@@ -18,6 +18,11 @@ function elementoCom(tag, classe, texto) {
   return el
 }
 
+async function preverEnvio(url) {
+  console.warn(`chatflow: pré-visualização — nada foi enviado para ${url}.`)
+  return { ok: true }
+}
+
 function novaSessao() {
   return crypto.randomUUID
     ? crypto.randomUUID()
@@ -58,7 +63,12 @@ export function criarChat({
     destinos: destinos.destinos || {},
     ao_finalizar: modo === "teste" ? [] : destinos.ao_finalizar || [],
     eventos: modo === "teste" ? null : destinos.eventos || null,
-    buscar
+    // Em pré-visualização o cadeado fica no transporte, não na configuração.
+    // O bloco "webhook" fala com destinos.destinos por enviarPara, sem passar
+    // por ao_finalizar, e dispararia de verdade. Trocando só o transporte,
+    // nada sai para a rede e os avisos de configuração continuam dizendo a
+    // verdade sobre o destinos.json de quem está editando.
+    buscar: modo === "teste" ? preverEnvio : buscar
   })
 
   let estado = criarEstado(fluxo)
