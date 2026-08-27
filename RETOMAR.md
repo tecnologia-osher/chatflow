@@ -77,8 +77,11 @@ deles pego pela suíte:
 ## Pendências que dependem do Gustavo
 
 1. **URL do Apps Script publicado** — bloqueia a entrega, ver acima.
-2. **As quatro faixas de valor** do fluxo da Osher (até 100 mil, 100–300,
-   300–600, acima de 600) foram estimadas pelo mercado de Brasília.
+2. ~~As quatro faixas de valor~~ **Decidido em 27/08/2026:** ficam como
+   estão, medindo o valor do bem (até 100 mil, 100–300, 300–600, acima de
+   600). O Typebot antigo perguntava parcela mensal; o Gustavo optou por
+   manter o eixo de valor do bem. As faixas de classificação (quente 9,
+   morno 5) vieram do Typebot, não foram inventadas.
 3. **Para qual WhatsApp vai o lead quente.** Está no fluxo o
    (61) 98228-6044, o único que existe, mas a equipe tem seis vendedores.
 4. **O bubble de texto aceita negrito, itálico e link?** Decide se o campo
@@ -89,6 +92,31 @@ deles pego pela suíte:
    três reviews. Um shim de DOM escrito à mão (~60 linhas, sem dependência
    nova) cobriria caminho quente, retomada e guarda de laço. Decisão sua,
    porque muda a arquitetura de teste que o plano fixou de propósito.
+
+## O Typebot antigo está encerrado
+
+`Osher/Typebot/` foi inventariado em 27/08/2026 contra o chatflow. Nada mais
+precisa sair de lá:
+
+- As faixas `quente 9 / morno 5` já tinham vindo dele.
+- O copy dele **viola o `preferencias.md`** em quase toda linha (emoji,
+  exclamação, e a palavra banida "investimento" na pergunta de faixa) e uma
+  das perguntas dava a mesma pontuação para todas as opções. Nada disso deve
+  voltar — o teste da Task 12 hoje barra os três casos.
+- O `apps-script.gs` dele foi substituído por `clientes/osher/apps-script.gs`,
+  que aponta a planilha por ID e trava a rajada de eventos.
+- `clientes/osher/preferencias.md` é cópia de `Osher Teste/_memoria/` (o
+  original continua lá). Existe porque o teste do fluxo verifica as palavras
+  banidas e não pode depender de arquivo de outro repositório.
+
+**Decidido em 27/08/2026:** o fundo do chat fica `#0C2340`, mesmo o
+`design-guide.md` dizendo que o fundo padrão da marca é `#1F3140`. Foi
+escolha consciente, não descuido — se algum dia o chat precisar bater com as
+outras peças, é uma linha em `clientes/osher/tema.json`.
+
+**Ideia que ficou para o v2:** o Typebot tinha barra de progresso
+("pergunta 3 de 8"). O chatflow não tem. Num fluxo de 6 perguntas isso
+reduz abandono; vira um tipo de bloco novo.
 
 ## Onde está o resto
 
