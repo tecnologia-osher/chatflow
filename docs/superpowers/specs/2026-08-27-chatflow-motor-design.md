@@ -116,7 +116,9 @@ parâmetro, carrega o exemplo.
 ```json
 {
   "versao": 2,
-  "inicio": "g_boas_vindas",
+  "eventos": [
+    { "tipo": "inicio", "posicao": { "x": 40, "y": 40 }, "proximo": "g_boas_vindas" }
+  ],
   "pontuacao": { "ativa": true, "faixas": { "quente": 9, "morno": 5 } },
   "grupos": [ ... ]
 }
@@ -124,6 +126,38 @@ parâmetro, carrega o exemplo.
 
 `pontuacao` é opcional. Ausente ou `"ativa": false`, o motor ignora
 qualquer campo `pontos` e não calcula classificação.
+
+### 7.1.1 Eventos
+
+Eventos **não são blocos**. Não vivem dentro de grupos e não são
+executados em sequência: eles dizem *quando* um fluxo começa ou é
+interrompido. No canvas, são nós próprios com conector de saída.
+
+| Evento | Dispara quando | Quando |
+|---|---|---|
+| `inicio` | A conversa abre | v1, obrigatório, exatamente um |
+| `invalido` | A resposta não passa na validação do input | **v1** |
+| `comando` | A página hospedeira chama o chat por código | depois |
+| `resposta` | Chega resposta por canal assíncrono (WhatsApp) | depois |
+
+**`invalido` substitui a mensagem de erro fixa.** Sem ele, o motor repete
+a pergunta com o texto padrão do tipo de bloco. Com ele, quem monta decide
+o que acontece — explicar melhor na segunda tentativa, oferecer outro
+caminho, ou seguir sem o campo depois de duas falhas.
+
+```json
+{ "tipo": "invalido", "posicao": { "x": 40, "y": 200 },
+  "apos_tentativas": 2, "proximo": "g_ajuda_contato" }
+```
+
+`apos_tentativas` define quantas falhas antes de desviar. Ausente, desvia
+na primeira.
+
+**Nota de escopo:** `resposta` implica canais fora do navegador, o que
+muda a arquitetura inteira — a conversa deixa de viver numa aba aberta e
+passa a precisar de servidor e de estado persistente. Fora do sub-projeto
+1 e provavelmente fora do 2. Registrado aqui porque o formato não deve
+impedir.
 
 ### 7.2 Grupo
 
@@ -184,10 +218,27 @@ Espelham o vocabulário que quem monta já reconhece:
 | `condicao` | logica | **sim** | não |
 | `definir_variavel` | logica | não | sim |
 | `ir_para` | logica | **sim** | não |
+| `redirecionar` | conexao | não | não |
 | `webhook` | conexao | não | opcional |
 
 Depois: vídeo, áudio, embed, website, hora, nota, escolha com foto, cards,
-arquivo, pagamento, esperar, teste A/B, redirecionar.
+arquivo, pagamento, esperar, teste A/B, sub-fluxo, retornar, script.
+
+### Dois pontos do catálogo futuro que afetam decisões de agora
+
+**Sub-fluxo e retornar são o mecanismo de templates.** Um fluxo chamando
+outro e voltando permite montar um trecho padrão uma vez e reusar em todo
+cliente novo, corrigindo num lugar só. É a maior alavanca comercial do
+catálogo. Não entra no v1, mas o formato precisa comportar — e comporta,
+porque grupo já é endereçável por id.
+
+**`script` é o único bloco com risco de segurança.** Ele executa
+JavaScript escrito por quem monta o fluxo. Enquanto cada fluxo roda no
+domínio do próprio dono, tudo bem. No momento em que o chatflow hospedar
+fluxos de clientes no mesmo domínio, um cliente escrevendo JavaScript
+alcança sessão e dados de outros contextos. Implementar por último, e
+então ou isolar em moldura separada, ou restringir a expressões em vez de
+código livre.
 
 **Invariante:** só ramificam `entrada_botoes`, `condicao` e `ir_para`.
 Todo o resto segue em frente. Isso mantém o canvas previsível — quem olha
@@ -379,6 +430,23 @@ em silêncio — aviso no console sempre, e faixa visível com `?teste=1`.
 **Segurança:** nenhuma credencial em arquivo de cliente. Só URL pública de
 webhook. Integração que exija chave fica atrás do Apps Script ou do Make,
 nunca no navegador.
+
+### Integrações são presets sobre webhook
+
+O Typebot lista 28 integrações. A maioria — Sheets, Zapier, Make, Pabbly,
+Segment, Posthog, Zendesk, HTTP request — é um POST para uma URL. O que
+muda entre elas é a interface: campos pré-preenchidos, nome e ícone.
+
+Portanto o chatflow **não implementa integrações uma a uma**. Implementa um
+bloco `webhook` sólido, e cada integração nomeada é um arquivo de preset
+no registro de tipos, declarando os campos que aquele serviço espera. É o
+mesmo mecanismo que gera o painel de propriedades no editor.
+
+**Exceção: os modelos de IA** (OpenAI, Anthropic, Mistral, Groq, DeepSeek,
+Perplexity, Together, OpenRouter). Todos exigem chave de API, que não pode
+existir no navegador — qualquer visitante lê o código-fonte. Só são
+viáveis com servidor intermediando, junto com os canais assíncronos. Fora
+dos sub-projetos 1 e 2.
 
 ## 10. Testes
 
