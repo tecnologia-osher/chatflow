@@ -1,0 +1,63 @@
+{
+  "versao": 2,
+  "eventos": [
+    { "tipo": "inicio", "posicao": { "x": 40, "y": 40 }, "proximo": "g_abertura" },
+    { "tipo": "invalido", "posicao": { "x": 40, "y": 200 }, "apos_tentativas": 2, "proximo": "g_ajuda" }
+  ],
+  "pontuacao": { "ativa": true, "faixas": { "quente": 4, "morno": 2 } },
+  "grupos": [
+    {
+      "id": "g_abertura",
+      "titulo": "Abertura",
+      "posicao": { "x": 320, "y": 40 },
+      "blocos": [
+        { "id": "b_ola", "tipo": "texto", "conteudo": { "texto": "Olá. Vou fazer duas perguntas rápidas." } },
+        { "id": "b_nome", "tipo": "entrada_texto", "conteudo": { "placeholder": "Seu nome", "rotulo_botao": "Enviar" }, "salvar_em": "nome" }
+      ],
+      "proximo": "g_interesse"
+    },
+    {
+      "id": "g_interesse",
+      "titulo": "Interesse",
+      "posicao": { "x": 320, "y": 260 },
+      "blocos": [
+        { "id": "b_p", "tipo": "texto", "conteudo": { "texto": "Prazer, {{nome}}. Com o que podemos ajudar?" } },
+        {
+          "id": "b_opcoes", "tipo": "entrada_botoes", "salvar_em": "interesse",
+          "conteudo": { "opcoes": [
+            { "id": "o1", "label": "Quero contratar", "pontos": 3, "proximo": "g_contato" },
+            { "id": "o2", "label": "Só tirando dúvidas", "pontos": 1, "proximo": "g_duvidas" }
+          ] }
+        }
+      ],
+      "proximo": "g_duvidas"
+    },
+    {
+      "id": "g_contato",
+      "titulo": "Contato",
+      "posicao": { "x": 660, "y": 180 },
+      "blocos": [
+        { "id": "b_tel_txt", "tipo": "texto", "conteudo": { "texto": "Qual o melhor telefone para falar com você?" } },
+        { "id": "b_tel", "tipo": "entrada_telefone", "conteudo": { "placeholder": "(00) 00000-0000", "rotulo_botao": "Enviar" }, "salvar_em": "telefone" },
+        { "id": "b_fim", "tipo": "texto", "conteudo": { "texto": "Obrigado, {{nome}}. Entraremos em contato." } }
+      ]
+    },
+    {
+      "id": "g_duvidas",
+      "titulo": "Dúvidas",
+      "posicao": { "x": 660, "y": 400 },
+      "blocos": [
+        { "id": "b_duv", "tipo": "texto", "conteudo": { "texto": "Sem problema, {{nome}}. Estamos por aqui quando precisar." } }
+      ]
+    },
+    {
+      "id": "g_ajuda",
+      "titulo": "Ajuda",
+      "posicao": { "x": 40, "y": 400 },
+      "blocos": [
+        { "id": "b_aj", "tipo": "texto", "conteudo": { "texto": "Vamos seguir sem esse dado por enquanto." } }
+      ],
+      "proximo": "g_duvidas"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chatflow</title>
+<link rel="stylesheet" href="tema.css">
+<style>
+  html, body { height: 100%; margin: 0; }
+  #chat { height: 100%; }
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<script type="module">
+  import { criarChat } from "./motor.js"
+
+  const parametros = new URLSearchParams(location.search)
+  const cliente = parametros.get("cliente")
+  const modo = parametros.get("teste") === "1" ? "teste" : "producao"
+
+  const base = cliente ? `../clientes/${cliente}` : "../exemplos"
+  const arquivoFluxo = cliente ? `${base}/fluxo.json` : `${base}/captacao-simples.json`
+
+  async function carregar(url, padrao) {
+    try {
+      const resposta = await fetch(url)
+      if (!resposta.ok) return padrao
+      return await resposta.json()
+    } catch {
+      return padrao
+    }
+  }
+
+  const [fluxo, tema, destinos] = await Promise.all([
+    carregar(arquivoFluxo, null),
+    carregar(`${base}/tema.json`, {}),
+    carregar(`${base}/destinos.json`, {})
+  ])
+
+  if (!fluxo) {
+    document.getElementById("chat").textContent = `Não consegui carregar ${arquivoFluxo}.`
+  } else {
+    const chat = criarChat({
+      elemento: document.getElementById("chat"),
+      fluxo, tema, destinos, modo
+    })
+    chat.reiniciar()
+  }
+</script>
+</body>
+</html>
