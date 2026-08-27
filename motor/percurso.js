@@ -1,4 +1,5 @@
 import { pontuacaoAtiva, classificar } from "./pontuacao.js"
+import { obter } from "./blocos/_registro.js"
 
 function acharGrupo(fluxo, id) {
   return (fluxo.grupos || []).find((g) => g.id === id) || null
@@ -24,7 +25,8 @@ export function criarEstado(fluxo) {
     grupoAtual: null,
     indiceBloco: 0,
     historico: [],
-    terminou: false
+    terminou: false,
+    tentativas: 0
   }
   if (!inicio || !inicio.proximo) return { ...base, terminou: true }
   const alvo = acharGrupo(fluxo, inicio.proximo)
@@ -140,4 +142,32 @@ export function destinoDaLogica(fluxo, estado, bloco) {
   }
 
   return null
+}
+
+export function validarEntrada(bloco, valor) {
+  if (!bloco || !bloco.tipo) return { ok: true, erro: null }
+  let definicao
+  try {
+    definicao = obter(bloco.tipo)
+  } catch {
+    return { ok: true, erro: null }
+  }
+  if (typeof definicao.validar !== "function") return { ok: true, erro: null }
+  if (definicao.validar(valor)) return { ok: true, erro: null }
+  return { ok: false, erro: definicao.erro || "Resposta inválida." }
+}
+
+export function registrarFalha(estado) {
+  return { ...estado, tentativas: (estado.tentativas || 0) + 1 }
+}
+
+export function limparFalhas(estado) {
+  return { ...estado, tentativas: 0 }
+}
+
+export function destinoDeInvalido(fluxo, estado) {
+  const evento = (fluxo.eventos || []).find((e) => e.tipo === "invalido")
+  if (!evento || !evento.proximo) return null
+  const limite = typeof evento.apos_tentativas === "number" ? evento.apos_tentativas : 1
+  return (estado.tentativas || 0) >= limite ? evento.proximo : null
 }
