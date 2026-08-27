@@ -10,6 +10,7 @@ export default {
     { nome: "minimo", rotulo: "Mínimo", tipo: "numero" },
     { nome: "maximo", rotulo: "Máximo", tipo: "numero" }
   ],
+  campo_html: { type: "text", inputmode: "decimal" },
   validar: (valor) => {
     if (typeof valor !== "string" || valor.trim() === "") return false
     return !Number.isNaN(Number(valor.replace(",", ".")))

@@ -8,6 +8,7 @@ export default {
     { nome: "placeholder", rotulo: "Texto de exemplo", tipo: "texto", aceita_variavel: true },
     { nome: "rotulo_botao", rotulo: "Texto do botão", tipo: "texto", padrao: "Enviar" }
   ],
+  campo_html: { type: "tel" },
   validar: (valor) => {
     const digitos = String(valor || "").replace(/\D/g, "")
     return digitos.length >= 10 && digitos.length <= 13

@@ -8,6 +8,7 @@ export default {
     { nome: "placeholder", rotulo: "Texto de exemplo", tipo: "texto", aceita_variavel: true },
     { nome: "rotulo_botao", rotulo: "Texto do botão", tipo: "texto", padrao: "Enviar" }
   ],
+  campo_html: { type: "text", inputmode: "numeric" },
   validar: (valor) => {
     const partes = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(valor || ""))
     if (!partes) return false

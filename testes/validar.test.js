@@ -231,3 +231,23 @@ test("inicio quebrado nao esconde becos sem saida alcancaveis por outro evento",
   assert.ok(r.erros.some((e) => e.includes('"g1"') && /beco sem saída/i.test(e)))
   assert.ok(r.erros.some((e) => e.includes('"g2"') && /beco sem saída/i.test(e)))
 })
+
+test("evento nulo na lista de eventos nao lanca e gera erro", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push(null)
+  let r
+  assert.doesNotThrow(() => { r = validarFluxo(f) })
+  assert.equal(r.valido, false)
+  assert.match(r.erros.join(" "), /Evento nulo.*posição 1/)
+})
+
+test("evento nulo nao impede a checagem do resto do fluxo", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push(null)
+  f.grupos[0].proximo = "g_nao_existe"
+  const erros = validarFluxo(f).erros.join(" ")
+  assert.match(erros, /Evento nulo/)
+  assert.match(erros, /g_nao_existe/)
+})

@@ -41,7 +41,16 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
 
   const gruposValidos = grupos.filter(Boolean)
 
-  const eventos = fluxo?.eventos || []
+  // Mesmo tratamento dado a grupos e blocos: um editor que apaga por índice
+  // deixa null solto no array, e o contrato deste módulo é nunca lançar.
+  const eventosDeclarados = fluxo?.eventos || []
+  eventosDeclarados.forEach((evento, indice) => {
+    if (!evento) {
+      erros.push(`Evento nulo encontrado na posição ${indice} da lista de eventos.`)
+    }
+  })
+  const eventos = eventosDeclarados.filter(Boolean)
+
   const inicio = eventos.find((e) => e.tipo === "inicio")
   if (!inicio) {
     erros.push("O fluxo precisa de um evento de início.")

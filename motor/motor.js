@@ -1,5 +1,5 @@
 import { registrarTodos } from "./blocos/index.js"
-import { todos } from "./blocos/_registro.js"
+import { todos, obter } from "./blocos/_registro.js"
 import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
 import { criarEnviador } from "./destinos.js"
@@ -17,6 +17,18 @@ function elementoCom(tag, classe, texto) {
   if (classe) el.className = classe
   if (texto !== undefined) el.textContent = texto
   return el
+}
+
+// Atributos HTML do campo de entrada, declarados pelo próprio tipo de bloco.
+// Ficam lá e não numa lista aqui dentro para que acrescentar um tipo novo não
+// exija editar o motor. Em modo teste um fluxo inválido continua sendo
+// montado, então um tipo fora do catálogo cai no padrão em vez de estourar.
+function atributosDoCampo(tipo) {
+  try {
+    return obter(tipo).campo_html || { type: "text" }
+  } catch {
+    return { type: "text" }
+  }
 }
 
 async function preverEnvio(url) {
@@ -151,9 +163,11 @@ export function criarChat({
     seguir()
   }
 
-  function pedirTexto(bloco, definicaoTipo) {
+  function pedirTexto(bloco) {
     const campo = elementoCom("input", "cf__campo")
-    campo.type = definicaoTipo === "entrada_numero" ? "text" : "text"
+    for (const [nome, valor] of Object.entries(atributosDoCampo(bloco.tipo))) {
+      campo.setAttribute(nome, valor)
+    }
     campo.placeholder = interpolar(bloco.conteudo?.placeholder || "", contexto(fluxo, estado))
     const botao = elementoCom("button", "cf__botao", bloco.conteudo?.rotulo_botao || "Enviar")
     botao.type = "button"
@@ -262,7 +276,7 @@ export function criarChat({
         return
       }
       if (bloco.tipo === "entrada_botoes") { pedirOpcao(bloco); return }
-      pedirTexto(bloco, bloco.tipo)
+      pedirTexto(bloco)
       return
     }
 
