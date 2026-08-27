@@ -135,6 +135,47 @@ test("url com o texto de exemplo do apps script tambem avisa", async () => {
   assert.match(avisos.join(" "), /não configurad/i)
 })
 
+test("enviarPara entrega so ao destino nomeado, nao aos outros", async () => {
+  const chamadas = []
+  const enviador = criarEnviador({
+    ...config(),
+    buscar: async (url, opcoes) => {
+      chamadas.push({ url, corpo: JSON.parse(opcoes.body) })
+      return { ok: true }
+    }
+  })
+  await enviador.enviarPara("planilha", { nome: "Ana" })
+  assert.equal(chamadas.length, 1)
+  assert.equal(chamadas[0].url, "https://exemplo/planilha")
+  assert.equal(chamadas[0].corpo.nome, "Ana")
+  assert.equal(enviador.fila().length, 0)
+})
+
+test("enviarPara com destino nao configurado avisa e nao envia nada", async () => {
+  const avisos = []
+  let chamou = false
+  const enviador = criarEnviador({
+    ...config(),
+    buscar: async () => { chamou = true; return { ok: true } },
+    avisar: (m) => avisos.push(m)
+  })
+  await enviador.enviarPara("inexistente", { nome: "Ana" })
+  assert.equal(chamou, false)
+  assert.equal(enviador.fila().length, 0)
+  assert.match(avisos.join(" "), /inexistente/)
+})
+
+test("enviarPara com falha de rede coloca na fila", async () => {
+  const enviador = criarEnviador({
+    ...config(),
+    buscar: async () => { throw new Error("rede fora") }
+  })
+  await enviador.enviarPara("planilha", { nome: "Ana" })
+  assert.equal(enviador.fila().length, 1)
+  assert.equal(enviador.fila()[0].destino, "planilha")
+  assert.equal(enviador.fila()[0].tentativas, 1)
+})
+
 test("enviarEvento usa o destino de eventos", async () => {
   const chamadas = []
   const enviador = criarEnviador({
