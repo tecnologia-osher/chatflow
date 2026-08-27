@@ -71,7 +71,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test testes/"
+    "test": "node --test"
   }
 }
 ```
@@ -864,7 +864,7 @@ export function destinoDaLogica(fluxo, estado, bloco) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -1210,7 +1210,7 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -1595,7 +1595,7 @@ export function registrarTodos() {
 - [ ] **Step 5: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -1776,7 +1776,7 @@ export function destinoDeInvalido(fluxo, estado) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos. O teste `"nao modifica o estado recebido"` da Task 4 continua passando porque `tentativas` entra no estado inicial.
@@ -2061,7 +2061,7 @@ export function criarEnviador({
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -2540,7 +2540,7 @@ Criar `motor/player.html`:
 - [ ] **Step 5: Verificar no navegador**
 
 ```bash
-cd chatflow && node --run test 2>/dev/null || node --test testes/
+cd chatflow && node --run test 2>/dev/null || node --test
 python3 -m http.server 8080
 ```
 
@@ -2798,7 +2798,7 @@ E no `player.html`, passar a chave do cliente:
 - [ ] **Step 5: Rodar e verificar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -3147,7 +3147,7 @@ Pontuação máxima: 12. Quente a partir de 9, morno de 5 a 8, frio até 4.
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos, incluindo os seis testes do fluxo da Osher.
