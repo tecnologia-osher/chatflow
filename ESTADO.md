@@ -1,5 +1,22 @@
 # Estado do chatflow — 27/08/2026
 
+## Sub-projeto 1: EM PRODUÇÃO
+
+**O chat da Osher está no ar desde 27/08/2026:**
+https://tecnologia-osher.github.io/chatflow/?cliente=osher
+(acrescente `&teste=1` para pré-visualizar sem gravar nada)
+
+Publicado com GitHub Pages a partir de `main`, repositório público em
+github.com/tecnologia-osher/chatflow. Verificado no celular: tema correto,
+teclado numérico no campo de WhatsApp, caminho quente até o botão de
+WhatsApp, e a linha na aba `Chatflow` da planilha.
+
+**Armadilha que custou um susto e vai se repetir no próximo cliente:** o
+GitHub Pages roda Jekyll por padrão, e Jekyll **ignora todo arquivo que
+começa com `_`**. O `motor/blocos/_registro.js` voltava 404 enquanto os
+outros 25 arquivos vinham 200 — o chat abria em branco, sem erro nenhum.
+O `.nojekyll` vazio na raiz resolve. Não apague esse arquivo.
+
 ## Sub-projeto 1: concluído e integrado
 
 O motor e o formato do fluxo. As 12 tarefas do plano, a review final da
