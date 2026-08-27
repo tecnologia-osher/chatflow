@@ -2,6 +2,15 @@ const CATEGORIAS = ["fala", "entrada", "logica", "conexao"]
 
 const catalogo = new Map()
 
+function congelarProfundo(objeto) {
+  Object.freeze(objeto)
+  if (Array.isArray(objeto.campos)) {
+    Object.freeze(objeto.campos)
+    objeto.campos.forEach((campo) => Object.freeze(campo))
+  }
+  return objeto
+}
+
 function conferir(definicao) {
   if (!definicao || typeof definicao.tipo !== "string" || !definicao.tipo) {
     throw new Error("Definição de bloco precisa de um tipo.")
@@ -30,7 +39,11 @@ export function registrar(definicao) {
   if (catalogo.has(definicao.tipo)) {
     throw new Error(`Bloco "${definicao.tipo}" já registrado.`)
   }
-  catalogo.set(definicao.tipo, Object.freeze({ ...definicao }))
+  const copia = { ...definicao }
+  if (definicao.campos) {
+    copia.campos = [...definicao.campos].map((campo) => ({ ...campo }))
+  }
+  catalogo.set(definicao.tipo, congelarProfundo(copia))
 }
 
 export function obter(tipo) {

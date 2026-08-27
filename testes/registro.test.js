@@ -47,3 +47,19 @@ test("todos devolve as definicoes registradas", () => {
   registrar({ ...definicaoValida, tipo: "imagem", rotulo: "Imagem" })
   assert.deepEqual(todos().map((d) => d.tipo).sort(), ["imagem", "texto"])
 })
+
+test("definicao recuperada tem campos congelados", () => {
+  limpar()
+  registrar(definicaoValida)
+  const def = obter("texto")
+  assert.throws(() => def.campos.push({ nome: "novo" }), /Cannot add/)
+})
+
+test("mutacao da definicao original nao afeta o registrado", () => {
+  limpar()
+  const def = { ...definicaoValida }
+  registrar(def)
+  def.campos.push({ nome: "novo", rotulo: "Novo", tipo: "texto" })
+  const recuperada = obter("texto")
+  assert.equal(recuperada.campos.length, 1)
+})
