@@ -197,7 +197,7 @@ export function criarChat({
       }
 
       if (bloco.tipo === "webhook") {
-        enviador.enviar({ sessaoId, ...contexto(fluxo, estado) })
+        enviador.enviarPara(bloco.conteudo?.destino, { sessaoId, ...contexto(fluxo, estado) })
         estado = avancar(fluxo, estado)
         continue
       }
@@ -205,6 +205,13 @@ export function criarChat({
       if (bloco.tipo === "redirecionar") { mostrarLink(bloco); return }
       if (bloco.tipo === "entrada_botoes") { pedirOpcao(bloco); return }
       pedirTexto(bloco, bloco.tipo)
+      return
+    }
+
+    if (!estado.terminou) {
+      const mensagem = `O fluxo parece estar em loop e foi interrompido no grupo "${estado.grupoAtual}".`
+      console.error(`chatflow: ${mensagem}`)
+      erro.textContent = mensagem
       return
     }
 

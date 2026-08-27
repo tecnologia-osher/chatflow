@@ -70,6 +70,10 @@ export function criarEnviador({
       for (const nome of ao_finalizar) await tentar(nome, dados)
     },
 
+    async enviarPara(nome, dados) {
+      await tentar(nome, dados)
+    },
+
     async enviarEvento(dados) {
       if (!eventos) return
       await entregar(eventos, dados)
