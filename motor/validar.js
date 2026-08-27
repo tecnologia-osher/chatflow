@@ -18,7 +18,10 @@ function destinosDoBloco(bloco) {
 
 function saidasDoGrupo(grupo) {
   const saidas = grupo.proximo ? [grupo.proximo] : []
-  for (const bloco of grupo.blocos || []) saidas.push(...destinosDoBloco(bloco))
+  for (const bloco of grupo.blocos || []) {
+    if (!bloco) continue
+    saidas.push(...destinosDoBloco(bloco))
+  }
   return saidas
 }
 
@@ -27,10 +30,16 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   const grupos = fluxo?.grupos || []
   const porId = new Map()
 
-  for (const grupo of grupos) {
+  grupos.forEach((grupo, indice) => {
+    if (!grupo) {
+      erros.push(`Grupo nulo encontrado na posição ${indice} da lista de grupos.`)
+      return
+    }
     if (porId.has(grupo.id)) erros.push(`Grupo com id duplicado: "${grupo.id}".`)
     porId.set(grupo.id, grupo)
-  }
+  })
+
+  const gruposValidos = grupos.filter(Boolean)
 
   const eventos = fluxo?.eventos || []
   const inicio = eventos.find((e) => e.tipo === "inicio")
@@ -47,9 +56,14 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     }
   }
 
-  for (const grupo of grupos) {
+  for (const grupo of gruposValidos) {
     const idsBloco = new Set()
-    for (const bloco of grupo.blocos || []) {
+    const blocos = grupo.blocos || []
+    blocos.forEach((bloco, indiceBloco) => {
+      if (!bloco) {
+        erros.push(`Grupo "${grupo.id}": bloco nulo encontrado na posição ${indiceBloco}.`)
+        return
+      }
       if (idsBloco.has(bloco.id)) {
         erros.push(`Grupo "${grupo.id}": id de bloco duplicado "${bloco.id}".`)
       }
@@ -72,7 +86,7 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
           erros.push(`Bloco "${bloco.id}" usa o destino "${chave}", que não existe em destinos.json.`)
         }
       }
-    }
+    })
 
     for (const saida of saidasDoGrupo(grupo)) {
       if (!porId.has(saida)) {
@@ -81,46 +95,53 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     }
   }
 
-  if (inicio && porId.has(inicio.proximo)) {
-    // Todo evento é uma raiz: um grupo alcançado só pelo evento "invalido"
-    // não é órfão.
-    const alcancados = new Set()
-    const fila = eventos.map((e) => e.proximo).filter((id) => porId.has(id))
-    while (fila.length) {
-      const id = fila.shift()
-      if (alcancados.has(id)) continue
-      alcancados.add(id)
-      const grupo = porId.get(id)
-      if (!grupo) continue
-      for (const saida of saidasDoGrupo(grupo)) {
-        if (porId.has(saida)) fila.push(saida)
-      }
+  // Todo evento é uma raiz: um grupo alcançado só pelo evento "invalido"
+  // não é órfão. A busca roda sempre; só reportamos "inalcançável" quando
+  // ao menos uma raiz de fato resolve para um grupo real — senão o
+  // problema já está coberto pelo erro de início/evento quebrado.
+  const alcancados = new Set()
+  const fila = eventos.map((e) => e.proximo).filter((id) => porId.has(id))
+  const haviaRaizValida = fila.length > 0
+  while (fila.length) {
+    const id = fila.shift()
+    if (alcancados.has(id)) continue
+    alcancados.add(id)
+    const grupo = porId.get(id)
+    if (!grupo) continue
+    for (const saida of saidasDoGrupo(grupo)) {
+      if (porId.has(saida)) fila.push(saida)
     }
-    for (const grupo of grupos) {
+  }
+  if (haviaRaizValida) {
+    for (const grupo of gruposValidos) {
       if (!alcancados.has(grupo.id)) {
         erros.push(`Grupo "${grupo.id}" não é alcançável a partir do início.`)
       }
     }
+  }
 
-    const terminais = new Set(
-      grupos.filter((g) => saidasDoGrupo(g).length === 0).map((g) => g.id)
-    )
-    const chegaAoFim = new Set(terminais)
-    let mudou = true
-    while (mudou) {
-      mudou = false
-      for (const grupo of grupos) {
-        if (chegaAoFim.has(grupo.id)) continue
-        if (saidasDoGrupo(grupo).some((s) => chegaAoFim.has(s))) {
-          chegaAoFim.add(grupo.id)
-          mudou = true
-        }
+  // Becos sem saída: propriedade pura do grafo de grupos. Independe de
+  // alcançabilidade ou do evento de início, então roda sempre — mas só
+  // reportamos para grupos alcançáveis, para não duplicar o erro de um
+  // grupo já apontado como órfão acima.
+  const terminais = new Set(
+    gruposValidos.filter((g) => saidasDoGrupo(g).length === 0).map((g) => g.id)
+  )
+  const chegaAoFim = new Set(terminais)
+  let mudou = true
+  while (mudou) {
+    mudou = false
+    for (const grupo of gruposValidos) {
+      if (chegaAoFim.has(grupo.id)) continue
+      if (saidasDoGrupo(grupo).some((s) => chegaAoFim.has(s))) {
+        chegaAoFim.add(grupo.id)
+        mudou = true
       }
     }
-    for (const grupo of grupos) {
-      if (alcancados.has(grupo.id) && !chegaAoFim.has(grupo.id)) {
-        erros.push(`Grupo "${grupo.id}" é um beco sem saída: nenhum caminho a partir dele termina o fluxo.`)
-      }
+  }
+  for (const grupo of gruposValidos) {
+    if (alcancados.has(grupo.id) && !chegaAoFim.has(grupo.id)) {
+      erros.push(`Grupo "${grupo.id}" é um beco sem saída: nenhum caminho a partir dele termina o fluxo.`)
     }
   }
 

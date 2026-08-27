@@ -165,5 +165,69 @@ test("acumula varios erros de uma vez", () => {
   const f = fluxoValido()
   f.grupos[0].proximo = "g_x"
   f.grupos[0].blocos[0].tipo = "inventado"
-  assert.ok(validarFluxo(f).erros.length >= 2)
+  const texto = validarFluxo(f).erros.join(" ")
+  assert.match(texto, /inventado/)
+  assert.match(texto, /g_x/)
+})
+
+test("grupo nulo na lista de grupos nao lanca e gera erro", () => {
+  prepararCatalogo()
+  const f = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [null]
+  }
+  let r
+  assert.doesNotThrow(() => { r = validarFluxo(f) })
+  assert.equal(r.valido, false)
+  assert.match(r.erros.join(" "), /nul[oa]/i)
+})
+
+test("bloco nulo dentro de um grupo nao lanca e gera erro", () => {
+  prepararCatalogo()
+  const f = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", blocos: [null] }]
+  }
+  let r
+  assert.doesNotThrow(() => { r = validarFluxo(f) })
+  assert.equal(r.valido, false)
+  assert.match(r.erros.join(" "), /nul[oa]/i)
+})
+
+test("ciclo sem saida gera beco sem saida para cada grupo", () => {
+  prepararCatalogo()
+  const f = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", blocos: [], proximo: "g2" },
+      { id: "g2", blocos: [], proximo: "g1" }
+    ]
+  }
+  const r = validarFluxo(f)
+  assert.equal(r.valido, false)
+  assert.ok(r.erros.some((e) => e.includes('"g1"') && /beco sem saída/i.test(e)))
+  assert.ok(r.erros.some((e) => e.includes('"g2"') && /beco sem saída/i.test(e)))
+})
+
+test("inicio quebrado nao esconde becos sem saida alcancaveis por outro evento", () => {
+  prepararCatalogo()
+  const f = {
+    versao: 2,
+    eventos: [
+      { tipo: "inicio", proximo: "nope" },
+      { tipo: "invalido", proximo: "g1" }
+    ],
+    grupos: [
+      { id: "g1", blocos: [], proximo: "g2" },
+      { id: "g2", blocos: [], proximo: "g1" }
+    ]
+  }
+  const r = validarFluxo(f)
+  const texto = r.erros.join(" ")
+  assert.match(texto, /nope/)
+  assert.ok(r.erros.some((e) => e.includes('"g1"') && /beco sem saída/i.test(e)))
+  assert.ok(r.erros.some((e) => e.includes('"g2"') && /beco sem saída/i.test(e)))
 })
