@@ -2468,6 +2468,10 @@ export function criarChat({
 
   return {
     reiniciar() {
+      // Um envio que falhou numa tentativa anterior desta sessão é
+      // retentado agora. Sem esta chamada a fila de `destinos.js` nunca
+      // é drenada por ninguém e o lead se perde em silêncio.
+      enviador.processarFila()
       estado = criarEstado(fluxo)
       sessaoId = novaSessao()
       thread.replaceChildren()
@@ -2477,6 +2481,12 @@ export function criarChat({
   }
 }
 ```
+
+**Limitação conhecida, a registrar no README:** a fila vive na memória da
+instância. Ela cobre falha de rede enquanto a aba continua aberta, não
+sobrevive a um fechamento. Persistir a fila junto com o estado da sessão
+(Task 11) fecharia isso; entregar de verdade sob qualquer falha exige
+servidor, que é o sub-projeto 3.
 
 - [ ] **Step 4: Criar o `player.html`**
 
