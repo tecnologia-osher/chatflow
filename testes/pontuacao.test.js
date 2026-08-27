@@ -26,6 +26,7 @@ test("faixas fora de ordem no objeto nao afetam o resultado", () => {
 test("faixas ausentes devolve null", () => {
   assert.equal(classificar(9, undefined), null)
   assert.equal(classificar(9, {}), null)
+  assert.equal(classificar(9, [9, 5]), null)
 })
 
 test("pontuacaoAtiva le a configuracao do fluxo", () => {

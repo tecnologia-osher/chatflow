@@ -3,7 +3,7 @@ export function pontuacaoAtiva(fluxo) {
 }
 
 export function classificar(pontos, faixas) {
-  if (!faixas || typeof faixas !== "object") return null
+  if (!faixas || typeof faixas !== "object" || Array.isArray(faixas)) return null
   const ordenadas = Object.entries(faixas)
     .filter(([, corte]) => typeof corte === "number")
     .sort((a, b) => b[1] - a[1])
