@@ -41,6 +41,21 @@ test("destino inativo e ignorado sem erro", async () => {
   assert.equal(enviador.fila().length, 0)
 })
 
+test("destino pausado com url valida nunca e chamado, mesmo configurado", async () => {
+  const chamadas = []
+  const enviador = criarEnviador({
+    destinos: {
+      planilha: { tipo: "apps_script", url: "https://exemplo/planilha" },
+      crm: { tipo: "webhook", url: "https://exemplo/crm", ativo: false }
+    },
+    ao_finalizar: ["planilha", "crm"],
+    buscar: async (url) => { chamadas.push(url); return { ok: true } }
+  })
+  await enviador.enviar({ nome: "Ana" })
+  assert.deepEqual(chamadas, ["https://exemplo/planilha"])
+  assert.equal(enviador.fila().length, 0)
+})
+
 test("falha de rede coloca na fila", async () => {
   const enviador = criarEnviador({
     ...config(),
@@ -77,14 +92,18 @@ test("processarFila reenvia e limpa quando da certo", async () => {
 })
 
 test("descarta o item depois de tres tentativas", async () => {
+  let chamadas = 0
   const enviador = criarEnviador({
     ...config(),
-    buscar: async () => { throw new Error("rede fora") }
+    buscar: async () => { chamadas++; throw new Error("rede fora") }
   })
   await enviador.enviar({ nome: "Ana" })
+  assert.equal(enviador.fila()[0].tentativas, 1)
   await enviador.processarFila()
+  assert.equal(enviador.fila()[0].tentativas, 2)
   await enviador.processarFila()
   assert.equal(enviador.fila().length, 0)
+  assert.equal(chamadas, 3)
 })
 
 test("destino sem url avisa e nao tenta enviar", async () => {
