@@ -50,11 +50,9 @@ achados e o que falta em cada um:
    declara o campo, `motor/validar.js` exige que ele exista em
    `destinos.json`, e o motor chamava `enviador.enviar()` — que só entrega
    para `ao_finalizar`. O campo era validado e morto.
-   **Feito:** `enviarPara(nome, dados)` existe em
-   `motor/destinos.js:73` e o ramo `webhook` do motor já o usa
-   (`motor/motor.js:200`).
-   nomeado e não aos outros; destino nomeado não configurado avisa e não
-   envia; falha entra na fila.
+   **Fechado.** `enviarPara(nome, dados)` existe em `motor/destinos.js:73`,
+   o ramo `webhook` do motor já o usa (`motor/motor.js:200`), e os três
+   testes estão em `testes/destinos.test.js`.
 
 2. **`motor/motor.js`, a guarda de 500 iterações finge conclusão.** Ao
    estourar, o laço sai com `terminou` ainda falso e cai em `finalizar()`,
