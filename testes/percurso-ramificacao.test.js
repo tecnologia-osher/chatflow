@@ -49,6 +49,25 @@ test("variavel inexistente conta como vazia", () => {
   assert.equal(avaliarRegra({ variavel: "nao_existe", vazio: true }, {}), true)
 })
 
+test("maior_que e menor_que na forma variavel comparam numericamente, nao como texto", () => {
+  // "10" e "5" divergem entre comparacao numerica e lexicografica (string):
+  // numericamente 10 > 5, mas como texto "10" < "5" (o char '1' < '5').
+  assert.equal(avaliarRegra({ variavel: "idade", maior_que: 5 }, { idade: "10" }), true)
+  assert.equal(avaliarRegra({ variavel: "idade", menor_que: 5 }, { idade: "10" }), false)
+  // "9" e "30" tambem divergem: numericamente 9 < 30, mas como texto "9" > "30"
+  // (o char '9' > '3'). Se a coercao numerica fosse removida, estes dois
+  // primeiros asserts do bloco anterior continuariam corretos por acaso, mas
+  // estes dois pegam o caso onde a comparacao textual erra.
+  assert.equal(avaliarRegra({ variavel: "idade", maior_que: 30 }, { idade: "9" }), false)
+  assert.equal(avaliarRegra({ variavel: "idade", menor_que: 30 }, { idade: "9" }), true)
+})
+
+test("maior_que com valor nao numerico devolve false, nao lanca erro", () => {
+  // Number("abc") e NaN, e toda comparacao com NaN e false — falha fechado,
+  // este teste fixa esse comportamento como o esperado.
+  assert.equal(avaliarRegra({ variavel: "x", maior_que: 5 }, { x: "abc" }), false)
+})
+
 const fluxoCondicao = {
   versao: 2,
   eventos: [{ tipo: "inicio", proximo: "g1" }],
