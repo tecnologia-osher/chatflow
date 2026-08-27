@@ -71,7 +71,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test testes/"
+    "test": "node --test"
   }
 }
 ```
@@ -864,7 +864,7 @@ export function destinoDaLogica(fluxo, estado, bloco) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -975,6 +975,25 @@ test("grupo inalcancavel", () => {
   const f = fluxoValido()
   f.grupos.push({ id: "g_orfao", blocos: [] })
   assert.match(validarFluxo(f).erros.join(" "), /g_orfao/)
+})
+
+test("grupo alcancado apenas por um evento nao e orfao", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push({ tipo: "invalido", apos_tentativas: 2, proximo: "g_ajuda" })
+  f.grupos.push({
+    id: "g_ajuda",
+    blocos: [{ id: "b_aj", tipo: "texto", conteudo: { texto: "Vamos seguir." } }],
+    proximo: "g2"
+  })
+  assert.deepEqual(validarFluxo(f).erros, [])
+})
+
+test("evento apontando para grupo inexistente e erro", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push({ tipo: "invalido", proximo: "g_nao_existe" })
+  assert.match(validarFluxo(f).erros.join(" "), /g_nao_existe/)
 })
 
 test("ciclo com saida e aceito", () => {
@@ -1092,11 +1111,19 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     porId.set(grupo.id, grupo)
   }
 
-  const inicio = (fluxo?.eventos || []).find((e) => e.tipo === "inicio")
+  const eventos = fluxo?.eventos || []
+  const inicio = eventos.find((e) => e.tipo === "inicio")
   if (!inicio) {
     erros.push("O fluxo precisa de um evento de início.")
   } else if (!porId.has(inicio.proximo)) {
     erros.push(`O início aponta para o grupo "${inicio.proximo}", que não existe.`)
+  }
+
+  for (const evento of eventos) {
+    if (evento === inicio) continue
+    if (evento.proximo && !porId.has(evento.proximo)) {
+      erros.push(`O evento "${evento.tipo}" aponta para o grupo "${evento.proximo}", que não existe.`)
+    }
   }
 
   for (const grupo of grupos) {
@@ -1134,8 +1161,10 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   }
 
   if (inicio && porId.has(inicio.proximo)) {
+    // Todo evento é uma raiz: um grupo alcançado só pelo evento "invalido"
+    // não é órfão.
     const alcancados = new Set()
-    const fila = [inicio.proximo]
+    const fila = eventos.map((e) => e.proximo).filter((id) => porId.has(id))
     while (fila.length) {
       const id = fila.shift()
       if (alcancados.has(id)) continue
@@ -1181,7 +1210,7 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -1566,7 +1595,7 @@ export function registrarTodos() {
 - [ ] **Step 5: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -1747,7 +1776,7 @@ export function destinoDeInvalido(fluxo, estado) {
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos. O teste `"nao modifica o estado recebido"` da Task 4 continua passando porque `tentativas` entra no estado inicial.
@@ -2032,7 +2061,7 @@ export function criarEnviador({
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -2439,6 +2468,10 @@ export function criarChat({
 
   return {
     reiniciar() {
+      // Um envio que falhou numa tentativa anterior desta sessão é
+      // retentado agora. Sem esta chamada a fila de `destinos.js` nunca
+      // é drenada por ninguém e o lead se perde em silêncio.
+      enviador.processarFila()
       estado = criarEstado(fluxo)
       sessaoId = novaSessao()
       thread.replaceChildren()
@@ -2448,6 +2481,12 @@ export function criarChat({
   }
 }
 ```
+
+**Limitação conhecida, a registrar no README:** a fila vive na memória da
+instância. Ela cobre falha de rede enquanto a aba continua aberta, não
+sobrevive a um fechamento. Persistir a fila junto com o estado da sessão
+(Task 11) fecharia isso; entregar de verdade sob qualquer falha exige
+servidor, que é o sub-projeto 3.
 
 - [ ] **Step 4: Criar o `player.html`**
 
@@ -2511,7 +2550,7 @@ Criar `motor/player.html`:
 - [ ] **Step 5: Verificar no navegador**
 
 ```bash
-cd chatflow && node --run test 2>/dev/null || node --test testes/
+cd chatflow && node --run test 2>/dev/null || node --test
 python3 -m http.server 8080
 ```
 
@@ -2769,7 +2808,7 @@ E no `player.html`, passar a chave do cliente:
 - [ ] **Step 5: Rodar e verificar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos.
@@ -3118,7 +3157,7 @@ Pontuação máxima: 12. Quente a partir de 9, morno de 5 a 8, frio até 4.
 - [ ] **Step 4: Rodar e ver passar**
 
 ```bash
-node --test testes/
+node --test
 ```
 
 Esperado: PASS em todos os arquivos, incluindo os seis testes do fluxo da Osher.

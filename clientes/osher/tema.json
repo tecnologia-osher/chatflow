@@ -1,0 +1,10 @@
+{
+  "marca": "Osher",
+  "cores": {
+    "fundo": "#0C2340",
+    "superficie": "#1F3140",
+    "acento": "#BF9C5A",
+    "texto": "#EEF1F5"
+  },
+  "fonte": "Georgia, 'Times New Roman', serif"
+}
