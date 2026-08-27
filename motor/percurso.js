@@ -88,3 +88,56 @@ export function contexto(fluxo, estado) {
   }
   return base
 }
+
+export function destinoDaResposta(bloco, valor) {
+  const opcoes = (bloco && bloco.conteudo && bloco.conteudo.opcoes) || []
+  const escolhida = opcoes.find((o) => o.label === valor)
+  return (escolhida && escolhida.proximo) || null
+}
+
+function estaVazio(valor) {
+  return valor === undefined || valor === null || valor === ""
+}
+
+export function avaliarRegra(regra, ctx) {
+  if (!regra || typeof regra !== "object") return false
+
+  if (regra.pontuacao && typeof regra.pontuacao === "object") {
+    const pontos = ctx.pontuacao ?? 0
+    if ("maior_que" in regra.pontuacao) return pontos > regra.pontuacao.maior_que
+    if ("menor_que" in regra.pontuacao) return pontos < regra.pontuacao.menor_que
+    if ("igual" in regra.pontuacao) return pontos === regra.pontuacao.igual
+    return false
+  }
+
+  if (typeof regra.variavel === "string") {
+    const valor = ctx[regra.variavel]
+    if ("vazio" in regra) return regra.vazio === estaVazio(valor)
+    if ("igual" in regra) return valor === regra.igual
+    if ("diferente" in regra) return valor !== regra.diferente
+    if ("contem" in regra) return String(valor ?? "").includes(String(regra.contem))
+    if ("maior_que" in regra) return Number(valor) > Number(regra.maior_que)
+    if ("menor_que" in regra) return Number(valor) < Number(regra.menor_que)
+  }
+
+  return false
+}
+
+export function destinoDaLogica(fluxo, estado, bloco) {
+  if (!bloco) return null
+
+  if (bloco.tipo === "ir_para") {
+    return (bloco.conteudo && bloco.conteudo.destino) || null
+  }
+
+  if (bloco.tipo === "condicao") {
+    const ctx = contexto(fluxo, estado)
+    const regras = (bloco.conteudo && bloco.conteudo.regras) || []
+    for (const item of regras) {
+      if (avaliarRegra(item.se, ctx)) return item.entao || null
+    }
+    return null
+  }
+
+  return null
+}
