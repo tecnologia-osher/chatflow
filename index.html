@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chatflow</title>
+<script>
+  // A raiz existe só para encurtar o link publicado. Repassa a query string
+  // e o fragmento inteiros, então ?cliente=osher e &teste=1 continuam
+  // valendo. replace() em vez de href para não empilhar no histórico do
+  // navegador — senão o botão Voltar fica preso num laço de redirecionamento.
+  location.replace("motor/player.html" + location.search + location.hash)
+</script>
+</head>
+<body>
+<p>Abrindo o chat… <a href="motor/player.html">continuar</a></p>
+</body>
+</html>
