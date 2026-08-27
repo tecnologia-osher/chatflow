@@ -2,19 +2,25 @@
 // Apps Script (script.google.com), preencha o ID abaixo, salve e publique.
 //
 // Este script é AVULSO: não nasce dentro de uma planilha, então precisa
-// dizer explicitamente em qual planilha escrever. Troque a constante abaixo
-// pelo ID da planilha — é o trecho do link entre "/d/" e "/edit".
+// dizer explicitamente em qual planilha escrever. O ID é o trecho do link
+// entre "/d/" e "/edit".
 //
-// https://docs.google.com/spreadsheets/d/ESTE_PEDACO_AQUI/edit
-const ID_DA_PLANILHA = "COLE_AQUI_O_ID_DA_PLANILHA";
+// Planilha "Leads Osher Backup", que já guarda os leads históricos de 2025.
+// O chat escreve só nas duas abas nomeadas abaixo, criadas sozinhas na
+// primeira vez. Nenhuma aba existente é tocada.
+const ID_DA_PLANILHA = "1utcWfxzIZUOpC8IF7ckwDFaCrdKZwDhZILVgkUG1JEI";
 
-// Duas abas, criadas sozinhas na primeira vez:
-//   "Respostas" -> uma linha por pessoa que TERMINOU o chat, com todas as
+// Onde o chat escreve. Renomear aqui é suficiente: as abas são criadas com
+// o nome que estiver nestas constantes.
+//   ABA_LEADS   -> uma linha por pessoa que TERMINOU o chat, com todas as
 //                  respostas, a pontuação e a classificação.
-//   "Eventos"   -> uma linha cada vez que uma pergunta é EXIBIDA, mesmo que
+//   ABA_EVENTOS -> uma linha cada vez que uma pergunta é EXIBIDA, mesmo que
 //                  a pessoa abandone o chat. É o funil: mostra em que
-//                  pergunta as pessoas mais desistem.
-//
+//                  pergunta as pessoas mais desistem. São ~16 linhas por
+//                  visitante, por isso fica longe da aba de leads.
+const ABA_LEADS = "Chatflow";
+const ABA_EVENTOS = "Chatflow Eventos";
+
 // O motor marca o evento de funil com o campo "event". É só isso que separa
 // uma aba da outra.
 //
@@ -30,7 +36,7 @@ function doPost(e) {
 
   try {
     const data = JSON.parse(e.postData.contents);
-    const sheet = getOrCreateSheet(data.event ? "Eventos" : "Respostas");
+    const sheet = getOrCreateSheet(data.event ? ABA_EVENTOS : ABA_LEADS);
 
     let headers = sheet.getLastRow() > 0
       ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
@@ -62,9 +68,17 @@ function getOrCreateSheet(name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
 }
 
-// Confere se o ID está certo antes de publicar. Rode esta função e olhe o
-// Registro de execução: deve aparecer o nome da planilha que você espera.
+// Confere o ID e mostra o que já existe na planilha, antes de publicar.
+// Rode esta função e olhe o Registro de execução.
 function conferirPlanilha() {
   const ss = SpreadsheetApp.openById(ID_DA_PLANILHA);
-  Logger.log(ss.getName() + "\n" + ss.getUrl());
+  const abas = ss.getSheets().map((s) => s.getName());
+  Logger.log(
+    ss.getName() + "\n" + ss.getUrl() +
+    "\n\nAbas hoje: " + abas.join(", ") +
+    "\n\nO chat vai escrever em: " + ABA_LEADS + " e " + ABA_EVENTOS +
+    "\n" + (abas.indexOf(ABA_LEADS) === -1
+      ? "Ainda não existem — serão criadas no primeiro envio."
+      : "Já existem — o chat vai acrescentar linhas nelas.")
+  );
 }
