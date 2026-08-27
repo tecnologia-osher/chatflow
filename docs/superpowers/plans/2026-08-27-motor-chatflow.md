@@ -977,6 +977,25 @@ test("grupo inalcancavel", () => {
   assert.match(validarFluxo(f).erros.join(" "), /g_orfao/)
 })
 
+test("grupo alcancado apenas por um evento nao e orfao", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push({ tipo: "invalido", apos_tentativas: 2, proximo: "g_ajuda" })
+  f.grupos.push({
+    id: "g_ajuda",
+    blocos: [{ id: "b_aj", tipo: "texto", conteudo: { texto: "Vamos seguir." } }],
+    proximo: "g2"
+  })
+  assert.deepEqual(validarFluxo(f).erros, [])
+})
+
+test("evento apontando para grupo inexistente e erro", () => {
+  prepararCatalogo()
+  const f = fluxoValido()
+  f.eventos.push({ tipo: "invalido", proximo: "g_nao_existe" })
+  assert.match(validarFluxo(f).erros.join(" "), /g_nao_existe/)
+})
+
 test("ciclo com saida e aceito", () => {
   prepararCatalogo()
   const f = {
@@ -1092,11 +1111,19 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     porId.set(grupo.id, grupo)
   }
 
-  const inicio = (fluxo?.eventos || []).find((e) => e.tipo === "inicio")
+  const eventos = fluxo?.eventos || []
+  const inicio = eventos.find((e) => e.tipo === "inicio")
   if (!inicio) {
     erros.push("O fluxo precisa de um evento de início.")
   } else if (!porId.has(inicio.proximo)) {
     erros.push(`O início aponta para o grupo "${inicio.proximo}", que não existe.`)
+  }
+
+  for (const evento of eventos) {
+    if (evento === inicio) continue
+    if (evento.proximo && !porId.has(evento.proximo)) {
+      erros.push(`O evento "${evento.tipo}" aponta para o grupo "${evento.proximo}", que não existe.`)
+    }
   }
 
   for (const grupo of grupos) {
@@ -1134,8 +1161,10 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   }
 
   if (inicio && porId.has(inicio.proximo)) {
+    // Todo evento é uma raiz: um grupo alcançado só pelo evento "invalido"
+    // não é órfão.
     const alcancados = new Set()
-    const fila = [inicio.proximo]
+    const fila = eventos.map((e) => e.proximo).filter((id) => porId.has(id))
     while (fila.length) {
       const id = fila.shift()
       if (alcancados.has(id)) continue
