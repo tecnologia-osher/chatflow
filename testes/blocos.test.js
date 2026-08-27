@@ -69,6 +69,14 @@ test("entrada de texto aceita qualquer conteudo nao vazio", () => {
   assert.equal(texto.validar("   "), false)
 })
 
+test("validacao de botoes", () => {
+  preparar()
+  const botoes = obter("entrada_botoes")
+  assert.equal(botoes.validar("Sim"), true)
+  assert.equal(botoes.validar(""), false)
+  assert.equal(botoes.validar(undefined), false)
+})
+
 test("todo tipo declara campos com nome e rotulo", () => {
   preparar()
   for (const d of todos()) {
