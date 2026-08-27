@@ -5,7 +5,7 @@ Branch de trabalho: **`motor-v1`**. `main` está intocado.
 
 ## Estado
 
-**10 de 12 tarefas concluídas. 95 testes passando.**
+**10 de 12 tarefas concluídas. 98 testes passando.**
 
 | | Tarefa | Estado |
 |---|---|---|
@@ -50,10 +50,9 @@ achados e o que falta em cada um:
    declara o campo, `motor/validar.js` exige que ele exista em
    `destinos.json`, e o motor chamava `enviador.enviar()` — que só entrega
    para `ao_finalizar`. O campo era validado e morto.
-   **Parcialmente feito:** `enviarPara(nome, dados)` já existe em
+   **Feito:** `enviarPara(nome, dados)` existe em
    `motor/destinos.js:73` e o ramo `webhook` do motor já o usa
    (`motor/motor.js:200`).
-   **Falta:** os testes em `testes/destinos.test.js` — envia ao destino
    nomeado e não aos outros; destino nomeado não configurado avisa e não
    envia; falha entra na fila.
 
@@ -64,9 +63,10 @@ achados e o que falta em cada um:
    visível em português nomeando o grupo onde travou, não enviar nada, não
    marcar como terminado.
 
-3. Falta ainda acrescentar ao `README.md` a limitação conhecida: a fila de
-   reenvio vive na memória da instância — cobre falha de rede com a aba
-   aberta, não sobrevive ao fechamento.
+3. A limitação da fila já foi registrada no `README.md`. **Fechado.**
+
+**Resumo: só o item 2 continua aberto.** Feito ele, a Task 10 vai para o
+re-review e seguem as Tasks 11 e 12.
 
 ## Pendências que dependem do Gustavo
 
