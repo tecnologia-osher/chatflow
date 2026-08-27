@@ -1,258 +1,352 @@
 # chatflow — Motor e formato do fluxo
 
-**Data:** 2026-08-27
+**Data:** 2026-08-27 (revisão 2)
 **Sub-projeto:** 1 de 4
-**Status:** desenho aprovado, aguardando plano de implementação
+**Status:** desenho revisado, aguardando aprovação
+
+> **Revisão 2** — Reescrita depois que o Gustavo definiu que o chatflow é um
+> produto genérico, para qualquer área, com editor visual como interface
+> principal. Mudanças estruturais: grupos, fala separada de captura, fim do
+> bloco `fim`, catálogo extensível de tipos. A revisão 1 tratava o formato
+> como algo escrito à mão para um fluxo de consórcio.
 
 ---
 
-## 1. Contexto
+## 1. O que é o chatflow
 
-A Osher usa hoje um qualificador de leads em `Osher/Typebot/index.html`: um
-chat de 7 perguntas lineares, com pontuação e classificação em quente,
-morno e frio, que deveria enviar o resultado para uma planilha via Google
-Apps Script.
+Uma ferramenta para montar chats de captação e atendimento sem escrever
+código. Quem usa arrasta blocos num canvas, escreve o que o cliente vai
+ler, liga um grupo no outro, e publica.
 
-Três problemas encontrados no estado atual:
+O produto não pertence a nenhum ramo. O primeiro fluxo real será da Osher
+(consórcio), mas ele é um exemplo dentro do repositório, não o produto.
 
-1. **Nenhum lead está sendo salvo.** `CONFIG.sheetsWebhookUrl` continua com
-   o valor `"COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT"`, e a função de envio
-   desiste silenciosamente quando encontra esse valor. O `apps-script.gs`
-   está escrito e correto, mas nunca foi conectado.
-2. **O fluxo é linear.** Todo lead responde as mesmas 7 perguntas, mesmo
-   quando as primeiras respostas já mostram que não faz sentido continuar.
-3. **Motor e conteúdo estão no mesmo arquivo.** Não é possível reaproveitar
-   o mecanismo para outro fluxo ou outro cliente sem duplicar tudo.
+**Sub-projeto 1 entrega o alicerce:** o formato que descreve um fluxo e o
+motor que executa esse fluxo para o cliente final. O editor visual, que é a
+cara do produto, é o sub-projeto 2 — e todas as decisões aqui existem para
+que ele seja possível.
 
-Além disso, a pergunta `necessidade` atribui 3 pontos a todas as opções, o
-que a torna irrelevante para a classificação.
+## 2. Contexto
 
-## 2. Objetivo
+A Osher usa hoje `Osher/Typebot/index.html`: sete perguntas lineares,
+pontuação, classificação em quente, morno e frio. Três problemas:
 
-Construir um motor de chat conversacional que executa um fluxo descrito em
-arquivo, com ramificação, pontuação e entrega do lead a destinos
-configuráveis.
+1. **Nenhum lead é salvo.** `sheetsWebhookUrl` continua com o valor de
+   exemplo e a função de envio desiste em silêncio.
+2. **Fluxo linear**, sem ramificação nem encerramento antecipado.
+3. **Motor e conteúdo no mesmo arquivo**, impossível de reaproveitar.
 
-O motor é uma **ferramenta independente**. A Osher é seu primeiro cliente,
-não sua dona.
+Serve como caso de teste real, não como escopo.
 
-### Critério de aceitação do sub-projeto
+## 3. Critério de aceitação
 
-- O fluxo da Osher roda no motor novo, com ramificação real
+- Um fluxo genérico de exemplo roda no motor, com ramificação
+- O fluxo da Osher roda no mesmo motor, sem nenhuma linha específica dele
 - Um lead que completa o chat **aparece na planilha**, verificado
-- Apagar a pasta `clientes/osher/` não quebra o motor
+- Apagar `clientes/osher/` não quebra nada
+- Adicionar um tipo de bloco novo não exige editar o motor
 - A lógica de percurso tem testes automatizados que passam
 
-## 3. Não-objetivos
+## 4. Não-objetivos
 
-Fora de escopo deste sub-projeto, cada um com sua própria spec depois:
+- **Editor visual** (sub-projeto 2) — mas o formato é desenhado para ele
+- **Contas, banco, multi-cliente simultâneo** (sub-projeto 3)
+- **Analytics e CRM** (sub-projeto 4)
+- Cobrança, planos, marca comercial
 
-- **Editor visual com arrastar-e-soltar** (sub-projeto 2)
-- **Contas, banco de dados e multi-cliente simultâneo** (sub-projeto 3)
-- **Painel de analytics e integração com CRM** (sub-projeto 4)
-
-Também fora: autenticação, cobrança, marca comercial do produto.
-
-## 4. Decisões
+## 5. Decisões estruturais
 
 | Decisão | Escolha | Motivo |
 |---|---|---|
-| Motor x conteúdo | Separados | Um motor, N configurações. Correção de bug em um lugar só. É também a fronteira que o editor do sub-projeto 2 vai usar. |
-| Onde roda | Navegador, sem servidor | Publica em qualquer lugar, custo zero. Migrar para servidor depois troca onde roda, não o formato. |
-| Build | Nenhum | HTML + JS puro. Node só para rodar testes. |
-| Idioma das chaves | Português | O arquivo será lido e editado por gente da operação. Legibilidade vale mais que convenção. |
-| Onde mora o código | Repositório próprio, fora do workspace da Osher | A ferramenta é independente desde o primeiro commit. |
-| Destino do lead | Configurável por cliente | O motor não conhece CRM nem planilha. A Osher aponta para o Apps Script dela. |
+| Fala x captura | Blocos separados | Liberdade de montar: três mensagens, uma imagem, depois o campo. É o que dá autonomia a quem monta. |
+| Agrupamento | Grupos contêm blocos; setas ligam grupos | Sem isso, um chat de seis perguntas vira doze setas no canvas. Confirmado no Typebot. |
+| Bloco de encerramento | Não existe | O fluxo acaba quando um grupo não aponta para ninguém. Menos conceito especial, mais liberdade. |
+| Catálogo de tipos | Registro extensível | Adicionar "Rating" é escrever um arquivo, sem tocar em motor nem editor. |
+| Pontuação | Opcional | Uma clínica marcando consulta não pontua. Recurso que se liga, não obrigação. |
+| Motor x conteúdo | Separados | Um motor, N fluxos. Correção de bug num lugar só. |
+| Montagem | Em qualquer elemento da página | O editor precisa rodar o fluxo num painel lateral, ao vivo. Motor que assume ser dono da página inviabiliza o preview. |
+| Onde roda | Navegador, sem servidor | Publica em qualquer lugar. Migrar para servidor troca onde roda, não o formato. |
+| Build | Nenhum | HTML + JS puro. Node só para testes. |
+| Idioma das chaves | Português | Mercado brasileiro. Quem edita pelo editor nunca vê o arquivo. |
 
 ### Teste de acoplamento
 
-Aplicado a cada arquivo do motor: *se a pasta `clientes/osher/` for
-apagada, o motor continua funcionando?* Se não, há acoplamento e volta.
+Aplicado a cada arquivo do motor: *se `clientes/osher/` for apagada, o
+motor continua funcionando?* Proíbe, dentro de `motor/`: qualquer texto de
+nicho, as cores da Osher, e qualquer URL de destino.
 
-Na prática, isso proíbe dentro de `motor/`: qualquer texto sobre consórcio,
-as cores da Osher, e qualquer URL de destino.
-
-## 5. Estrutura de arquivos
+## 6. Estrutura de arquivos
 
 ```
 chatflow/
 ├── motor/
 │   ├── player.html          entrada, sem conteúdo de cliente
 │   ├── motor.js             estado da conversa e renderização
-│   ├── fluxo.js             percurso: qual é o próximo bloco (lógica pura)
+│   ├── percurso.js          qual é o próximo grupo (lógica pura, testada)
 │   ├── destinos.js          envio, fila e reenvio
-│   └── tema.css             estrutura visual, cores vêm de variáveis CSS
+│   ├── tema.css             estrutura visual; cores via variáveis CSS
+│   └── blocos/              um arquivo por tipo de bloco
+│       ├── _registro.js
+│       ├── texto.js
+│       ├── imagem.js
+│       ├── entrada-texto.js
+│       ├── entrada-numero.js
+│       ├── entrada-email.js
+│       ├── entrada-telefone.js
+│       ├── entrada-data.js
+│       ├── entrada-botoes.js
+│       ├── condicao.js
+│       ├── definir-variavel.js
+│       └── ir-para.js
 ├── clientes/
-│   └── osher/
-│       ├── fluxo.json
-│       ├── tema.json
-│       └── destinos.json
+│   └── osher/               fluxo, tema e destinos da Osher
 ├── exemplos/
-│   └── fluxo-modelo.json    ponto de partida para cliente novo
+│   └── captacao-simples.json
 ├── testes/
-│   └── fluxo.test.js
 └── docs/superpowers/specs/
 ```
 
-Abertura: `player.html?cliente=osher` carrega os três arquivos daquela
-pasta. Sem o parâmetro, carrega `exemplos/fluxo-modelo.json`.
+`player.html?cliente=osher` carrega os três arquivos daquela pasta. Sem
+parâmetro, carrega o exemplo.
 
-## 6. Formato do fluxo
+## 7. O formato do fluxo
+
+### 7.1 Forma geral
 
 ```json
 {
-  "versao": 1,
-  "inicio": "boas_vindas",
-  "blocos": [ ... ]
+  "versao": 2,
+  "inicio": "g_boas_vindas",
+  "pontuacao": { "ativa": true, "faixas": { "quente": 9, "morno": 5 } },
+  "grupos": [ ... ]
 }
 ```
 
-Todo bloco tem `id` (único no fluxo) e `tipo`. Cada bloco declara para onde
-vai depois — é isso que vira seta no editor visual do sub-projeto 2.
+`pontuacao` é opcional. Ausente ou `"ativa": false`, o motor ignora
+qualquer campo `pontos` e não calcula classificação.
 
-### 6.1 `mensagem`
+### 7.2 Grupo
 
-O bot fala e segue adiante sem esperar resposta.
+A unidade que o editor desenha e conecta.
 
 ```json
-{ "id": "boas_vindas", "tipo": "mensagem",
-  "texto": "Vou fazer algumas perguntas para entender seu momento.",
-  "proximo": "nome" }
+{
+  "id": "g_nome",
+  "titulo": "Nome",
+  "posicao": { "x": 320, "y": 140 },
+  "blocos": [ ... ],
+  "proximo": "g_contato"
+}
 ```
 
-### 6.2 `pergunta`
+- `titulo` é rótulo do editor, nunca aparece para o cliente
+- `posicao` é onde a caixa fica no canvas
+- `proximo` é a saída única do grupo. Ausente, o fluxo encerra ali.
+
+Os blocos rodam em ordem. Quando o último termina, o motor segue o
+`proximo` — a menos que algum bloco tenha desviado antes.
+
+### 7.3 Bloco
+
+Todo bloco, de qualquer tipo, tem a mesma forma:
 
 ```json
-{ "id": "tipo_bem", "tipo": "pergunta", "formato": "escolha",
-  "texto": "O que você quer conquistar?",
-  "salvar_em": "bem",
-  "opcoes": [
-    { "label": "Imóvel",        "pontos": 2, "proximo": "valor_imovel" },
-    { "label": "Automóvel",     "pontos": 2, "proximo": "valor_auto" },
-    { "label": "Ainda não sei", "pontos": 0, "proximo": "ajuda_definir" }
-  ] }
+{ "id": "b_1", "tipo": "texto", "conteudo": { ... } }
 ```
 
-- `formato`: `texto` · `email` · `telefone` · `numero` · `escolha`
-- `salvar_em`: nome da variável que guarda a resposta
-- `placeholder`: só para os formatos de digitação
-- `obrigatorio`: booleano, padrão `true`
-- `opcoes`: só para `escolha`. Cada opção pode ter `pontos` e `proximo`
-- `proximo`: para formatos de digitação, ou como padrão quando a opção não
-  declara o seu
+Inputs acrescentam `salvar_em`. Nada mais varia entre tipos — é o que
+permite ao editor montar a interface a partir do registro, sem conhecer
+cada tipo.
 
-Quando uma opção tem `proximo`, ele vence o `proximo` do bloco.
+### 7.4 Categorias
 
-### 6.3 `condicao`
+Espelham o vocabulário que quem monta já reconhece:
 
-Desvia por variável ou pontuação, sem perguntar nada.
+| Categoria | O que faz | Espera resposta |
+|---|---|---|
+| `fala` | O bot mostra algo | Não |
+| `entrada` | O cliente responde | Sim |
+| `logica` | Decide ou altera estado | Não |
+| `conexao` | Fala com sistema externo | Não |
 
-```json
-{ "id": "triagem", "tipo": "condicao",
-  "regras": [
-    { "se": { "pontuacao": { "menor_que": 4 } }, "entao": "fim_frio" },
-    { "se": { "variavel": "bem", "igual": "Ainda não sei" }, "entao": "ajuda_definir" }
+### 7.5 Catálogo — primeira versão
+
+| Tipo | Categoria | Ramifica | Salva variável |
+|---|---|---|---|
+| `texto` | fala | não | não |
+| `imagem` | fala | não | não |
+| `entrada_texto` | entrada | não | sim |
+| `entrada_numero` | entrada | não | sim |
+| `entrada_email` | entrada | não | sim |
+| `entrada_telefone` | entrada | não | sim |
+| `entrada_data` | entrada | não | sim |
+| `entrada_botoes` | entrada | **sim** | sim |
+| `condicao` | logica | **sim** | não |
+| `definir_variavel` | logica | não | sim |
+| `ir_para` | logica | **sim** | não |
+| `webhook` | conexao | não | opcional |
+
+Depois: vídeo, áudio, embed, website, hora, nota, escolha com foto, cards,
+arquivo, pagamento, esperar, teste A/B, redirecionar.
+
+**Invariante:** só ramificam `entrada_botoes`, `condicao` e `ir_para`.
+Todo o resto segue em frente. Isso mantém o canvas previsível — quem olha
+um grupo sabe, pelos blocos que ele tem, se dali sai uma seta ou várias.
+
+### 7.6 Registro de tipos
+
+Cada tipo é um arquivo em `motor/blocos/` que exporta sua definição:
+
+```js
+export default {
+  tipo: "entrada_email",
+  categoria: "entrada",
+  rotulo: "E-mail",
+  ramifica: false,
+  salva_variavel: true,
+  campos: [
+    { nome: "placeholder", rotulo: "Texto de exemplo", tipo: "texto", aceita_variavel: true },
+    { nome: "rotulo_botao", rotulo: "Texto do botão", tipo: "texto", padrao: "Enviar" }
   ],
-  "senao": "urgencia" }
+  validar: (valor) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valor),
+  erro: "Digite um e-mail válido.",
+  render: (bloco, ctx) => { /* devolve o elemento */ }
+}
 ```
 
-Regras avaliadas em ordem; a primeira verdadeira decide. Operadores:
-`igual`, `diferente`, `maior_que`, `menor_que`, `contem`, `vazio`.
+`campos` é o que permite ao editor do sub-projeto 2 **desenhar o painel de
+propriedades sozinho**, sem código específico por tipo. Adicionar um tipo
+novo é criar um arquivo e registrá-lo.
 
-### 6.4 `acao`
+### 7.7 Exemplos por tipo
 
-Entrega o que foi coletado a um destino, no meio do fluxo.
-
+**Fala:**
 ```json
-{ "id": "salvar_parcial", "tipo": "acao",
-  "destino": "planilha", "proximo": "urgencia" }
+{ "id": "b_1", "tipo": "texto",
+  "conteudo": { "texto": "Olá {{nome}}, vamos começar." } }
 ```
 
-`destino` referencia uma chave de `destinos.json`. Não bloqueia a conversa:
-falha vai para a fila de reenvio.
-
-### 6.5 `fim`
-
-Encerra. Um fluxo pode ter vários.
-
+**Entrada simples:**
 ```json
-{ "id": "fim_quente", "tipo": "fim",
-  "titulo": "Perfeito, {{nome}}.",
-  "texto": "Um consultor vai falar com você ainda hoje.",
-  "botao": { "tipo": "whatsapp", "numero": "5561982286044",
-             "mensagem": "Olá, sou {{nome}} e vim pelo chat.",
-             "label": "Continuar no WhatsApp" } }
+{ "id": "b_2", "tipo": "entrada_texto",
+  "conteudo": { "placeholder": "Seu nome", "rotulo_botao": "Enviar" },
+  "salvar_em": "nome" }
 ```
 
-`botao` aceita `whatsapp`, `link`, ou `null` (só mensagem).
-
-> **Nota de nomenclatura.** `destino` (no bloco `acao` e em
-> `destinos.json`) é para onde vão os **dados**. `botao` (no bloco `fim`) é
-> para onde vai a **pessoa**. São coisas diferentes e por isso têm nomes
-> diferentes.
-
-Ao chegar num `fim`, o motor envia o lead completo aos destinos listados em
-`ao_finalizar` antes de renderizar a tela final.
-
-### 6.6 Interpolação
-
-`{{variavel}}` em qualquer texto é trocado pelo valor salvo. Variável
-inexistente vira string vazia, nunca `undefined` na tela.
-
-Além das respostas, ficam disponíveis: `pontuacao` e `classificacao`.
-
-### 6.7 Classificação
-
-Declarada na raiz do fluxo, ao lado de `versao` e `inicio`:
-
+**Entrada que ramifica** — cada opção leva a um grupo:
 ```json
-{ "versao": 1,
-  "inicio": "boas_vindas",
-  "classificacao": { "quente": 9, "morno": 5 },
-  "blocos": [ ... ] }
+{ "id": "b_3", "tipo": "entrada_botoes",
+  "conteudo": { "opcoes": [
+      { "id": "o1", "label": "Imóvel",        "pontos": 2, "proximo": "g_valor" },
+      { "id": "o2", "label": "Automóvel",     "pontos": 2, "proximo": "g_valor" },
+      { "id": "o3", "label": "Ainda não sei", "pontos": 0, "proximo": "g_ajuda" }
+  ] },
+  "salvar_em": "interesse" }
 ```
 
-Faixas por pontuação total, comparadas com "maior ou igual". Abaixo da
-menor faixa, `frio`. Disponível como `{{classificacao}}`, usável em
-condições e enviada aos destinos.
+Opção sem `proximo` cai no `proximo` do grupo. `pontos` só tem efeito com
+pontuação ativa.
 
-### 6.8 Validação do fluxo
+**Condição:**
+```json
+{ "id": "b_4", "tipo": "condicao",
+  "conteudo": { "regras": [
+      { "se": { "pontuacao": { "menor_que": 4 } }, "entao": "g_encerra" },
+      { "se": { "variavel": "interesse", "igual": "Ainda não sei" }, "entao": "g_ajuda" }
+  ] } }
+```
 
-Verificado ao carregar, com erro claro em tela (modo teste) e no console:
+Regras em ordem; a primeira verdadeira decide. Nenhuma verdadeira, segue o
+`proximo` do grupo. Operadores: `igual`, `diferente`, `maior_que`,
+`menor_que`, `contem`, `vazio`.
 
-- `inicio` aponta para um bloco existente
-- ids únicos
-- todo `proximo`, `entao` e `senao` aponta para bloco existente
-- todo bloco é alcançável a partir de `inicio`
-- de todo bloco existe ao menos um caminho até um bloco `fim` (evita becos
-  sem saída; ciclos são permitidos, desde que haja saída)
-- `destino` de `acao` existe em `destinos.json`
+**Definir variável:**
+```json
+{ "id": "b_5", "tipo": "definir_variavel",
+  "conteudo": { "operacao": "somar", "valor": 3 },
+  "salvar_em": "score_extra" }
+```
+Operações: `atribuir`, `somar`, `concatenar`.
 
-## 7. O motor
+**Webhook:**
+```json
+{ "id": "b_6", "tipo": "webhook",
+  "conteudo": { "destino": "planilha" } }
+```
+Referencia uma chave de `destinos.json`. Não bloqueia a conversa: falha vai
+para a fila de reenvio.
 
-### Estado da conversa
+### 7.8 Variáveis e interpolação
 
-`respostas` (objeto), `pontuacao` (número), `blocoAtual` (id),
-`sessaoId` (uuid), `historico` (ids visitados, para o funil).
+`{{variavel}}` em qualquer campo marcado `aceita_variavel: true` é trocado
+pelo valor. Variável inexistente vira string vazia, nunca `undefined` na
+tela.
 
-### Retomada
+Sempre disponíveis: `pontuacao` e `classificacao` (com pontuação ativa).
 
-O estado é gravado no navegador a cada bloco. Quem fecha a aba e volta em
-até 24 horas retoma de onde parou. Depois disso, recomeça. O botão de
-recomeçar fica sempre disponível.
+### 7.9 Encerramento
 
-Motivação: hoje quem sai perde tudo, e o abandono é o maior vazamento.
+Não há bloco de fim. O fluxo termina quando um grupo sem `proximo` acaba de
+rodar seus blocos. Ao encerrar, o motor envia o resultado aos destinos de
+`ao_finalizar`.
 
-### Eventos
+Um "fim com botão de WhatsApp" é montado como qualquer outra coisa: um
+`texto` seguido de um `entrada_botoes` com uma opção que aponta para link
+externo.
 
-A cada bloco exibido, um evento é enviado ao destino de eventos com
-`sessaoId`, `blocoId` e horário. É o que permite ver em que pergunta as
-pessoas desistem. Envio sem bloquear a conversa.
+### 7.10 Validação do fluxo
 
-### Tema
+Verificada ao carregar; erro claro no console e em tela no modo `?teste=1`:
 
-`tema.json` alimenta variáveis CSS. `motor/tema.css` só usa variáveis,
-nunca cor literal.
+- `inicio` aponta para grupo existente
+- ids de grupo únicos; ids de bloco únicos dentro do grupo
+- todo `proximo` e `entao` aponta para grupo existente
+- todo grupo é alcançável a partir de `inicio`
+- de todo grupo existe ao menos um caminho até um grupo terminal (ciclos
+  permitidos, becos sem saída não)
+- todo `tipo` existe no registro
+- todo `salvar_em` de input está preenchido
+- `destino` de webhook existe em `destinos.json`
+
+## 8. O motor
+
+### Como é montado
+
+```js
+const chat = criarChat({
+  elemento: document.querySelector("#chat"),
+  fluxo, tema, destinos,
+  modo: "producao"   // ou "teste": não envia nada, mostra avisos
+})
+chat.reiniciar()
+```
+
+O motor **não é dono da página**. Ele desenha dentro do elemento que
+recebe, e várias instâncias podem coexistir. Isso é o que permite:
+
+- `player.html` montar em tela cheia para o cliente final
+- o editor do sub-projeto 2 montar num painel lateral, com preview ao vivo
+  e botão de reiniciar, enquanto quem monta edita o fluxo
+- incorporar o chat dentro do site de um cliente, como widget
+
+O modo `teste` roda o fluxo sem enviar nada aos destinos e exibe os avisos
+de configuração em tela.
+
+### Estado
+
+`respostas`, `pontuacao`, `grupoAtual`, `blocoAtual`, `sessaoId`,
+`historico`.
+
+**Retomada:** estado gravado no navegador a cada grupo. Quem fecha a aba e
+volta em até 24 horas retoma de onde parou. Botão de recomeçar sempre
+disponível.
+
+**Eventos:** a cada grupo exibido, envio de `sessaoId`, `grupoId` e horário
+ao destino de eventos. É o que mostra onde as pessoas desistem. Sem
+bloquear a conversa.
+
+**Tema:** `tema.json` alimenta variáveis CSS; `tema.css` nunca usa cor
+literal.
 
 ```json
 { "marca": "Osher",
@@ -262,7 +356,7 @@ nunca cor literal.
   "fonte": "Georgia, 'Gelasio', serif" }
 ```
 
-## 8. Destinos
+## 9. Destinos
 
 ```json
 { "destinos": {
@@ -272,76 +366,78 @@ nunca cor literal.
   "eventos": "planilha" }
 ```
 
-Tipos: `apps_script` e `webhook` (ambos POST com JSON). Destino com
-`"ativo": false` ou `url` vazia é ignorado sem erro.
+Tipos: `apps_script` e `webhook`, ambos POST com JSON. Destino inativo ou
+sem URL é ignorado sem erro.
 
-### Fila e reenvio
+**Fila e reenvio:** envio que falha entra numa fila no navegador, com
+espera crescente (2s, 8s, 30s), máximo 3 tentativas. Reprocessada quando a
+pessoa volta.
 
-Envio que falha entra numa fila no navegador e é retentado com espera
-crescente (2s, 8s, 30s). A fila é reprocessada quando a pessoa volta.
-Máximo de 3 tentativas por item.
+**Sem destino configurado:** diferente do estado atual, isso **não** passa
+em silêncio — aviso no console sempre, e faixa visível com `?teste=1`.
 
-### Quando não há destino configurado
+**Segurança:** nenhuma credencial em arquivo de cliente. Só URL pública de
+webhook. Integração que exija chave fica atrás do Apps Script ou do Make,
+nunca no navegador.
 
-Diferente de hoje, isso **não** passa em silêncio: aviso no console em
-qualquer caso, e faixa visível de aviso quando aberto com `?teste=1`.
+## 10. Testes
 
-### Segurança
+`percurso.js` é lógica pura, sem DOM: recebe fluxo e respostas, devolve o
+caminho percorrido e a pontuação. Testado com `node --test`, sem
+dependência externa. Escritos antes do código.
 
-Nenhuma chave, token ou credencial em arquivo de cliente — tudo é URL
-pública de webhook. Integração que exija credencial (CRM) fica atrás do
-Apps Script ou do Make, nunca no navegador.
+1. Grupo com vários blocos executa todos na ordem
+2. Grupo sem `proximo` encerra o fluxo
+3. Opção de botões com `proximo` desvia; sem `proximo` cai no do grupo
+4. Condição por pontuação desvia
+5. Condição por variável desvia
+6. Nenhuma regra verdadeira segue o `proximo` do grupo
+7. Pontuação soma só o que a opção declara
+8. Pontuação desativada ignora `pontos` e não gera classificação
+9. Interpolação troca variável e não vaza `undefined`
+10. Classificação bate nos limites (4, 5, 8, 9)
+11. `proximo` órfão é rejeitado com mensagem clara
+12. Grupo inalcançável é rejeitado
+13. Beco sem saída é rejeitado; ciclo com saída é aceito
+14. Tipo desconhecido é rejeitado
+15. Validação de e-mail e telefone rejeita entrada inválida
 
-## 9. Testes
+Ponta a ponta, manual e verificado: completar o fluxo no navegador e
+**confirmar a linha na planilha**. Não é dado como concluído sem isso.
 
-`fluxo.js` é lógica pura, sem DOM: recebe um fluxo e as respostas, devolve
-o percurso e a pontuação. Testado com o runner nativo do Node
-(`node --test`), sem dependência externa. Escritos antes do código.
+## 11. O fluxo da Osher
 
-Casos obrigatórios:
+Vive em `clientes/osher/`, montado só com blocos do catálogo. Correções
+sobre o atual:
 
-1. Fluxo linear percorre todos os blocos na ordem
-2. Opção com `proximo` próprio desvia corretamente
-3. `condicao` por pontuação manda para o fim antecipado
-4. `condicao` por variável desvia corretamente
-5. Pontuação soma apenas o que a opção declara
-6. Interpolação troca variável e não vaza `undefined`
-7. Classificação bate as faixas nos limites (8, 9, 4, 5)
-8. Fluxo com `proximo` órfão é rejeitado com mensagem clara
-9. Fluxo com bloco inalcançável é rejeitado
-10. Caminho sem `fim` é rejeitado
-
-Teste de ponta a ponta, manual e verificado: completar o fluxo no navegador
-e **confirmar a linha na planilha**. Não é dado por concluído sem isso.
-
-## 10. Fluxo da Osher
-
-Reescrito, não portado. Correções em relação ao atual:
-
-- `necessidade` (3 pontos para tudo) removida; `tipo_bem` passa a ramificar
-- "Qual faixa de **investimento**" reescrita — palavra proibida em
+- Pergunta que dava 3 pontos para toda resposta: removida
+- "Faixa de **investimento**": reescrita — palavra proibida em
   `_memoria/preferencias.md`, e consórcio não é aplicação financeira
-- Typo "iteresse" corrigido
-- Placeholder "Ex.: e-commerce" removido
-- Emoji removido das boas-vindas, conforme tom registrado
-- Faixa por valor do bem, não por parcela: o cliente sabe quanto custa o
-  que quer, raramente sabe qual parcela cabe
-- E-mail deixa de ser perguntado: contato segue por WhatsApp
-- Fim antecipado para quem está só pesquisando
+- Typo "iteresse" e placeholder "Ex.: e-commerce": corrigidos
+- Emoji removido da abertura, conforme tom registrado
+- Faixa por valor do bem, não por parcela
+- E-mail deixa de ser perguntado
+- Encerramento antecipado para quem está só pesquisando
 
-## 11. Dependências e pendências
+## 12. Dependências e pendências
 
 | Item | Responsável | Bloqueia |
 |---|---|---|
 | Publicar o Apps Script e obter a URL | Gustavo | Teste de ponta a ponta |
-| Confirmar faixas de valor do bem | Gustavo | Conteúdo do fluxo |
-| Nome do CRM e como a planilha se liga a ele | Gustavo | Sub-projeto 4 |
+| Confirmar faixas de valor do bem | Gustavo | Fluxo da Osher |
+| Bubble de texto aceita negrito, itálico e link? | Gustavo | Campo simples ou editor com formatação |
+| Blocos de Logic e Integrations do Typebot | Gustavo | Completar o catálogo (não bloqueia o v1) |
+| Para qual WhatsApp vai o lead quente | Gustavo | Fluxo da Osher |
+| Nome do CRM e ligação com a planilha | Gustavo | Sub-projeto 4 |
 | Onde o player será hospedado | Gustavo | Publicação |
 
-Nenhuma dessas impede começar a implementação.
+Nenhuma impede começar a implementação.
 
-## 12. Registro
+## 13. Registro
 
-- **2026-08-27** — Desenho aprovado por Gustavo. Abordagem escolhida:
-  motor separado do fluxo. Ferramenta interna da Osher agora, com
-  estrutura preparada para uso independente depois.
+- **2026-08-27** — Revisão 1: motor separado do fluxo, formato para edição
+  manual, fluxo de consórcio.
+- **2026-08-27** — Revisão 2: reposicionado como produto genérico com
+  editor visual. Grupos, fala separada de captura, bloco `fim` eliminado,
+  catálogo extensível, pontuação opcional. Baseado nas telas do Typebot
+  enviadas pelo Gustavo.
