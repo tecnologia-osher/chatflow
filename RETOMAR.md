@@ -5,7 +5,7 @@ Branch de trabalho: **`motor-v1`**. `main` está intocado.
 
 ## Estado
 
-**10 de 12 tarefas concluídas. 98 testes passando.**
+**12 de 12 tarefas concluídas. 112 testes passando.**
 
 | | Tarefa | Estado |
 |---|---|---|
@@ -18,12 +18,29 @@ Branch de trabalho: **`motor-v1`**. `main` está intocado.
 | 7 | Os treze tipos de bloco | ✅ |
 | 8 | Entrada inválida e tentativas | ✅ |
 | 9 | Envio, fila e reenvio | ✅ |
-| 10 | `criarChat` e player | 🔄 **em correção** |
-| 11 | Retomada de sessão | ⬜ |
-| 12 | Fluxo da Osher, ponta a ponta | ⬜ |
+| 10 | `criarChat` e player | ✅ |
+| 11 | Retomada de sessão | ✅ |
+| 12 | Fluxo da Osher, ponta a ponta | ✅ código / ⛔ falta a planilha |
 
-Depois da 12 falta a **review final da branch inteira**, que olha o conjunto
-em vez de tarefa por tarefa.
+Falta a **review final da branch inteira**, que olha o conjunto em vez de
+tarefa por tarefa, e o merge em `main`.
+
+## O que trava a entrega: a URL do Apps Script
+
+É o único item bloqueado. `clientes/osher/destinos.json` está com
+`"url": ""`, então **o lead não é enviado para lugar nenhum**. Todo o resto
+do caminho já foi verificado: o fluxo quente monta o lead completo (nome,
+whatsapp, bem, valor, prazo, decisor, pontuacao 12, classificacao "quente")
+e o entrega ao destino `planilha`.
+
+Como publicar: planilha → Extensões → Apps Script → colar
+`Osher/Typebot/apps-script.gs` → Implantar → Nova implantação → App da Web →
+executar como você, acesso "qualquer pessoa" → copiar a URL terminada em
+`/exec` e colar em `clientes/osher/destinos.json`.
+
+Depois disso: completar o chat em
+`http://localhost:8080/motor/player.html?cliente=osher` e conferir a linha
+nova na planilha, com os próprios olhos.
 
 ## Como ver funcionando agora
 
@@ -32,66 +49,57 @@ cd "/Users/gustavolacerda/Desktop/Claude Master/chatflow"
 python3 -m http.server 8080
 ```
 
-Navegador: `http://localhost:8080/motor/player.html`
-Com avisos de configuração em tela e sem enviar nada: acrescente `?teste=1`.
+- Fluxo genérico: `http://localhost:8080/motor/player.html`
+- Fluxo da Osher: `http://localhost:8080/motor/player.html?cliente=osher`
+- Sem enviar nada, com avisos em tela: acrescente `?teste=1`
+  (com `&teste=1` se já houver `?cliente=`)
 
 Rodar os testes: `npm test`
+Editar as frases: `clientes/osher/fluxo.json` ou `exemplos/captacao-simples.json`
 
-Editar as frases do fluxo: `exemplos/captacao-simples.json`.
+## O que mudou nesta sessão
 
-## O ponto exato de retomada
+Três defeitos reais, todos encontrados dirigindo o motor de verdade, nenhum
+deles pego pela suíte:
 
-A Task 10 estava num ciclo de correção quando paramos. O commit
-`724d0c8 wip: enviarPara para destino nomeado (INCOMPLETO)` guarda o
-trabalho parcial: consistente, 95 testes passando, mas **inacabado**. Os
-achados e o que falta em cada um:
-
-1. **`motor/motor.js`, bloco `webhook` ignora seu `destino`.** O bloco
-   declara o campo, `motor/validar.js` exige que ele exista em
-   `destinos.json`, e o motor chamava `enviador.enviar()` — que só entrega
-   para `ao_finalizar`. O campo era validado e morto.
-   **Fechado.** `enviarPara(nome, dados)` existe em `motor/destinos.js:73`,
-   o ramo `webhook` do motor já o usa (`motor/motor.js:200`), e os três
-   testes estão em `testes/destinos.test.js`.
-
-2. **`motor/motor.js`, a guarda de 500 iterações finge conclusão.** Ao
-   estourar, o laço sai com `terminou` ainda falso e cai em `finalizar()`,
-   que envia um lead carimbado como concluído. Um fluxo travado vira chat
-   mudo mais um lead falso na planilha do cliente. Correção: mostrar erro
-   visível em português nomeando o grupo onde travou, não enviar nada, não
-   marcar como terminado.
-
-3. A limitação da fila já foi registrada no `README.md`. **Fechado.**
-
-**Resumo: só o item 2 continua aberto.** Feito ele, a Task 10 vai para o
-re-review e seguem as Tasks 11 e 12.
+1. **O lead mais quente nunca era enviado.** `g_fim_quente` termina num
+   bloco `redirecionar`, e o motor parava ali sem fechar o fluxo: 16 pings
+   de evento e zero leads. Corrigido — se não há nada depois do
+   redirecionamento, o lead sai e o botão do WhatsApp continua na tela.
+2. **A retomada devolvia a conversa vazia.** Recarregar a página trazia de
+   volta o ponto certo do fluxo, mas com a tela em branco: dois botões
+   soltos sem a pergunta. Agora a conversa já dita é gravada junto e
+   redesenhada.
+3. **A pré-visualização mentia sobre os destinos.** Dizia "destino não
+   existe em destinos.json" para destinos que existiam. O cadeado do modo
+   teste mudou de lugar: bloqueia o transporte, não a configuração.
 
 ## Pendências que dependem do Gustavo
 
-1. **URL do Apps Script publicado.** A Task 12 termina com um teste de ponta
-   a ponta que só fecha com ela: completar o chat e conferir a linha na
-   planilha. Como publicar: planilha → Extensões → Apps Script → colar
-   `Osher/Typebot/apps-script.gs` → Implantar → Nova implantação → App da
-   Web → executar como você, acesso "qualquer pessoa" → copiar a URL
-   terminada em `/exec`.
+1. **URL do Apps Script publicado** — bloqueia a entrega, ver acima.
 2. **As quatro faixas de valor** do fluxo da Osher (até 100 mil, 100–300,
    300–600, acima de 600) foram estimadas pelo mercado de Brasília.
-3. **Para qual WhatsApp vai o lead quente.** Só existe o (61) 98228-6044 e
-   a equipe tem seis vendedores.
+3. **Para qual WhatsApp vai o lead quente.** Está no fluxo o
+   (61) 98228-6044, o único que existe, mas a equipe tem seis vendedores.
 4. **O bubble de texto aceita negrito, itálico e link?** Decide se o campo
    do editor é caixa simples ou editor com formatação. Não bloqueia o
    sub-projeto 1.
+5. **`motor/motor.js` continua sem teste automatizado**, por ser camada de
+   DOM — decisão da Task 10. O defeito nº 1 acima mostra o preço: passou por
+   três reviews. Um shim de DOM escrito à mão (~60 linhas, sem dependência
+   nova) cobriria caminho quente, retomada e guarda de laço. Decisão sua,
+   porque muda a arquitetura de teste que o plano fixou de propósito.
 
 ## Onde está o resto
 
 - Spec: `docs/superpowers/specs/2026-08-27-chatflow-motor-design.md`
 - Plano das 12 tarefas: `docs/superpowers/plans/2026-08-27-motor-chatflow.md`
-- Registro de execução, com todas as decisões que tomei e por quê:
+- Registro de execução, com todas as decisões e por quê:
   `.superpowers/sdd/2026-08-27-motor-chatflow/progress.md` *(fora do git —
   não rode `git clean -fdx`)*
 
 ## Para retomar
 
-Abra o Claude Code nesta pasta e diga: *"retomar o plano do chatflow a
-partir da Task 10"*. O registro de execução tem o histórico completo,
-inclusive as quinze decisões que tomei sozinho durante a execução.
+Abra o Claude Code nesta pasta e diga: *"fazer a review final da branch
+motor-v1 do chatflow"* — ou, com a URL do Apps Script em mãos,
+*"concluir o Step 5 da Task 12"*.
