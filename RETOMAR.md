@@ -3,7 +3,7 @@
 ## Sub-projeto 1: concluído e integrado
 
 O motor e o formato do fluxo. As 12 tarefas do plano, a review final da
-branch e o merge em `main`. **114 testes passando.** A branch `motor-v1`
+branch e o merge em `main`. **139 testes passando.** A branch `motor-v1`
 foi removida; o histórico está preservado no commit de merge `8dc10b9`,
 que isola o sub-projeto inteiro caso algum dia precise ser revertido.
 
@@ -31,20 +31,28 @@ Testes: `npm test` · Frases do chat: `clientes/osher/fluxo.json`
 - **Sub-projeto 3** — servidor. Hoje a entrega do lead depende da aba do
   navegador ficar aberta; a fila de reenvio vive em memória.
 
+## Camada de DOM agora tem teste
+
+`motor/motor.js` era a única parte sem teste automatizado, por ser a camada
+que fala com o DOM. Cinco defeitos sérios nasceram ali e nenhum foi pego pela
+suíte — o pior deles fazia o lead mais quente nunca ser enviado.
+
+Fechado em 27/08/2026: `testes/apoio/navegador.js` é um navegador de mentira
+escrito à mão (81 linhas, zero dependência) e `testes/motor.test.js` dirige o
+chat de ponta a ponta em 25 casos. Os testes foram validados por mutação:
+oito defeitos foram reintroduzidos um a um no código de produção e os oito
+foram detectados.
+
+Não cobertos ainda, por nenhum fluxo em uso os exercitar: o bloco `imagem`, o
+bloco `definir_variavel` e vários destinos em `ao_finalizar`.
+
 ## Decisões em aberto, todas suas
 
 1. **Para qual WhatsApp vai o lead quente.** Está no fluxo o
    (61) 98228-6044, o único que existe, mas a equipe tem seis vendedores.
 2. **O bubble de texto aceita negrito, itálico e link?** Decide se o editor
    do sub-projeto 2 usa caixa simples ou editor com formatação.
-3. **`motor/motor.js` continua sem teste automatizado**, por ser camada de
-   DOM — decisão deliberada do plano. Vale saber o preço: cinco defeitos
-   sérios apareceram nele ou na fronteira dele, e **nenhum** foi pego pela
-   suíte. Entre eles, o lead mais quente nunca ser enviado. O que os pegou
-   foi um shim de DOM escrito à mão (~60 linhas, sem dependência nova) que
-   vive fora do repositório e some com a sessão. Promovê-lo a `testes/` é a
-   melhoria de qualidade mais barata disponível aqui.
-4. **Barra de progresso** ("pergunta 3 de 8"), que existia no Typebot antigo
+3. **Barra de progresso** ("pergunta 3 de 8"), que existia no Typebot antigo
    e não foi reimplementada. Vira um tipo de bloco novo.
 
 ## Onde está o resto
