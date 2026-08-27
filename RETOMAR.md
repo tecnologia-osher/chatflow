@@ -41,18 +41,21 @@ Editar as frases do fluxo: `exemplos/captacao-simples.json`.
 
 ## O ponto exato de retomada
 
-A Task 10 estava num ciclo de correção quando paramos. Dois achados da
-review foram despachados e **podem não ter sido commitados**. Confira com
-`git log --oneline -3`: se o commit mais recente for
-`618f31a feat: criarChat montavel...`, a correção não entrou e precisa ser
-refeita. Os dois achados:
+A Task 10 estava num ciclo de correção quando paramos. O commit
+`724d0c8 wip: enviarPara para destino nomeado (INCOMPLETO)` guarda o
+trabalho parcial: consistente, 95 testes passando, mas **inacabado**. Os
+achados e o que falta em cada um:
 
 1. **`motor/motor.js`, bloco `webhook` ignora seu `destino`.** O bloco
    declara o campo, `motor/validar.js` exige que ele exista em
-   `destinos.json`, e o motor chama `enviador.enviar()` — que só entrega
-   para `ao_finalizar`. O campo é validado e morto. Correção: criar
-   `enviarPara(nome, dados)` em `motor/destinos.js`, reaproveitando o mesmo
-   caminho de `tentar`, e usá-lo no ramo `webhook` do motor. Com testes.
+   `destinos.json`, e o motor chamava `enviador.enviar()` — que só entrega
+   para `ao_finalizar`. O campo era validado e morto.
+   **Parcialmente feito:** `enviarPara(nome, dados)` já existe em
+   `motor/destinos.js:73` e o ramo `webhook` do motor já o usa
+   (`motor/motor.js:200`).
+   **Falta:** os testes em `testes/destinos.test.js` — envia ao destino
+   nomeado e não aos outros; destino nomeado não configurado avisa e não
+   envia; falha entra na fila.
 
 2. **`motor/motor.js`, a guarda de 500 iterações finge conclusão.** Ao
    estourar, o laço sai com `terminou` ainda falso e cai em `finalizar()`,
