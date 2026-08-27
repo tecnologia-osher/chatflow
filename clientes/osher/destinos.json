@@ -1,6 +1,6 @@
 {
   "destinos": {
-    "planilha": { "tipo": "apps_script", "url": "" },
+    "planilha": { "tipo": "apps_script", "url": "https://script.google.com/macros/s/AKfycbz-70XGlr-76YY32H7zUlePfViApxS6GRHlN-HkEv8Dvb7Dsi58NWfQ9I06BSiGlJVC/exec" },
     "crm": { "tipo": "webhook", "url": "", "ativo": false }
   },
   "ao_finalizar": ["planilha"],

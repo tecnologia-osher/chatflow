@@ -203,6 +203,11 @@ export function criarChat({
       if (!bloco) { estado = avancar(fluxo, estado); continue }
 
       enviador.enviarEvento({
+        // Marca que separa evento de funil de lead finalizado no destino.
+        // A chave é em inglês porque é o contrato que o receptor já espera;
+        // sem ela, um destino que recebe os dois num endereço só não tem
+        // como distinguir e mistura tudo no mesmo lugar.
+        event: true,
         sessaoId,
         grupoId: estado.grupoAtual,
         blocoId: bloco.id,
