@@ -116,8 +116,10 @@ export function criarChat({
     erro.textContent = ""
   }
 
+  // Não limpa o composer: quem termina num redirecionamento precisa continuar
+  // vendo o botão de saída enquanto o lead é enviado. Nos outros caminhos o
+  // composer já foi esvaziado no começo de seguirInterno.
   async function finalizar() {
-    limparComposer()
     await enviador.enviar({
       sessaoId,
       finalizadoEm: new Date().toISOString(),
@@ -244,7 +246,16 @@ export function criarChat({
         continue
       }
 
-      if (bloco.tipo === "redirecionar") { mostrarLink(bloco); return }
+      if (bloco.tipo === "redirecionar") {
+        mostrarLink(bloco)
+        // Um redirecionamento é uma despedida. Se não há nada depois dele, o
+        // fluxo acabou aqui e o lead precisa sair agora: sem isto o caminho
+        // mais quente — o único que termina em redirecionamento — seria
+        // justamente o que nunca chega ao destino.
+        const depois = avancar(fluxo, estado)
+        if (depois.terminou) { estado = depois; finalizar() }
+        return
+      }
       if (bloco.tipo === "entrada_botoes") { pedirOpcao(bloco); return }
       pedirTexto(bloco, bloco.tipo)
       return
