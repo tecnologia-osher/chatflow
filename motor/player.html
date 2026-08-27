@@ -43,7 +43,8 @@
   } else {
     const chat = criarChat({
       elemento: document.getElementById("chat"),
-      fluxo, tema, destinos, modo
+      fluxo, tema, destinos, modo,
+      chaveSessao: cliente || "exemplo"
     })
     chat.reiniciar()
   }

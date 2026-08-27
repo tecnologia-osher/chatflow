@@ -3,6 +3,7 @@ import { todos } from "./blocos/_registro.js"
 import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
 import { criarEnviador } from "./destinos.js"
+import { criarSessao } from "./sessao.js"
 import {
   criarEstado, blocoAtual, avancar, aplicarResposta, contexto,
   destinoDaResposta, destinoDaLogica, validarEntrada,
@@ -35,7 +36,9 @@ export function criarChat({
   tema = {},
   destinos = {},
   modo = "producao",
-  buscar = (...args) => fetch(...args)
+  buscar = (...args) => fetch(...args),
+  chaveSessao = "padrao",
+  armazenamento = globalThis.localStorage
 }) {
   if (!elemento) throw new Error("criarChat precisa de um elemento onde montar.")
 
@@ -71,19 +74,41 @@ export function criarChat({
     buscar: modo === "teste" ? preverEnvio : buscar
   })
 
+  const sessao = criarSessao({ chave: chaveSessao, armazenamento })
+
   let estado = criarEstado(fluxo)
   let sessaoId = novaSessao()
+  // A conversa já dita. Sem ela, retomar devolveria a pessoa a uma tela em
+  // branco com um campo solto: o estado sabe onde parou, mas não o que foi
+  // falado até ali.
+  let transcricao = []
 
-  function falar(texto) {
-    const bolha = elementoCom("div", "cf__bolha", interpolar(texto, contexto(fluxo, estado)))
-    thread.append(bolha)
+  function desenhar(item) {
+    if (item.imagem !== undefined) {
+      const bolha = elementoCom("div", "cf__bolha")
+      const img = document.createElement("img")
+      img.src = item.imagem
+      img.alt = item.alternativo || ""
+      bolha.append(img)
+      thread.append(bolha)
+    } else {
+      const classe = item.lado === "pessoa" ? "cf__bolha cf__bolha--pessoa" : "cf__bolha"
+      thread.append(elementoCom("div", classe, item.texto))
+    }
     thread.scrollTop = thread.scrollHeight
   }
 
+  function dizer(item) {
+    transcricao.push(item)
+    desenhar(item)
+  }
+
+  function falar(texto) {
+    dizer({ lado: "bot", texto: interpolar(texto, contexto(fluxo, estado)) })
+  }
+
   function ecoar(texto) {
-    const bolha = elementoCom("div", "cf__bolha cf__bolha--pessoa", texto)
-    thread.append(bolha)
-    thread.scrollTop = thread.scrollHeight
+    dizer({ lado: "pessoa", texto })
   }
 
   function limparComposer() {
@@ -160,6 +185,14 @@ export function criarChat({
   }
 
   function seguir() {
+    seguirInterno()
+    if (estado.terminou) sessao.limpar()
+    // O sessaoId vai junto: sem ele, uma recarga geraria um id novo e os
+    // eventos emitidos antes da recarga deixariam de casar com o lead final.
+    else sessao.salvar({ estado, transcricao, sessaoId })
+  }
+
+  function seguirInterno() {
     limparComposer()
 
     let guarda = 0
@@ -177,12 +210,11 @@ export function criarChat({
       if (bloco.tipo === "texto") { falar(bloco.conteudo?.texto || ""); estado = avancar(fluxo, estado); continue }
 
       if (bloco.tipo === "imagem") {
-        const bolha = elementoCom("div", "cf__bolha")
-        const img = document.createElement("img")
-        img.src = interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado))
-        img.alt = bloco.conteudo?.alternativo || ""
-        bolha.append(img)
-        thread.append(bolha)
+        dizer({
+          lado: "bot",
+          imagem: interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
+          alternativo: bloco.conteudo?.alternativo || ""
+        })
         estado = avancar(fluxo, estado)
         continue
       }
@@ -229,14 +261,23 @@ export function criarChat({
   }
 
   return {
-    reiniciar() {
+    reiniciar({ retomar = true } = {}) {
       // Um envio que falhou numa tentativa anterior desta sessão é
       // retentado agora. Sem esta chamada a fila de `destinos.js` nunca
       // é drenada por ninguém e o lead se perde em silêncio.
       enviador.processarFila()
-      estado = criarEstado(fluxo)
-      sessaoId = novaSessao()
+      const guardado = retomar ? sessao.carregar() : null
       thread.replaceChildren()
+      if (guardado && guardado.estado) {
+        estado = guardado.estado
+        sessaoId = guardado.sessaoId || sessaoId
+        transcricao = Array.isArray(guardado.transcricao) ? guardado.transcricao : []
+        for (const item of transcricao) desenhar(item)
+      } else {
+        estado = criarEstado(fluxo)
+        sessaoId = novaSessao()
+        transcricao = []
+      }
       seguir()
     },
     estado: () => estado
