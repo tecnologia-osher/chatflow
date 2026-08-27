@@ -27,6 +27,8 @@ export function criarEstado(fluxo) {
     terminou: false
   }
   if (!inicio || !inicio.proximo) return { ...base, terminou: true }
+  const alvo = acharGrupo(fluxo, inicio.proximo)
+  if (!alvo) return { ...base, terminou: true }
   return entrarNoGrupo(base, inicio.proximo)
 }
 

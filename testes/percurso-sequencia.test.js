@@ -23,12 +23,49 @@ const fluxo = {
   ]
 }
 
+function fluxoComOpcoes(pontuacao) {
+  return {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    ...(pontuacao ? { pontuacao } : {}),
+    grupos: [
+      {
+        id: "g1",
+        titulo: "Pergunta",
+        blocos: [
+          {
+            id: "b1",
+            tipo: "escolha_unica",
+            conteudo: {
+              opcoes: [
+                { label: "Sim", pontos: 10 },
+                { label: "Não", pontos: 0 }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+
 test("estado inicial aponta para o grupo do evento de inicio", () => {
   const e = criarEstado(fluxo)
   assert.equal(e.grupoAtual, "g1")
   assert.equal(e.indiceBloco, 0)
   assert.equal(e.terminou, false)
   assert.deepEqual(e.respostas, {})
+})
+
+test("evento de inicio aponta para grupo inexistente encerra o fluxo", () => {
+  const fluxoQuebrado = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "inexistente" }],
+    grupos: []
+  }
+  const e = criarEstado(fluxoQuebrado)
+  assert.equal(e.terminou, true)
+  assert.deepEqual(e.historico, [])
 })
 
 test("blocoAtual devolve o primeiro bloco do grupo", () => {
@@ -74,7 +111,8 @@ test("aplicarResposta grava na variavel e nao avanca", () => {
 })
 
 test("nao modifica o estado recebido", () => {
-  const e = criarEstado(fluxo)
+  let e = criarEstado(fluxo)
+  e = avancar(fluxo, e)
   const copia = JSON.parse(JSON.stringify(e))
   avancar(fluxo, e)
   aplicarResposta(fluxo, e, "Ana")
@@ -93,4 +131,20 @@ test("contexto expoe as respostas", () => {
   e = avancar(fluxo, e)
   e = aplicarResposta(fluxo, e, "Ana")
   assert.equal(contexto(fluxo, e).nome, "Ana")
+})
+
+test("aplicarResposta soma os pontos da opcao escolhida quando a pontuacao esta ativa", () => {
+  const fluxoPontuado = fluxoComOpcoes({ ativa: true, faixas: { quente: 10, morno: 5 } })
+  const e = criarEstado(fluxoPontuado)
+  const depois = aplicarResposta(fluxoPontuado, e, "Sim")
+  assert.equal(depois.pontuacao, 10)
+  assert.equal(contexto(fluxoPontuado, depois).classificacao, "quente")
+})
+
+test("aplicarResposta nao soma pontos quando a pontuacao esta inativa", () => {
+  const fluxoSemPontuacao = fluxoComOpcoes(undefined)
+  const e = criarEstado(fluxoSemPontuacao)
+  const depois = aplicarResposta(fluxoSemPontuacao, e, "Sim")
+  assert.equal(depois.pontuacao, 0)
+  assert.equal(contexto(fluxoSemPontuacao, depois).classificacao, undefined)
 })
