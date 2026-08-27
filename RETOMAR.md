@@ -28,8 +28,13 @@ Testes: `npm test` · Frases do chat: `clientes/osher/fluxo.json`
 - **Sub-projeto 2** — editor visual do fluxo. O catálogo de blocos
   (`motor/blocos/`) já foi desenhado para isso: cada tipo declara seus
   `campos`, que é o que o painel de propriedades vai ler.
-- **Sub-projeto 3** — servidor. Hoje a entrega do lead depende da aba do
-  navegador ficar aberta; a fila de reenvio vive em memória.
+- **Sub-projeto 3** — contas, banco, multi-cliente simultâneo. Hoje a entrega
+  do lead depende da aba do navegador ficar aberta; a fila de reenvio vive em
+  memória.
+- **Sub-projeto 4** — analytics e CRM.
+
+São quatro ao todo, conforme a spec ("Sub-projeto: 1 de 4"). O 2 é a cara do
+produto: sem ele o chatflow é uma biblioteca, não uma ferramenta.
 
 ## Camada de DOM agora tem teste
 
