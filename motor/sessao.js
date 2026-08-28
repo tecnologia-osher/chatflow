@@ -4,10 +4,13 @@ export function criarSessao({
   chave,
   armazenamento,
   agora = () => Date.now(),
-  validadePorHoras = 24
+  // Trinta minutos cobre o caso real — recarreguei sem querer, saí para o
+  // WhatsApp e voltei — sem ressuscitar uma conversa de ontem, que devolveria
+  // a pessoa ao meio de um diálogo que ela não lembra.
+  validadePorMinutos = 30
 } = {}) {
   const endereco = `${PREFIXO}${chave || "padrao"}`
-  const validadeEmMs = validadePorHoras * 60 * 60 * 1000
+  const validadeEmMs = validadePorMinutos * 60 * 1000
 
   function apagar() {
     try {

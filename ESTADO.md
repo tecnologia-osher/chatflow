@@ -107,3 +107,17 @@ teste, e os testes validados por mutação.
    em laço repetiria a mesma bolha por ~8 minutos antes de avisar. Agora só as
    20 primeiras falas de cada rodada pausam; um fluxo legítimo diz duas ou
    três antes de perguntar algo.
+
+## Retomada de sessão encurtada — 28/08/2026
+
+De 24 horas para **30 minutos**. Motivo: para um chat de captação, ressuscitar
+em silêncio uma conversa de ontem devolve a pessoa ao meio de um diálogo que
+ela não lembra. Trinta minutos cobre o caso real — recarreguei sem querer, saí
+para o WhatsApp e voltei.
+
+O parâmetro passou de `validadePorHoras` para `validadePorMinutos`, porque
+`validadePorHoras: 0.5` seria um cheiro ruim.
+
+Junto veio o `?novo=1` no player: força começar do zero, ignorando a sessão.
+Serve para testar sem ter que fechar todas as janelas anônimas entre uma vez e
+outra. Links: `?cliente=osher&novo=1`, combinável com `&teste=1`.

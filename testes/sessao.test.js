@@ -29,16 +29,40 @@ test("sem nada salvo devolve null", () => {
   assert.equal(sessao.carregar(), null)
 })
 
-test("expira depois de 24 horas", () => {
+const MINUTO = 60 * 1000
+
+test("expira depois de 30 minutos", () => {
   const arm = armazenamentoFalso()
   let momento = 0
   const sessao = criarSessao({ chave: "osher", armazenamento: arm, agora: () => momento })
   sessao.salvar(estadoExemplo)
 
-  momento = 23 * 60 * 60 * 1000
-  assert.notEqual(sessao.carregar(), null)
+  momento = 29 * MINUTO
+  assert.notEqual(sessao.carregar(), null, "recarregar logo depois tem que retomar")
 
-  momento = 25 * 60 * 60 * 1000
+  momento = 31 * MINUTO
+  assert.equal(sessao.carregar(), null, "conversa velha não deve ressuscitar")
+})
+
+test("conversa de ontem nao volta", () => {
+  const arm = armazenamentoFalso()
+  let momento = 0
+  const sessao = criarSessao({ chave: "osher", armazenamento: arm, agora: () => momento })
+  sessao.salvar(estadoExemplo)
+  momento = 20 * 60 * MINUTO
+  assert.equal(sessao.carregar(), null)
+})
+
+test("a validade e configuravel em minutos", () => {
+  const arm = armazenamentoFalso()
+  let momento = 0
+  const sessao = criarSessao({
+    chave: "osher", armazenamento: arm, agora: () => momento, validadePorMinutos: 5
+  })
+  sessao.salvar(estadoExemplo)
+  momento = 4 * MINUTO
+  assert.notEqual(sessao.carregar(), null)
+  momento = 6 * MINUTO
   assert.equal(sessao.carregar(), null)
 })
 
@@ -47,7 +71,7 @@ test("carregar depois de expirado tambem apaga o registro", () => {
   let momento = 0
   const sessao = criarSessao({ chave: "osher", armazenamento: arm, agora: () => momento })
   sessao.salvar(estadoExemplo)
-  momento = 25 * 60 * 60 * 1000
+  momento = 31 * MINUTO
   sessao.carregar()
   assert.equal(arm._dados.size, 0)
 })
