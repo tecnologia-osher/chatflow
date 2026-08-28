@@ -125,7 +125,7 @@
       "posicao": { "x": 40, "y": 1200 },
       "blocos": [
         { "id": "b_fq", "tipo": "texto", "conteudo": { "texto": "Perfeito, {{nome}}. Um consultor vai falar com você para montar o plano a partir do que você contou." } },
-        { "id": "b_fq_link", "tipo": "redirecionar", "conteudo": { "url": "https://wa.me/5561982286044?text=Ol%C3%A1%2C%20sou%20{{nome}}%20e%20vim%20pelo%20chat.", "rotulo_botao": "Continuar no WhatsApp", "nova_aba": true } }
+        { "id": "b_fq_link", "tipo": "redirecionar", "conteudo": { "url": "https://wa.me/5561999699829?text=Ol%C3%A1%2C%20sou%20{{nome}}%20e%20vim%20pelo%20chat.", "rotulo_botao": "Continuar no WhatsApp", "nova_aba": true } }
       ]
     },
     {

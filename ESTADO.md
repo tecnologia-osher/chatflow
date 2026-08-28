@@ -70,8 +70,10 @@ bloco `definir_variavel` e vários destinos em `ao_finalizar`.
 
 ## Decisões em aberto, todas suas
 
-1. **Para qual WhatsApp vai o lead quente.** Está no fluxo o
-   (61) 98228-6044, o único que existe, mas a equipe tem seis vendedores.
+1. ~~Para qual WhatsApp vai o lead quente~~ **Decidido em 27/08/2026:**
+   **(61) 99969-9829**. É o número do botão "Continuar no WhatsApp" no fim do
+   caminho quente, em `clientes/osher/fluxo.json`. Trocar de novo é uma linha,
+   mas lembre de republicar — o chat no ar só muda com um `git push`.
 2. **O bubble de texto aceita negrito, itálico e link?** Decide se o editor
    do sub-projeto 2 usa caixa simples ou editor com formatação.
 3. **Barra de progresso** ("pergunta 3 de 8"), que existia no Typebot antigo
