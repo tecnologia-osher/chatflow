@@ -78,7 +78,7 @@
           "id": "b_prazer",
           "tipo": "texto",
           "conteudo": {
-            "texto": "Show, {{nome}}."
+            "texto": "Show, prazer em te conhecer, {{nome}}."
           }
         },
         {
