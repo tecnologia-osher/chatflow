@@ -200,3 +200,44 @@ test("sem nenhum destino configurado, avisa uma vez e nao quebra", async () => {
   await enviador.enviar({ nome: "Ana" })
   assert.ok(avisos.length >= 1)
 })
+
+test("dois destinos ativos recebem o mesmo lead", async () => {
+  const chamadas = []
+  const enviador = criarEnviador({
+    destinos: {
+      planilha: { tipo: "apps_script", url: "https://exemplo/planilha" },
+      crm: { tipo: "webhook", url: "https://exemplo/crm" }
+    },
+    ao_finalizar: ["planilha", "crm"],
+    buscar: async (url, opcoes) => {
+      chamadas.push({ url, corpo: JSON.parse(opcoes.body) })
+      return { ok: true }
+    }
+  })
+  await enviador.enviar({ nome: "Ana", classificacao: "quente" })
+
+  assert.deepEqual(chamadas.map((c) => c.url).sort(),
+    ["https://exemplo/crm", "https://exemplo/planilha"])
+  for (const c of chamadas) assert.deepEqual(c.corpo, { nome: "Ana", classificacao: "quente" })
+})
+
+test("um destino fora do ar nao impede o outro de receber", async () => {
+  const entregues = []
+  const enviador = criarEnviador({
+    destinos: {
+      planilha: { tipo: "apps_script", url: "https://exemplo/planilha" },
+      crm: { tipo: "webhook", url: "https://exemplo/crm" }
+    },
+    ao_finalizar: ["crm", "planilha"],
+    buscar: async (url) => {
+      if (url.includes("crm")) throw new Error("crm fora do ar")
+      entregues.push(url)
+      return { ok: true }
+    }
+  })
+  await enviador.enviar({ nome: "Ana" })
+
+  assert.deepEqual(entregues, ["https://exemplo/planilha"],
+    "a falha de um destino engoliu o outro")
+  assert.equal(enviador.fila().length, 1, "o destino que falhou deveria estar na fila")
+})
