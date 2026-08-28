@@ -80,3 +80,33 @@
   padding: 0.65rem 1.25rem;
   font-size: 0.88rem;
 }
+
+/* Indicador de digitação. A cor vem de currentColor, herdada de --cf-texto,
+   para não introduzir cor literal fora do bloco de variáveis. */
+.cf__digitando {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+}
+.cf__ponto {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  animation: cf-pulsar 1.2s ease-in-out infinite;
+}
+.cf__ponto:nth-child(2) { animation-delay: 0.2s; }
+.cf__ponto:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes cf-pulsar {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 0.9; transform: translateY(-0.15rem); }
+}
+
+/* Quem pediu menos movimento no sistema vê os pontos parados. A pausa
+   continua: o que some é a animação, não a espera. */
+@media (prefers-reduced-motion: reduce) {
+  .cf__ponto { animation: none; opacity: 0.5; }
+}

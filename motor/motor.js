@@ -50,7 +50,12 @@ export function criarChat({
   modo = "producao",
   buscar = (...args) => fetch(...args),
   chaveSessao = "padrao",
-  armazenamento = globalThis.localStorage
+  armazenamento = globalThis.localStorage,
+  // Quanto o chat "digita" antes de cada fala. Proporcional ao texto: fala
+  // curta espera pouco, longa espera mais, com teto para não irritar.
+  // Zerar qualquer campo desliga a pausa.
+  ritmo = { piso: 350, porCaractere: 10, teto: 1800 },
+  esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 }) {
   if (!elemento) throw new Error("criarChat precisa de um elemento onde montar.")
 
@@ -95,6 +100,36 @@ export function criarChat({
   // falado até ali.
   let transcricao = []
 
+  function pausaDe(texto) {
+    const { piso = 0, porCaractere = 0, teto = 0 } = ritmo || {}
+    return Math.min(teto, piso + String(texto ?? "").length * porCaractere)
+  }
+
+  // Balão transitório com os três pontos. Não passa por dizer(): se entrasse
+  // na transcrição, a retomada redesenharia pontinhos fantasmas no meio da
+  // conversa já dita.
+  function mostrarDigitando() {
+    const bolha = elementoCom("div", "cf__bolha cf__digitando")
+    bolha.setAttribute("aria-label", "digitando")
+    for (let i = 0; i < 3; i++) bolha.append(elementoCom("span", "cf__ponto"))
+    thread.append(bolha)
+    thread.scrollTop = thread.scrollHeight
+    return bolha
+  }
+
+  async function dizerComPausa(medida, item) {
+    const espera = pausaDe(medida)
+    if (espera > 0) {
+      const indicador = mostrarDigitando()
+      try {
+        await esperar(espera)
+      } finally {
+        indicador.remove()
+      }
+    }
+    dizer(item)
+  }
+
   function desenhar(item) {
     if (item.imagem !== undefined) {
       const bolha = elementoCom("div", "cf__bolha")
@@ -115,8 +150,9 @@ export function criarChat({
     desenhar(item)
   }
 
-  function falar(texto) {
-    dizer({ lado: "bot", texto: interpolar(texto, contexto(fluxo, estado)) })
+  async function falar(texto) {
+    const pronto = interpolar(texto, contexto(fluxo, estado))
+    await dizerComPausa(pronto, { lado: "bot", texto: pronto })
   }
 
   function ecoar(texto) {
@@ -140,7 +176,17 @@ export function criarChat({
     })
   }
 
+  // Enquanto o chat "digita", o composer já está vazio — mas um duplo clique
+  // rápido pode disparar dois responder() antes disso. A guarda fecha a porta.
+  let ocupado = false
+
+  function correr() {
+    ocupado = true
+    return seguir().finally(() => { ocupado = false })
+  }
+
   function responder(valor, rotuloVisivel = valor) {
+    if (ocupado) return
     const bloco = blocoAtual(fluxo, estado)
     const veredito = validarEntrada(bloco, valor)
     if (!veredito.ok) {
@@ -150,7 +196,7 @@ export function criarChat({
       if (desvio) {
         estado = limparFalhas(estado)
         estado = avancar(fluxo, estado, { destino: desvio })
-        seguir()
+        correr()
       }
       return
     }
@@ -160,7 +206,7 @@ export function criarChat({
     estado = aplicarResposta(fluxo, estado, valor)
     const destino = destinoDaResposta(bloco, valor)
     estado = avancar(fluxo, estado, destino ? { destino } : {})
-    seguir()
+    correr()
   }
 
   function pedirTexto(bloco) {
@@ -200,15 +246,15 @@ export function criarChat({
     composer.replaceChildren(link)
   }
 
-  function seguir() {
-    seguirInterno()
+  async function seguir() {
+    await seguirInterno()
     if (estado.terminou) sessao.limpar()
     // O sessaoId vai junto: sem ele, uma recarga geraria um id novo e os
     // eventos emitidos antes da recarga deixariam de casar com o lead final.
     else sessao.salvar({ estado, transcricao, sessaoId })
   }
 
-  function seguirInterno() {
+  async function seguirInterno() {
     limparComposer()
 
     let guarda = 0
@@ -228,13 +274,18 @@ export function criarChat({
         em: new Date().toISOString()
       })
 
-      if (bloco.tipo === "texto") { falar(bloco.conteudo?.texto || ""); estado = avancar(fluxo, estado); continue }
+      if (bloco.tipo === "texto") {
+        await falar(bloco.conteudo?.texto || "")
+        estado = avancar(fluxo, estado)
+        continue
+      }
 
       if (bloco.tipo === "imagem") {
-        dizer({
+        const alternativo = bloco.conteudo?.alternativo || ""
+        await dizerComPausa(alternativo, {
           lado: "bot",
           imagem: interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
-          alternativo: bloco.conteudo?.alternativo || ""
+          alternativo
         })
         estado = avancar(fluxo, estado)
         continue
@@ -308,7 +359,7 @@ export function criarChat({
         sessaoId = novaSessao()
         transcricao = []
       }
-      seguir()
+      return correr()
     },
     estado: () => estado
   }

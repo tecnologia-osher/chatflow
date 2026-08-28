@@ -8,7 +8,8 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
-import { montarChat, criarArmazenamento } from "./apoio/chat.js"
+import { montarChat, criarArmazenamento, assentar } from "./apoio/chat.js"
+import { relogioManual } from "./apoio/relogio.js"
 
 const exemplo = () =>
   JSON.parse(readFileSync(new URL("../exemplos/captacao-simples.json", import.meta.url)))
@@ -295,4 +296,160 @@ test("fluxo invalido nao monta em producao e avisa no console", async () => {
   })
   assert.equal(chat.estado(), null)
   assert.match(chat.avisos().join(" "), /inválido/)
+})
+
+// ---------------------------------------------------------------------------
+// Indicador de digitação
+// ---------------------------------------------------------------------------
+
+const RITMO = { piso: 350, porCaractere: 10, teto: 1800 }
+
+const fluxoDeDuasFalas = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{ id: "g1", blocos: [
+    { id: "t1", tipo: "texto", conteudo: { texto: "Oi." } },
+    { id: "t2", tipo: "texto", conteudo: { texto: "Tudo bem por aí?" } }
+  ] }]
+}
+
+test("mostra o indicador de digitacao antes da fala", async () => {
+  const relogio = relogioManual()
+  const chat = await montarChat({
+    fluxo: fluxoDeDuasFalas, ritmo: RITMO, esperar: relogio.esperar
+  })
+  assert.equal(chat.digitando(), 1, "o indicador não apareceu")
+  assert.deepEqual(chat.bolhas(), [], "a fala chegou antes da pausa")
+})
+
+test("o indicador some quando a fala chega", async () => {
+  const relogio = relogioManual()
+  const chat = await montarChat({
+    fluxo: fluxoDeDuasFalas, ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()
+  assert.equal(chat.digitando(), 1, "deveria estar digitando a segunda fala")
+  assert.deepEqual(chat.bolhas(), ["Oi."])
+})
+
+test("cada fala tem a sua propria pausa", async () => {
+  const relogio = relogioManual()
+  const chat = await montarChat({
+    fluxo: fluxoDeDuasFalas, ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()
+  await relogio.correr()
+  assert.deepEqual(chat.bolhas(), ["Oi.", "Tudo bem por aí?"])
+  assert.equal(chat.digitando(), 0, "sobrou indicador na tela")
+  assert.equal(relogio.duracoes().length, 2)
+})
+
+test("a pausa cresce com o tamanho do texto", async () => {
+  const relogio = relogioManual()
+  await montarChat({
+    fluxo: fluxoDeDuasFalas, ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()
+  await relogio.correr()
+  const [curta, longa] = relogio.duracoes()
+  assert.equal(curta, 350 + 3 * 10, "Oi. tem 3 caracteres")
+  assert.equal(longa, 350 + 16 * 10, "a segunda fala tem 16 caracteres")
+})
+
+test("a pausa respeita o teto", async () => {
+  const relogio = relogioManual()
+  await montarChat({
+    fluxo: {
+      versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "t", tipo: "texto", conteudo: { texto: "x".repeat(500) } }] }]
+    },
+    ritmo: RITMO, esperar: relogio.esperar
+  })
+  assert.equal(relogio.duracoes()[0], 1800)
+})
+
+test("bloco de logica nao pausa: so o que vira balao espera", async () => {
+  const relogio = relogioManual()
+  await montarChat({
+    fluxo: {
+      versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [
+        { id: "g1", blocos: [
+          { id: "j", tipo: "ir_para", conteudo: { destino: "g2" } }] },
+        { id: "g2", blocos: [
+          { id: "t", tipo: "texto", conteudo: { texto: "Cheguei." } }] }
+      ]
+    },
+    ritmo: RITMO, esperar: relogio.esperar
+  })
+  assert.equal(relogio.duracoes().length, 1, "o ir_para não deveria pausar")
+})
+
+test("o indicador nao entra na transcricao da sessao", async () => {
+  const armazenamento = criarArmazenamento()
+  const relogio = relogioManual()
+  // Precisa parar numa pergunta: fluxo que termina tem a sessão apagada,
+  // e aí não há transcrição gravada para inspecionar.
+  const fluxo = structuredClone(fluxoDeDuasFalas)
+  fluxo.grupos[0].blocos.push(
+    { id: "e", tipo: "entrada_texto", conteudo: {}, salvar_em: "x" }
+  )
+  const primeira = await montarChat({
+    fluxo, armazenamento, chaveSessao: "d",
+    ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()
+  await relogio.correr()
+  assert.deepEqual(primeira.bolhas(), ["Oi.", "Tudo bem por aí?"])
+
+  // Afirma sobre o que foi GRAVADO, não sobre a tela: se o indicador
+  // entrasse na transcrição, apareceria aqui como um item a mais.
+  const guardado = JSON.parse(armazenamento.getItem("chatflow:d"))
+  const transcricao = guardado.estado.transcricao
+  assert.deepEqual(
+    transcricao.map((i) => i.texto),
+    ["Oi.", "Tudo bem por aí?"],
+    "o indicador foi parar na transcrição"
+  )
+
+  const segunda = await montarChat({ fluxo, armazenamento, chaveSessao: "d" })
+  assert.equal(segunda.digitando(), 0)
+})
+
+test("a retomada redesenha a conversa de uma vez, sem pausar", async () => {
+  const armazenamento = criarArmazenamento()
+  const relogio = relogioManual()
+  const primeira = await montarChat({
+    fluxo: exemplo(), armazenamento, chaveSessao: "d2",
+    ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()          // a abertura
+  await primeira.digitar("Ana")
+  await relogio.correr()          // "Prazer, Ana." — depois disso o motor
+                                  // para nos botões, sem pausa pendente
+
+  const relogio2 = relogioManual()
+  const segunda = await montarChat({
+    fluxo: exemplo(), armazenamento, chaveSessao: "d2",
+    ritmo: RITMO, esperar: relogio2.esperar
+  })
+  assert.deepEqual(segunda.bolhas(), primeira.bolhas(), "a conversa não voltou inteira")
+  assert.equal(relogio2.duracoes().length, 0, "a retomada pausou para redesenhar")
+})
+
+test("clicar duas vezes durante a digitacao nao responde duas vezes", async () => {
+  const relogio = relogioManual()
+  const chat = await montarChat({
+    fluxo: exemplo(), ritmo: RITMO, esperar: relogio.esperar
+  })
+  await relogio.correr()
+  const campo = chat.controles()[0]
+  const botao = chat.controles()[1]
+  campo.value = "Ana"
+  botao.click()
+  botao.click()
+  await assentar()
+  const ecos = chat.hospedeiro.porClasse("cf__bolha--pessoa").map((b) => b.textContent)
+  assert.deepEqual(ecos, ["Ana"], "a resposta foi ecoada duas vezes")
 })

@@ -31,9 +31,18 @@ class Elemento {
     return this.filhos.map((f) => f.textContent).join("")
   }
 
-  append(...nos) { this.filhos.push(...nos) }
-  prepend(...nos) { this.filhos.unshift(...nos) }
-  replaceChildren(...nos) { this.filhos = [...nos]; this._texto = "" }
+  append(...nos) { this.#adotar(nos); this.filhos.push(...nos) }
+  prepend(...nos) { this.#adotar(nos); this.filhos.unshift(...nos) }
+  replaceChildren(...nos) { this.#adotar(nos); this.filhos = [...nos]; this._texto = "" }
+
+  #adotar(nos) { for (const no of nos) if (no) no.pai = this }
+
+  remove() {
+    if (!this.pai) return
+    const onde = this.pai.filhos.indexOf(this)
+    if (onde !== -1) this.pai.filhos.splice(onde, 1)
+    this.pai = null
+  }
 
   setAttribute(nome, valor) {
     this.atributos[nome] = String(valor)

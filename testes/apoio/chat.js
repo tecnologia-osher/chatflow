@@ -21,7 +21,12 @@ export async function montarChat({
   chaveSessao = "teste",
   armazenamento = criarArmazenamento(),
   redeResponde = async () => ({ ok: true }),
-  retomar = true
+  retomar = true,
+  // Testes não esperam de verdade: sem ritmo não há pausa e a suíte
+  // continua em milissegundos. Quem quiser exercitar a digitação passa
+  // um ritmo e um relógio manual.
+  ritmo = { piso: 0, porCaractere: 0, teto: 0 },
+  esperar
 } = {}) {
   limparAvisos()
 
@@ -30,6 +35,7 @@ export async function montarChat({
 
   const chat = criarChat({
     elemento: hospedeiro, fluxo, tema, destinos, modo, chaveSessao, armazenamento,
+    ritmo, esperar,
     buscar: async (url, opcoes) => {
       enviados.push({ url, corpo: JSON.parse(opcoes.body) })
       return redeResponde(url, opcoes)
@@ -45,7 +51,10 @@ export async function montarChat({
     estado: () => chat.estado(),
 
     // O que a pessoa vê
-    bolhas: () => hospedeiro.porClasse("cf__bolha").map((b) => b.textContent),
+    bolhas: () => hospedeiro.porClasse("cf__bolha")
+      .filter((b) => !b.className.includes("cf__digitando"))
+      .map((b) => b.textContent),
+    digitando: () => hospedeiro.porClasse("cf__digitando").length,
     erro: () => hospedeiro.porClasse("cf__erro")[0]?.textContent ?? "",
     aviso: () => hospedeiro.porClasse("cf__aviso")[0]?.textContent ?? "",
     campo: () => hospedeiro.porClasse("cf__campo")[0] ?? null,
