@@ -27,8 +27,8 @@
   "pontuacao": {
     "ativa": true,
     "faixas": {
-      "quente": 4,
-      "morno": 2
+      "quente": 5,
+      "morno": 3
     }
   },
   "grupos": [

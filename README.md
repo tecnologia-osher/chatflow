@@ -88,7 +88,7 @@ estado e devolve estado novo, nunca modifica o que recebeu.
 
 ## Estado
 
-**Sub-projeto 1 de 4 concluído** — o formato e o motor. 152 testes passando.
+**Sub-projeto 1 de 4 concluído** — o formato e o motor. 161 testes passando.
 
 Os próximos: 2 = editor visual do fluxo, que é a cara do produto;
 3 = contas, banco e multi-cliente simultâneo; 4 = analytics e CRM.

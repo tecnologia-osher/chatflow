@@ -135,3 +135,25 @@ test("o fluxo declara o proprio ritmo de digitacao", () => {
   assert.deepEqual(fluxo.ritmo, { piso: 1000, porCaractere: 0, teto: 1000 },
     "a Osher quer um segundo fixo antes de cada fala")
 })
+
+test("as tres classificacoes sao alcancaveis", () => {
+  // Faixa que ninguém atinge é rótulo morto: o vendedor perde o sinal que a
+  // pontuação existe para dar. Este teste enumera todas as combinações de
+  // resposta e confere que quente, morno e frio acontecem de verdade.
+  const perguntas = fluxo.grupos.flatMap((g) => g.blocos)
+    .map((b) => (b.conteudo?.opcoes || []).map((o) => o.pontos).filter((p) => typeof p === "number"))
+    .filter((p) => p.length)
+
+  let combinacoes = [[]]
+  for (const opcoes of perguntas) {
+    combinacoes = combinacoes.flatMap((c) => opcoes.map((v) => [...c, v]))
+  }
+  const { quente, morno } = fluxo.pontuacao.faixas
+  const classificar = (n) => (n >= quente ? "quente" : n >= morno ? "morno" : "frio")
+  const alcancadas = new Set(combinacoes.map((c) => classificar(c.reduce((a, b) => a + b, 0))))
+
+  for (const faixa of ["quente", "morno", "frio"]) {
+    assert.ok(alcancadas.has(faixa),
+      `nenhuma combinação de respostas resulta em "${faixa}": a faixa é inalcançável`)
+  }
+})

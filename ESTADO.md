@@ -1,123 +1,128 @@
-# Estado do chatflow — 27/08/2026
+# Estado do chatflow — 28/08/2026
 
 ## Sub-projeto 1: EM PRODUÇÃO
 
-**O chat da Osher está no ar desde 27/08/2026:**
-https://tecnologia-osher.github.io/chatflow/?cliente=osher
-(acrescente `&teste=1` para pré-visualizar sem gravar nada)
+O chat da Osher está no ar desde 27/08/2026:
+
+**https://tecnologia-osher.github.io/chatflow/?cliente=osher**
+
+- `&novo=1` — ignora a sessão guardada e começa do zero (para testar)
+- `&teste=1` — pré-visualiza sem enviar nada a lugar nenhum
 
 Publicado com GitHub Pages a partir de `main`, repositório público em
-github.com/tecnologia-osher/chatflow. Verificado no celular: tema correto,
-teclado numérico no campo de WhatsApp, caminho quente até o botão de
-WhatsApp, e a linha na aba `Chatflow` da planilha.
+github.com/tecnologia-osher/chatflow. **161 testes passando.**
 
-**Armadilha que custou um susto e vai se repetir no próximo cliente:** o
-GitHub Pages roda Jekyll por padrão, e Jekyll **ignora todo arquivo que
-começa com `_`**. O `motor/blocos/_registro.js` voltava 404 enquanto os
-outros 25 arquivos vinham 200 — o chat abria em branco, sem erro nenhum.
-O `.nojekyll` vazio na raiz resolve. Não apague esse arquivo.
+**Armadilha que vai se repetir no próximo cliente:** o GitHub Pages roda
+Jekyll por padrão, e Jekyll **ignora todo arquivo que começa com `_`**. O
+`motor/blocos/_registro.js` voltava 404 e o chat abria em branco, sem erro
+nenhum no console. O `.nojekyll` vazio na raiz resolve. **Não apague.**
 
-## Sub-projeto 1: concluído e integrado
-
-O motor e o formato do fluxo. As 12 tarefas do plano, a review final da
-branch e o merge em `main`. **152 testes passando.** A branch `motor-v1`
-foi removida; o histórico está preservado no commit de merge `8dc10b9`,
-que isola o sub-projeto inteiro caso algum dia precise ser revertido.
-
-O primeiro cliente está no ar de ponta a ponta: o chat da Osher grava na
-planilha **Leads Osher Backup**, nas abas `Chatflow` e `Chatflow Eventos`.
-
-## Como rodar
+## Para onde vai o lead
 
 ```
-cd "/Users/gustavolacerda/Desktop/Claude Master/chatflow"
-python3 -m http.server 8080
+chat no navegador
+  ├── planilha "Leads Osher Backup"
+  │      aba Chatflow          — um lead por pessoa que termina
+  │      aba Chatflow Eventos  — ~1 linha por pergunta exibida (funil)
+  └── webhook do Make
+         └── Edge Function lead-intake (Supabase pidzzwlpsffjznbzukhj)
+                └── rodízio de vendedor → tabela deals → e-mail
 ```
 
-- Fluxo genérico: `http://localhost:8080/motor/player.html`
-- Fluxo da Osher: `http://localhost:8080/motor/player.html?cliente=osher`
-- Sem enviar nada, para pré-visualizar: acrescente `&teste=1`
+**Por que o Make existe no meio.** Ele guarda o `INTAKE_SECRET` da Edge
+Function. O `destinos.json` do chatflow é público — repositório público,
+site público — então a credencial não pode viver nele. O Make é quem segura
+o segredo.
 
-Testes: `npm test` · Frases do chat: `clientes/osher/fluxo.json`
+**O formato que a Edge Function espera** é o payload embrulhado:
+`{ "value": "<o json do chatflow como string>" }`. Daí o módulo Create JSON
+entre o webhook e o HTTP no cenário do Make. Payload cru também entra, mas
+mutilado: perde origem, campanha, dedup e toda a qualificação.
 
-## O que vem depois
+**O cenário do Make** chama-se `Osher - Chatflow para CRM`, com três
+módulos: Webhook (2) → Create JSON (5) → HTTP (8). O campo da estrutura de
+dados precisa chamar-se exatamente `value`.
 
-- **Sub-projeto 2** — editor visual do fluxo. O catálogo de blocos
-  (`motor/blocos/`) já foi desenhado para isso: cada tipo declara seus
-  `campos`, que é o que o painel de propriedades vai ler.
-- **Sub-projeto 3** — contas, banco, multi-cliente simultâneo. Hoje a entrega
-  do lead depende da aba do navegador ficar aberta; a fila de reenvio vive em
-  memória.
-- **Sub-projeto 4** — analytics e CRM.
+## O fluxo hoje
 
-São quatro ao todo, conforme a spec ("Sub-projeto: 1 de 4"). O 2 é a cara do
-produto: sem ele o chatflow é uma biblioteca, não uma ferramenta.
+Cinco perguntas, nove falas, 1 segundo de digitação antes de cada uma.
 
-## Camada de DOM agora tem teste
+```
+1. Bem-vindo à Osher Capital, queremos te conhecer melhor.
+2. Qual o seu nome?                          → nome
+3. Show, prazer em te conhecer, {nome}.
+4. Qual seu telefone com WhatsApp?           → whatsapp
+5. Qual sua idade?                           → idade      (não pontua)
+6. Por que você está buscando um consórcio?  → objetivo   (1 · 2)
+7. Qual o valor do crédito do imóvel?        → valor      (1 · 2 · 3)
+8. Muito obrigado pelas respostas.
+9. Vou te redirecionar para falar com um de nossos especialistas.
+   [ Continuar no WhatsApp ]  → (61) 99969-9829
+```
 
-`motor/motor.js` era a única parte sem teste automatizado, por ser a camada
-que fala com o DOM. Cinco defeitos sérios nasceram ali e nenhum foi pego pela
-suíte — o pior deles fazia o lead mais quente nunca ser enviado.
+Fora do caminho principal: se a pessoa errar o telefone duas vezes, o chat
+diz "Sem problema, vamos seguir sem esse dado por enquanto" e pula para a
+idade. **O lead chega sem `whatsapp`** — já aconteceu em produção.
 
-Fechado em 27/08/2026: `testes/apoio/navegador.js` é um navegador de mentira
-escrito à mão (81 linhas, zero dependência) e `testes/motor.test.js` dirige o
-chat de ponta a ponta em 25 casos. Os testes foram validados por mutação:
-oito defeitos foram reintroduzidos um a um no código de produção e os oito
-foram detectados.
+**Faixas:** quente ≥ 5 · morno ≥ 3 · frio abaixo. Das seis combinações
+possíveis, uma é frio, quatro são morno e uma é quente.
 
-Não cobertos ainda, por nenhum fluxo em uso os exercitar: o bloco `imagem`, o
-bloco `definir_variavel` e vários destinos em `ao_finalizar`.
+**O ritmo da digitação é do cliente**, declarado em `ritmo` dentro do
+`fluxo.json`. Sem ele, o motor usa o padrão proporcional ao tamanho do texto.
+
+## Auditoria de 28/08/2026
+
+**Corrigido: a classificação "frio" era inalcançável.** Depois da reescrita
+do fluxo, a menor pontuação possível passou a ser 2 e "morno" começava em 2 —
+todo lead virava morno ou quente, metade e metade. O rótulo deixava de ser
+sinal para o vendedor. Faixas ajustadas, e criado um teste que enumera todas
+as combinações de resposta e exige que as três classificações aconteçam.
+
+Verificado e limpo: `motor/` e `exemplos/` sem nenhum vestígio de cliente;
+zero dependências; nenhuma sobra de depuração; os 28 arquivos publicados
+idênticos ao repositório; a cópia de `preferencias.md` idêntica ao original
+do MazyOS.
 
 ## Decisões em aberto, todas suas
 
-1. ~~Para qual WhatsApp vai o lead quente~~ **Decidido em 27/08/2026:**
-   **(61) 99969-9829**. É o número do botão "Continuar no WhatsApp" no fim do
-   caminho quente, em `clientes/osher/fluxo.json`. Trocar de novo é uma linha,
-   mas lembre de republicar — o chat no ar só muda com um `git push`.
-2. **O bubble de texto aceita negrito, itálico e link?** Decide se o editor
-   do sub-projeto 2 usa caixa simples ou editor com formatação.
-3. **Barra de progresso** ("pergunta 3 de 8"), que existia no Typebot antigo
-   e não foi reimplementada. Vira um tipo de bloco novo.
+1. **As exclamações.** Você escreveu "Show!" e "Muito obrigado pelas
+   respostas!". O `preferencias.md` da marca bane exclamação e um teste
+   barra. Estão publicados sem o ponto. Ou mantém a regra, ou a gente
+   relaxa ela para o chat e ajusta o teste.
+2. **Lead sem WhatsApp.** Quem erra o telefone duas vezes entra no CRM sem
+   forma de contato. Dá para barrar no Make, ou tornar o campo obrigatório
+   no fluxo — mas aí quem não conseguir digitar trava e você perde o lead.
+3. **Formato do payload instável.** Campos só existem se a pergunta foi
+   alcançada, então todo destino precisa tolerar ausência. Está em standby
+   por decisão sua: o motor poderia sempre enviar todas as variáveis
+   declaradas no fluxo, com vazio nas não respondidas.
+4. **Barra de progresso** ("pergunta 3 de 8"), que o Typebot antigo tinha.
+
+## O que vem depois
+
+- **Sub-projeto 2** — editor visual, a cara do produto. As imagens do Typebot
+  já foram analisadas e o formato do chatflow bate quase campo a campo:
+  grupos, blocos, eventos, `salvar_em`, `proximo`, e as `posicao {x,y}` que
+  já estão gravadas em todos os JSONs esperando o canvas.
+- **Sub-projeto 3** — contas, banco, multi-cliente. **Ficou mais barato do
+  que a spec previa:** o projeto Supabase `Chatflow`
+  (`tsaqxbqthnnqtspojwxk`) já existe, vazio. Banco, auth e Edge Functions
+  prontos.
+
+**Atenção ao encadeamento:** o sub-projeto 2 sozinho **não** dá autonomia ao
+cliente. Ele dá a edição visual, mas não o salvar — sem servidor, o editor só
+consegue baixar um arquivo que alguém ainda precisa publicar. Autonomia real
+é editar + salvar + publicar, e isso exige o 3 junto.
+
+Antes de atacar o 2, vale deixar o chat rodando alguns dias: a aba
+`Chatflow Eventos` vai dizer onde as pessoas desistem, e isso deveria guiar o
+desenho do editor em vez de a gente adivinhar.
 
 ## Onde está o resto
 
-- Spec: `docs/superpowers/specs/2026-08-27-chatflow-motor-design.md`
+- Spec do motor: `docs/superpowers/specs/2026-08-27-chatflow-motor-design.md`
+- Desenho da publicação: `docs/superpowers/specs/2026-08-27-publicacao-design.md`
 - Plano das 12 tarefas: `docs/superpowers/plans/2026-08-27-motor-chatflow.md`
-- Registro de execução, com as 18 decisões tomadas durante a implementação e
-  o porquê de cada uma, mais o relatório da review final:
-  `.superpowers/sdd/2026-08-27-motor-chatflow/progress.md`
-  *(fora do git — não rode `git clean -fdx`)*
-
-## Auditoria de 27/08/2026 — o que foi corrigido
-
-Revisão do refactor assíncrono que o indicador de digitação exigiu. Quatro
-defeitos, três deles introduzidos no mesmo dia. Todos corrigidos, cada um com
-teste, e os testes validados por mutação.
-
-1. **Um `ritmo` parcial desligava a pausa em silêncio.** `{ piso: 500 }` sem
-   os outros campos zerava `porCaractere` e `teto`, e o chat parava de
-   "digitar" sem avisar. Agora o valor é mesclado com o padrão.
-2. **O fluxo se dava por encerrado antes de o lead sair.** `finalizar()` não
-   era aguardado, então a sessão era apagada enquanto o envio ainda estava em
-   curso. Quem fechasse a aba nesse intervalo perdia o lead e a sessão.
-3. **Falha dentro do laço virava promessa rejeitada silenciosa.** O chat
-   congelava sem dizer nada e a pessoa ficava olhando uma tela morta. Agora
-   aparece mensagem em português e o erro vai para o console.
-4. **A guarda de laço passou a levar minutos.** Com pausa por fala, um fluxo
-   em laço repetiria a mesma bolha por ~8 minutos antes de avisar. Agora só as
-   20 primeiras falas de cada rodada pausam; um fluxo legítimo diz duas ou
-   três antes de perguntar algo.
-
-## Retomada de sessão encurtada — 28/08/2026
-
-De 24 horas para **30 minutos**. Motivo: para um chat de captação, ressuscitar
-em silêncio uma conversa de ontem devolve a pessoa ao meio de um diálogo que
-ela não lembra. Trinta minutos cobre o caso real — recarreguei sem querer, saí
-para o WhatsApp e voltei.
-
-O parâmetro passou de `validadePorHoras` para `validadePorMinutos`, porque
-`validadePorHoras: 0.5` seria um cheiro ruim.
-
-Junto veio o `?novo=1` no player: força começar do zero, ignorando a sessão.
-Serve para testar sem ter que fechar todas as janelas anônimas entre uma vez e
-outra. Links: `?cliente=osher&novo=1`, combinável com `&teste=1`.
+- Registro de execução, com as decisões e o porquê de cada uma:
+  `.superpowers/sdd/2026-08-27-motor-chatflow/progress.md` *(fora do git —
+  não rode `git clean -fdx`)*
