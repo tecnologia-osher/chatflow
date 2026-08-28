@@ -31,6 +31,9 @@ function atributosDoCampo(tipo) {
   }
 }
 
+const RITMO_PADRAO = { piso: 350, porCaractere: 10, teto: 1800 }
+const PAUSAS_POR_RODADA = 20
+
 async function preverEnvio(url) {
   console.warn(`chatflow: pré-visualização — nada foi enviado para ${url}.`)
   return { ok: true }
@@ -54,7 +57,7 @@ export function criarChat({
   // Quanto o chat "digita" antes de cada fala. Proporcional ao texto: fala
   // curta espera pouco, longa espera mais, com teto para não irritar.
   // Zerar qualquer campo desliga a pausa.
-  ritmo = { piso: 350, porCaractere: 10, teto: 1800 },
+  ritmo = {},
   esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 }) {
   if (!elemento) throw new Error("criarChat precisa de um elemento onde montar.")
@@ -100,8 +103,18 @@ export function criarChat({
   // falado até ali.
   let transcricao = []
 
+  // Mesclado com o padrão, não destruturado com zeros: `ritmo: { piso: 500 }`
+  // não pode desligar a pausa em silêncio por omitir os outros campos.
+  const compasso = { ...RITMO_PADRAO, ...(ritmo || {}) }
+
+  // Quantas falas ainda podem pausar nesta rodada. Um fluxo legítimo diz duas
+  // ou três coisas antes de perguntar algo; um fluxo em laço diria quinhentas.
+  // Sem este teto, a guarda de laço levaria minutos repetindo a mesma bolha
+  // antes de avisar que o fluxo travou.
+  let pausasRestantes = 0
+
   function pausaDe(texto) {
-    const { piso = 0, porCaractere = 0, teto = 0 } = ritmo || {}
+    const { piso, porCaractere, teto } = compasso
     return Math.min(teto, piso + String(texto ?? "").length * porCaractere)
   }
 
@@ -118,7 +131,7 @@ export function criarChat({
   }
 
   async function dizerComPausa(medida, item) {
-    const espera = pausaDe(medida)
+    const espera = pausasRestantes-- > 0 ? pausaDe(medida) : 0
     if (espera > 0) {
       const indicador = mostrarDigitando()
       try {
@@ -247,7 +260,16 @@ export function criarChat({
   }
 
   async function seguir() {
-    await seguirInterno()
+    try {
+      await seguirInterno()
+    } catch (falha) {
+      // Sem isto a promessa rejeitada morre no console e o chat congela sem
+      // dizer nada — a pessoa fica olhando uma tela que não responde mais.
+      console.error("chatflow: a conversa parou por um erro.", falha)
+      erro.textContent =
+        "Tivemos um problema ao continuar a conversa. Recarregue a página para tentar de novo."
+      return
+    }
     if (estado.terminou) sessao.limpar()
     // O sessaoId vai junto: sem ele, uma recarga geraria um id novo e os
     // eventos emitidos antes da recarga deixariam de casar com o lead final.
@@ -256,6 +278,7 @@ export function criarChat({
 
   async function seguirInterno() {
     limparComposer()
+    pausasRestantes = PAUSAS_POR_RODADA
 
     let guarda = 0
     while (!estado.terminou && guarda++ < 500) {
@@ -323,7 +346,7 @@ export function criarChat({
         // mais quente — o único que termina em redirecionamento — seria
         // justamente o que nunca chega ao destino.
         const depois = avancar(fluxo, estado)
-        if (depois.terminou) { estado = depois; finalizar() }
+        if (depois.terminou) { estado = depois; await finalizar() }
         return
       }
       if (bloco.tipo === "entrada_botoes") { pedirOpcao(bloco); return }
@@ -338,7 +361,7 @@ export function criarChat({
       return
     }
 
-    finalizar()
+    await finalizar()
   }
 
   return {

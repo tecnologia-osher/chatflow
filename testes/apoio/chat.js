@@ -86,7 +86,7 @@ export async function montarChat({
     }
   }
 
-  chat.reiniciar({ retomar })
+  painel.pronto = chat.reiniciar({ retomar })
   await assentar()
   return painel
 }

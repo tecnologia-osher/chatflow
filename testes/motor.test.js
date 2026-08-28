@@ -453,3 +453,69 @@ test("clicar duas vezes durante a digitacao nao responde duas vezes", async () =
   const ecos = chat.hospedeiro.porClasse("cf__bolha--pessoa").map((b) => b.textContent)
   assert.deepEqual(ecos, ["Ana"], "a resposta foi ecoada duas vezes")
 })
+
+// ---------------------------------------------------------------------------
+// Auditoria: defeitos encontrados na revisão do refactor assíncrono
+// ---------------------------------------------------------------------------
+
+test("ritmo parcial mantem os outros valores padrao", async () => {
+  const relogio = relogioManual()
+  await montarChat({
+    fluxo: fluxoDeDuasFalas,
+    ritmo: { piso: 500 },        // só o piso; o resto deve continuar valendo
+    esperar: relogio.esperar
+  })
+  assert.equal(relogio.duracoes().length, 1,
+    "sem os padrões, um ritmo parcial desliga a pausa em silêncio")
+  assert.equal(relogio.duracoes()[0], 500 + 3 * 10)
+})
+
+test("o fluxo so termina depois do lead ter sido entregue", async () => {
+  let entregar
+  const chat = await montarChat({
+    fluxo: fluxoDeDuasFalas,
+    destinos: destinosDeTeste(),
+    redeResponde: () => new Promise((resolve) => { entregar = () => resolve({ ok: true }) })
+  })
+  let terminou = false
+  chat.pronto.then(() => { terminou = true })
+  await assentar()
+  assert.equal(terminou, false, "deu o fluxo por encerrado antes de o lead sair")
+  entregar()
+  await assentar()
+  assert.equal(terminou, true)
+})
+
+test("erro dentro do laco vira mensagem na tela, nao rejeicao silenciosa", async () => {
+  const chat = await montarChat({
+    fluxo: fluxoDeDuasFalas,
+    ritmo: { piso: 10, porCaractere: 0, teto: 10 },
+    esperar: () => Promise.reject(new Error("relógio quebrou"))
+  })
+  await assentar()
+  assert.match(chat.erro(), /problema/i,
+    "a falha sumiu sem avisar ninguém")
+})
+
+test("laco em fuga para de pausar em vez de arrastar por minutos", async () => {
+  const relogio = { chamadas: 0, esperar() { relogio.chamadas++; return Promise.resolve() } }
+  const chat = await montarChat({
+    fluxo: {
+      versao: 2,
+      eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [
+        { id: "g1", proximo: "g3", blocos: [
+          { id: "t", tipo: "texto", conteudo: { texto: "de novo" } },
+          { id: "c", tipo: "condicao", conteudo: {
+            regras: [{ se: { variavel: "x", vazio: true }, entao: "g2" }] } }] },
+        { id: "g2", blocos: [{ id: "j", tipo: "ir_para", conteudo: { destino: "g1" } }] },
+        { id: "g3", blocos: [] }
+      ]
+    },
+    ritmo: RITMO,
+    esperar: relogio.esperar
+  })
+  assert.match(chat.erro(), /em loop/, "a guarda de laço não disparou")
+  assert.ok(relogio.chamadas <= 25,
+    `pausou ${relogio.chamadas} vezes: um fluxo quebrado ficaria minutos na tela`)
+})

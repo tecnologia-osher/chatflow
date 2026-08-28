@@ -20,7 +20,7 @@ O `.nojekyll` vazio na raiz resolve. Não apague esse arquivo.
 ## Sub-projeto 1: concluído e integrado
 
 O motor e o formato do fluxo. As 12 tarefas do plano, a review final da
-branch e o merge em `main`. **139 testes passando.** A branch `motor-v1`
+branch e o merge em `main`. **152 testes passando.** A branch `motor-v1`
 foi removida; o histórico está preservado no commit de merge `8dc10b9`,
 que isola o sub-projeto inteiro caso algum dia precise ser revertido.
 
@@ -87,3 +87,23 @@ bloco `definir_variavel` e vários destinos em `ao_finalizar`.
   o porquê de cada uma, mais o relatório da review final:
   `.superpowers/sdd/2026-08-27-motor-chatflow/progress.md`
   *(fora do git — não rode `git clean -fdx`)*
+
+## Auditoria de 27/08/2026 — o que foi corrigido
+
+Revisão do refactor assíncrono que o indicador de digitação exigiu. Quatro
+defeitos, três deles introduzidos no mesmo dia. Todos corrigidos, cada um com
+teste, e os testes validados por mutação.
+
+1. **Um `ritmo` parcial desligava a pausa em silêncio.** `{ piso: 500 }` sem
+   os outros campos zerava `porCaractere` e `teto`, e o chat parava de
+   "digitar" sem avisar. Agora o valor é mesclado com o padrão.
+2. **O fluxo se dava por encerrado antes de o lead sair.** `finalizar()` não
+   era aguardado, então a sessão era apagada enquanto o envio ainda estava em
+   curso. Quem fechasse a aba nesse intervalo perdia o lead e a sessão.
+3. **Falha dentro do laço virava promessa rejeitada silenciosa.** O chat
+   congelava sem dizer nada e a pessoa ficava olhando uma tela morta. Agora
+   aparece mensagem em português e o erro vai para o console.
+4. **A guarda de laço passou a levar minutos.** Com pausa por fala, um fluxo
+   em laço repetiria a mesma bolha por ~8 minutos antes de avisar. Agora só as
+   20 primeiras falas de cada rodada pausam; um fluxo legítimo diz duas ou
+   três antes de perguntar algo.

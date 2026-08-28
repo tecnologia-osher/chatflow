@@ -58,6 +58,10 @@ bloco fala, pergunta ou decide. O caminho entre grupos é explícito.
 }
 ```
 
+Antes de cada fala o chat mostra três pontinhos, por um tempo proporcional
+ao tamanho do texto. O compasso é configurável em
+`criarChat({ ritmo: { piso, porCaractere, teto } })`; zerar os três desliga.
+
 `{{nome}}` em qualquer texto é trocado pela resposta. São treze tipos de
 bloco: fala (`texto`, `imagem`), entrada (texto, número, e-mail, telefone,
 data, botões), lógica (`condicao`, `definir_variavel`, `ir_para`) e conexão
@@ -83,7 +87,7 @@ estado e devolve estado novo, nunca modifica o que recebeu.
 
 ## Estado
 
-**Sub-projeto 1 de 4 concluído** — o formato e o motor. 139 testes passando.
+**Sub-projeto 1 de 4 concluído** — o formato e o motor. 152 testes passando.
 
 Os próximos: 2 = editor visual do fluxo, que é a cara do produto;
 3 = contas, banco e multi-cliente simultâneo; 4 = analytics e CRM.
