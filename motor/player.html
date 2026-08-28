@@ -18,6 +18,9 @@
   const parametros = new URLSearchParams(location.search)
   const cliente = parametros.get("cliente")
   const modo = parametros.get("teste") === "1" ? "teste" : "producao"
+  // ?novo=1 ignora a sessão guardada e começa a conversa do zero. Serve para
+  // testar sem ter que fechar todas as janelas anônimas entre uma vez e outra.
+  const comecarDoZero = parametros.get("novo") === "1"
 
   const base = cliente ? `../clientes/${cliente}` : "../exemplos"
   const arquivoFluxo = cliente ? `${base}/fluxo.json` : `${base}/captacao-simples.json`
@@ -46,7 +49,7 @@
       fluxo, tema, destinos, modo,
       chaveSessao: cliente || "exemplo"
     })
-    chat.reiniciar()
+    chat.reiniciar({ retomar: !comecarDoZero })
   }
 </script>
 </body>

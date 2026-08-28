@@ -24,6 +24,7 @@ python3 -m http.server 8080
 | Fluxo de exemplo | `localhost:8080/motor/player.html` |
 | Um cliente | `localhost:8080/motor/player.html?cliente=osher` |
 | Pré-visualizar sem enviar nada | acrescente `&teste=1` |
+| Começar do zero, ignorando a sessão | acrescente `&novo=1` |
 
 Testes: `npm test` — usa o runner nativo do Node, nada a instalar.
 
