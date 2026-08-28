@@ -1,5 +1,10 @@
 {
   "versao": 2,
+  "ritmo": {
+    "piso": 1000,
+    "porCaractere": 0,
+    "teto": 1000
+  },
   "eventos": [
     {
       "tipo": "inicio",

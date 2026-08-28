@@ -47,6 +47,9 @@
     const chat = criarChat({
       elemento: document.getElementById("chat"),
       fluxo, tema, destinos, modo,
+      // O compasso da digitação é do cliente, não do motor: cada fluxo
+      // pode declarar o seu. Sem isso, vale o padrão proporcional.
+      ritmo: fluxo.ritmo,
       chaveSessao: cliente || "exemplo"
     })
     chat.reiniciar({ retomar: !comecarDoZero })

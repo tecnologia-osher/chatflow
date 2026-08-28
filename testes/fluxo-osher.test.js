@@ -130,3 +130,8 @@ test("percorrer o fluxo inteiro chega ao fim e classifica como quente", () => {
   assert.equal(estado.respostas.objetivo, "Investir em imóveis")
 })
 
+
+test("o fluxo declara o proprio ritmo de digitacao", () => {
+  assert.deepEqual(fluxo.ritmo, { piso: 1000, porCaractere: 0, teto: 1000 },
+    "a Osher quer um segundo fixo antes de cada fala")
+})
