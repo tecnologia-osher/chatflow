@@ -4,154 +4,97 @@
     { "tipo": "inicio", "posicao": { "x": 40, "y": 40 }, "proximo": "g_abertura" },
     { "tipo": "invalido", "posicao": { "x": 40, "y": 220 }, "apos_tentativas": 2, "proximo": "g_sem_dado" }
   ],
-  "pontuacao": { "ativa": true, "faixas": { "quente": 9, "morno": 5 } },
+  "pontuacao": { "ativa": true, "faixas": { "quente": 4, "morno": 2 } },
   "grupos": [
     {
       "id": "g_abertura",
       "titulo": "Abertura",
       "posicao": { "x": 320, "y": 40 },
       "blocos": [
-        { "id": "b_ola", "tipo": "texto", "conteudo": { "texto": "Olá. Vou fazer algumas perguntas rápidas para entender o que faz sentido para você." } },
+        { "id": "b_ola", "tipo": "texto", "conteudo": { "texto": "Bem-vindo à Osher Capital. Queremos te conhecer melhor: qual o seu nome?" } },
         { "id": "b_nome", "tipo": "entrada_texto", "conteudo": { "placeholder": "Seu nome", "rotulo_botao": "Enviar" }, "salvar_em": "nome" }
       ],
-      "proximo": "g_whatsapp"
+      "proximo": "g_contato"
     },
     {
-      "id": "g_whatsapp",
-      "titulo": "WhatsApp",
+      "id": "g_contato",
+      "titulo": "Contato",
       "posicao": { "x": 320, "y": 220 },
       "blocos": [
-        { "id": "b_zap_txt", "tipo": "texto", "conteudo": { "texto": "Obrigado, {{nome}}. Qual o melhor WhatsApp para falar com você?" } },
+        { "id": "b_prazer", "tipo": "texto", "conteudo": { "texto": "Prazer em te conhecer, {{nome}}." } },
+        { "id": "b_zap_txt", "tipo": "texto", "conteudo": { "texto": "Qual seu telefone com WhatsApp?" } },
         { "id": "b_zap", "tipo": "entrada_telefone", "conteudo": { "placeholder": "(61) 90000-0000", "rotulo_botao": "Enviar" }, "salvar_em": "whatsapp" }
       ],
-      "proximo": "g_bem"
+      "proximo": "g_idade"
     },
     {
-      "id": "g_bem",
-      "titulo": "O que quer conquistar",
-      "posicao": { "x": 320, "y": 400 },
+      "id": "g_idade",
+      "titulo": "Idade",
+      "posicao": { "x": 320, "y": 420 },
       "blocos": [
-        { "id": "b_bem_txt", "tipo": "texto", "conteudo": { "texto": "O que você quer conquistar?" } },
+        { "id": "b_idade_txt", "tipo": "texto", "conteudo": { "texto": "Qual sua idade?" } },
         {
-          "id": "b_bem", "tipo": "entrada_botoes", "salvar_em": "bem",
+          "id": "b_idade", "tipo": "entrada_botoes", "salvar_em": "idade",
           "conteudo": { "opcoes": [
-            { "id": "o_imovel", "label": "Um imóvel", "pontos": 2, "proximo": "g_valor" },
-            { "id": "o_auto", "label": "Um automóvel", "pontos": 2, "proximo": "g_valor" },
-            { "id": "o_nsei", "label": "Ainda não sei", "pontos": 0, "proximo": "g_ajuda_definir" }
+            { "id": "i1", "label": "25-34" },
+            { "id": "i2", "label": "35-44" },
+            { "id": "i3", "label": "45-54" },
+            { "id": "i4", "label": "55+" }
           ] }
         }
       ],
-      "proximo": "g_valor"
+      "proximo": "g_objetivo"
     },
     {
-      "id": "g_ajuda_definir",
-      "titulo": "Ajuda a definir",
-      "posicao": { "x": 40, "y": 400 },
+      "id": "g_objetivo",
+      "titulo": "Objetivo",
+      "posicao": { "x": 320, "y": 620 },
       "blocos": [
-        { "id": "b_aj", "tipo": "texto", "conteudo": { "texto": "Sem problema. Essa é justamente a conversa em que a gente mais ajuda: entender o objetivo antes de falar de plano." } }
+        { "id": "b_obj_txt", "tipo": "texto", "conteudo": { "texto": "Qual seu objetivo com consórcio?" } },
+        {
+          "id": "b_objetivo", "tipo": "entrada_botoes", "salvar_em": "objetivo",
+          "conteudo": { "opcoes": [
+            { "id": "o1", "label": "Morar", "pontos": 1 },
+            { "id": "o2", "label": "Investir em imóveis", "pontos": 2 }
+          ] }
+        }
       ],
       "proximo": "g_valor"
     },
     {
       "id": "g_valor",
-      "titulo": "Valor do bem",
-      "posicao": { "x": 320, "y": 600 },
+      "titulo": "Valor do crédito",
+      "posicao": { "x": 320, "y": 820 },
       "blocos": [
-        { "id": "b_val_txt", "tipo": "texto", "conteudo": { "texto": "Qual o valor aproximado do bem que você tem em mente?" } },
+        { "id": "b_val_txt", "tipo": "texto", "conteudo": { "texto": "Qual o valor do crédito do imóvel?" } },
         {
           "id": "b_valor", "tipo": "entrada_botoes", "salvar_em": "valor",
           "conteudo": { "opcoes": [
-            { "id": "v1", "label": "Até R$ 100 mil", "pontos": 1 },
-            { "id": "v2", "label": "De R$ 100 a 300 mil", "pontos": 2 },
-            { "id": "v3", "label": "De R$ 300 a 600 mil", "pontos": 3 },
-            { "id": "v4", "label": "Acima de R$ 600 mil", "pontos": 4 },
-            { "id": "v5", "label": "Ainda não sei", "pontos": 0 }
+            { "id": "v1", "label": "Até R$ 500.000", "pontos": 1 },
+            { "id": "v2", "label": "De R$ 500.000 a R$ 1.000.000", "pontos": 2 },
+            { "id": "v3", "label": "Acima de R$ 1.000.000", "pontos": 3 }
           ] }
         }
       ],
-      "proximo": "g_prazo"
+      "proximo": "g_fim"
     },
     {
-      "id": "g_prazo",
-      "titulo": "Prazo",
-      "posicao": { "x": 320, "y": 800 },
+      "id": "g_fim",
+      "titulo": "Fim",
+      "posicao": { "x": 320, "y": 1020 },
       "blocos": [
-        { "id": "b_pz_txt", "tipo": "texto", "conteudo": { "texto": "Quando você pretende começar?" } },
-        {
-          "id": "b_prazo", "tipo": "entrada_botoes", "salvar_em": "prazo",
-          "conteudo": { "opcoes": [
-            { "id": "p1", "label": "Agora", "pontos": 3 },
-            { "id": "p2", "label": "Nas próximas semanas", "pontos": 2 },
-            { "id": "p3", "label": "Nos próximos meses", "pontos": 1 },
-            { "id": "p4", "label": "Só pesquisando por enquanto", "pontos": 0 }
-          ] }
-        },
-        {
-          "id": "b_triagem", "tipo": "condicao",
-          "conteudo": { "regras": [
-            { "se": { "variavel": "prazo", "igual": "Só pesquisando por enquanto" }, "entao": "g_fim_frio" }
-          ] }
-        }
-      ],
-      "proximo": "g_decisor"
-    },
-    {
-      "id": "g_decisor",
-      "titulo": "Decisor",
-      "posicao": { "x": 320, "y": 1000 },
-      "blocos": [
-        { "id": "b_dec_txt", "tipo": "texto", "conteudo": { "texto": "Quem decide sobre essa contratação?" } },
-        {
-          "id": "b_decisor", "tipo": "entrada_botoes", "salvar_em": "decisor",
-          "conteudo": { "opcoes": [
-            { "id": "d1", "label": "Eu decido", "pontos": 3 },
-            { "id": "d2", "label": "Decido junto com outra pessoa", "pontos": 2 },
-            { "id": "d3", "label": "Preciso consultar alguém", "pontos": 0 }
-          ] }
-        },
-        {
-          "id": "b_classificar", "tipo": "condicao",
-          "conteudo": { "regras": [
-            { "se": { "pontuacao": { "maior_que": 8 } }, "entao": "g_fim_quente" },
-            { "se": { "pontuacao": { "maior_que": 4 } }, "entao": "g_fim_morno" }
-          ] }
-        }
-      ],
-      "proximo": "g_fim_frio"
-    },
-    {
-      "id": "g_fim_quente",
-      "titulo": "Fim quente",
-      "posicao": { "x": 40, "y": 1200 },
-      "blocos": [
-        { "id": "b_fq", "tipo": "texto", "conteudo": { "texto": "Perfeito, {{nome}}. Um consultor vai falar com você para montar o plano a partir do que você contou." } },
-        { "id": "b_fq_link", "tipo": "redirecionar", "conteudo": { "url": "https://wa.me/5561999699829?text=Ol%C3%A1%2C%20sou%20{{nome}}%20e%20vim%20pelo%20chat.", "rotulo_botao": "Continuar no WhatsApp", "nova_aba": true } }
-      ]
-    },
-    {
-      "id": "g_fim_morno",
-      "titulo": "Fim morno",
-      "posicao": { "x": 320, "y": 1200 },
-      "blocos": [
-        { "id": "b_fm", "tipo": "texto", "conteudo": { "texto": "Obrigado pelas respostas, {{nome}}. Vamos analisar o seu caso com calma e retornar pelo WhatsApp que você deixou." } }
-      ]
-    },
-    {
-      "id": "g_fim_frio",
-      "titulo": "Fim frio",
-      "posicao": { "x": 640, "y": 1200 },
-      "blocos": [
-        { "id": "b_ff", "tipo": "texto", "conteudo": { "texto": "Obrigado por responder, {{nome}}. Guardamos o seu contato para quando fizer sentido para você." } }
+        { "id": "b_fim", "tipo": "texto", "conteudo": { "texto": "Perfeito, {{nome}}. Vamos continuar pelo WhatsApp para montar o plano a partir do que você contou." } },
+        { "id": "b_fim_link", "tipo": "redirecionar", "conteudo": { "url": "https://wa.me/5561999699829?text=Ol%C3%A1%2C%20quero%20saber%20mais%20sobre%20o%20cons%C3%B3rcio.", "rotulo_botao": "Continuar no WhatsApp", "nova_aba": true } }
       ]
     },
     {
       "id": "g_sem_dado",
       "titulo": "Seguir sem o dado",
-      "posicao": { "x": 40, "y": 220 },
+      "posicao": { "x": 40, "y": 420 },
       "blocos": [
         { "id": "b_sd", "tipo": "texto", "conteudo": { "texto": "Sem problema, vamos seguir sem esse dado por enquanto." } }
       ],
-      "proximo": "g_bem"
+      "proximo": "g_idade"
     }
   ]
 }
