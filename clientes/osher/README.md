@@ -3,8 +3,17 @@
 Primeiro cliente do chatflow. Consórcio, Brasília.
 
 - `fluxo.json` — as perguntas e os caminhos
-- `tema.json` — azul #0C2340, dourado #BF9C5A, Georgia
+- `tema.json` — fala do chat em azul #0C2340, resposta em dourado #BF9C5A, Open Sans
+- `logo.svg` — o retrato redondo que aparece ao lado de cada fala do chat
 - `destinos.json` — para onde vai o lead
+
+A fonte vem do Google Fonts, pedida pelo `fonte_url` do tema. É o único
+recurso de fora que este cliente carrega — se a rede não responder, o chat
+cai na fonte do sistema e continua funcionando.
+
+`logo.svg` é o wordmark desenhado em SVG, dentro de um círculo azul. Para
+trocar pelo arquivo oficial, ponha o PNG na pasta e mude `avatar` no
+`tema.json`; nada além dessa linha precisa mudar.
 
 Rodar: `motor/player.html?cliente=osher`
 Rodar sem enviar nada: `motor/player.html?cliente=osher&teste=1`

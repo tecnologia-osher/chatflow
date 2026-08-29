@@ -1,6 +1,6 @@
 // Monta um chat de verdade num hospedeiro de mentira e devolve as alavancas
-// que um teste precisa: o que está escrito na tela, o que está no composer,
-// o que foi para a rede, e como responder.
+// que um teste precisa: o que está escrito na tela, o que dá para acionar
+// agora, o que foi para a rede, e como responder.
 
 import {
   instalarNavegador, Elemento, criarArmazenamento, assentar,
@@ -43,6 +43,10 @@ export async function montarChat({
   })
 
   const composer = () => hospedeiro.porClasse("cf__composer")[0]
+  // Botões de opção e o link de saída moram na conversa, do lado de quem
+  // responde; campo de texto e o botão de enviar continuam no rodapé. Um
+  // teste não deveria ter que saber de qual dos dois cada coisa veio.
+  const opcoes = () => hospedeiro.porClasse("cf__opcoes")[0]
 
   const painel = {
     hospedeiro,
@@ -58,8 +62,8 @@ export async function montarChat({
     erro: () => hospedeiro.porClasse("cf__erro")[0]?.textContent ?? "",
     aviso: () => hospedeiro.porClasse("cf__aviso")[0]?.textContent ?? "",
     campo: () => hospedeiro.porClasse("cf__campo")[0] ?? null,
-    controles: () => composer().filhos,
-    rotulos: () => composer().filhos.map((c) => c.textContent),
+    controles: () => [...(composer()?.filhos ?? []), ...(opcoes()?.filhos ?? [])],
+    rotulos: () => painel.controles().map((c) => c.textContent),
 
     // O que foi para a rede
     enviados: () => enviados.map((e) => ({ ...e })),
@@ -75,7 +79,7 @@ export async function montarChat({
       await assentar()
     },
     async escolher(rotulo) {
-      const botao = composer().filhos.find((c) => c.textContent === rotulo)
+      const botao = painel.controles().find((c) => c.textContent === rotulo)
       if (!botao) {
         throw new Error(
           `Não há opção "${rotulo}" na tela. Tem: ${JSON.stringify(painel.rotulos())}`

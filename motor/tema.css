@@ -1,9 +1,14 @@
 .cf {
-  --cf-fundo: #101418;
-  --cf-superficie: #1b2128;
-  --cf-acento: #7a8b99;
-  --cf-texto: #eef1f5;
-  --cf-erro: #e68a7c;
+  --cf-fundo: #f5f5f6;
+  --cf-superficie: #ffffff;
+  --cf-acento: #0c2340;
+  --cf-destaque: #bf9c5a;
+  --cf-texto: #12181f;
+  --cf-sobre-acento: #ffffff;
+  --cf-sobre-destaque: #ffffff;
+  --cf-aviso: #d97757;
+  --cf-borda: #d9dde3;
+  --cf-erro: #a6402f;
 
   display: flex;
   flex-direction: column;
@@ -13,70 +18,156 @@
   color: var(--cf-texto);
   font-family: system-ui, sans-serif;
   font-size: 1rem;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .cf__thread {
   flex: 1;
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.85rem;
+}
+
+/* Uma linha da conversa: avatar à esquerda e a bolha ao lado. É a linha que
+   escolhe o lado, não a bolha — assim a bolha continua encolhendo até o
+   tamanho do próprio texto em vez de esticar até a margem. */
+.cf__linha {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  align-self: flex-start;
+  max-width: 88%;
+}
+.cf__linha--pessoa { align-self: flex-end; }
+
+.cf__avatar {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--cf-acento);
 }
 
 .cf__bolha {
-  max-width: 80%;
-  padding: 0.7rem 0.95rem;
-  border-radius: 10px;
-  background: var(--cf-superficie);
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--cf-acento);
+  background: var(--cf-acento);
+  color: var(--cf-sobre-acento);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .cf__bolha--pessoa {
-  align-self: flex-end;
-  background: var(--cf-acento);
-  color: var(--cf-fundo);
+  border-color: var(--cf-acento);
+  background: var(--cf-destaque);
+  color: var(--cf-sobre-destaque);
 }
 .cf__bolha img { max-width: 100%; height: auto; border-radius: 6px; display: block; }
+
+/* As opções vivem na conversa, do lado de quem responde, e não numa barra
+   fixa no rodapé: a pessoa lê a pergunta e a resposta está logo abaixo dela.
+   Ficam lado a lado e só quebram quando a linha enche — quatro faixas de
+   idade viram duas fileiras curtas em vez de uma lista de quatro andares.
+   O teto de largura é o que faz a quebra acontecer antes de a linha esticar
+   pela tela inteira num monitor grande. */
+.cf__opcoes {
+  max-width: min(100%, 22rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
 
 .cf__composer {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--cf-borda);
 }
 .cf__campo {
-  flex: 1;
-  min-width: 12rem;
-  padding: 0.7rem 0.85rem;
+  flex: 0 1 26rem;
+  min-width: 10rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: var(--cf-fundo);
+  border: 1px solid var(--cf-borda);
+  background: var(--cf-superficie);
   color: var(--cf-texto);
   font: inherit;
 }
+.cf__campo::placeholder { color: var(--cf-texto); opacity: 0.45; }
+
 .cf__botao {
-  padding: 0.7rem 1.15rem;
+  padding: 0.75rem 1.15rem;
   border-radius: 8px;
   border: 1px solid var(--cf-acento);
   background: var(--cf-acento);
-  color: var(--cf-fundo);
+  color: var(--cf-sobre-acento);
   font: inherit;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
 }
-.cf__botao--opcao { background: transparent; color: var(--cf-texto); }
-.cf__botao:hover { filter: brightness(1.1); }
+.cf__botao:hover { filter: brightness(1.15); }
 .cf__campo:focus-visible, .cf__botao:focus-visible {
-  outline: 2px solid var(--cf-acento);
+  outline: 2px solid var(--cf-destaque);
   outline-offset: 2px;
+}
+
+/* Um botão de opção é a resposta da pessoa antes de ela clicar: tem a mesma
+   cara da bolha dela. */
+.cf__botao--opcao {
+  position: relative;
+  max-width: 100%;
+  border-color: var(--cf-acento);
+  background: var(--cf-destaque);
+  color: var(--cf-sobre-destaque);
+  /* Caixa larga por dois motivos: é o alvo de um dedo no celular, e é o que
+     faz quatro faixas de idade quebrarem em 3 + 1 em vez de virarem uma
+     fileira só apertada. */
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  font-weight: 400;
+  /* Rótulo longo ("De R$ 500.000 a R$ 1.000.000") tem que quebrar dentro do
+     botão. Sem isto ele empurra a conversa para fora da tela no celular. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+/* A bolinha de aviso: um selo na quina de cima da própria caixa, dizendo que
+   a vez é de quem está lendo. Pseudo-elemento de propósito — se fosse um nó
+   de verdade, entraria no texto do botão e no que os leitores de tela
+   anunciam. */
+.cf__botao--opcao::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--cf-aviso);
+  /* O deslocamento é o que põe o selo a cavalo na quina. Vai junto no
+     keyframe: uma segunda regra de transform apagaria esta. */
+  transform: translate(50%, -50%);
+  animation: cf-aviso 1.8s ease-in-out infinite;
+}
+
+@keyframes cf-aviso {
+  0%, 100% { opacity: 1; transform: translate(50%, -50%) scale(1); }
+  50% { opacity: 0.5; transform: translate(50%, -50%) scale(0.8); }
 }
 
 .cf__erro { color: var(--cf-erro); padding: 0 1.25rem 0.5rem; font-size: 0.9rem; }
 .cf__aviso {
   background: var(--cf-erro);
-  color: var(--cf-fundo);
+  color: var(--cf-superficie);
   padding: 0.65rem 1.25rem;
   font-size: 0.88rem;
 }
@@ -109,4 +200,5 @@
    continua: o que some é a animação, não a espera. */
 @media (prefers-reduced-motion: reduce) {
   .cf__ponto { animation: none; opacity: 0.5; }
+  .cf__botao--opcao::before { animation: none; }
 }

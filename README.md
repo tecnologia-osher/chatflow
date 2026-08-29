@@ -72,6 +72,45 @@ data, botões), lógica (`condicao`, `definir_variavel`, `ir_para`) e conexão
 em `motor/blocos/` que declara o que é e quais campos tem; o catálogo é lido
 em tempo de execução.
 
+## Tema
+
+O `tema.json` de um cliente pinta o chat sem tocar no motor. Cada cor vira uma
+variável CSS (`--cf-fundo`, `--cf-acento`, …) que a folha `motor/tema.css` já
+consome, então acrescentar uma cor nova é acrescentar uma chave.
+
+```json
+{
+  "marca": "Osher",
+  "cores": {
+    "fundo": "#F5F5F6",
+    "superficie": "#FFFFFF",
+    "acento": "#0C2340",
+    "destaque": "#BF9C5A",
+    "texto": "#12181F",
+    "sobre-acento": "#FFFFFF",
+    "sobre-destaque": "#0C2340",
+    "borda": "#D9DDE3",
+    "erro": "#A6402F"
+  },
+  "fonte": "'Open Sans', system-ui, sans-serif",
+  "fonte_url": "https://fonts.googleapis.com/css2?family=Open+Sans&display=swap",
+  "avatar": "logo.svg"
+}
+```
+
+| Campo | O que faz |
+|---|---|
+| `cores.acento` | Cor da marca: as falas do chat e o botão de enviar |
+| `cores.destaque` | As respostas de quem conversa e os botões de opção |
+| `cores.superficie` | Fundo do campo de texto |
+| `cores.sobre-acento` | Cor do texto por cima de `acento` |
+| `cores.sobre-destaque` | Cor do texto por cima de `destaque`, e do selo de aviso |
+| `fonte_url` | Folha de estilo de fonte externa, pedida só se o tema declarar |
+| `avatar` | Retrato redondo ao lado de cada fala do chat, relativo à pasta do cliente |
+
+Sem `avatar` o chat simplesmente não desenha retrato nenhum; sem `fonte_url`
+vale a fonte do sistema. O motor continua sem saber que a Osher existe.
+
 ## Estrutura
 
 | Pasta | O que é |
@@ -88,7 +127,7 @@ estado e devolve estado novo, nunca modifica o que recebeu.
 
 ## Estado
 
-**Sub-projeto 1 de 4 concluído** — o formato e o motor. 161 testes passando.
+**Sub-projeto 1 de 4 concluído** — o formato e o motor. 168 testes passando.
 
 Os próximos: 2 = editor visual do fluxo, que é a cara do produto;
 3 = contas, banco e multi-cliente simultâneo; 4 = analytics e CRM.

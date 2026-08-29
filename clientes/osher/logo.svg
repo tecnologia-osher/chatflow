@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Osher Capital">
+  <title>Osher Capital</title>
+  <circle cx="64" cy="64" r="64" fill="#0C2340"/>
+  <text x="64" y="66" text-anchor="middle"
+        font-family="'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif"
+        font-size="34" font-weight="300" letter-spacing="-0.5" fill="#FFFFFF">osher</text>
+  <text x="64" y="88" text-anchor="middle"
+        font-family="'Open Sans','Helvetica Neue',Helvetica,Arial,sans-serif"
+        font-size="13" font-weight="400" letter-spacing="3.2" fill="#BF9C5A">CAPITAL</text>
+</svg>
