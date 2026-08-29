@@ -7,6 +7,9 @@
   --cf-sobre-acento: #ffffff;
   --cf-sobre-destaque: #ffffff;
   --cf-aviso: #d97757;
+
+  /* Largura da coluna da conversa. Um cliente pode alargá-la pelo tema. */
+  --cf-coluna: 48rem;
   --cf-borda: #d9dde3;
   --cf-erro: #a6402f;
 
@@ -19,6 +22,20 @@
   font-family: system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
+}
+
+/* A conversa mora numa coluna centrada, não de ponta a ponta da tela: num
+   monitor largo, uma pergunta na margem esquerda e a resposta na direita
+   ficam longe demais uma da outra para serem lidas como um diálogo. Em tela
+   estreita a coluna simplesmente ocupa tudo o que existe. */
+/* Sem isto, o `width: 100%` abaixo soma o padding por fora e a conversa fica
+   40px mais larga que a tela — barra de rolagem horizontal no celular. */
+.cf, .cf *, .cf *::before, .cf *::after { box-sizing: border-box; }
+
+.cf__thread, .cf__composer, .cf__erro {
+  width: 100%;
+  max-width: var(--cf-coluna);
+  margin-inline: auto;
 }
 
 .cf__thread {
@@ -63,6 +80,7 @@
   overflow-wrap: anywhere;
 }
 .cf__bolha--pessoa {
+  font-weight: 600;
   border-color: var(--cf-acento);
   background: var(--cf-destaque);
   color: var(--cf-sobre-destaque);
@@ -83,6 +101,16 @@
   gap: 0.5rem;
 }
 
+/* No celular a conversa se comporta como um aplicativo de mensagens: as falas
+   ficam ancoradas no rodapé e sobem conforme a conversa cresce, em vez de
+   começarem no alto com um vazio embaixo. É margin-top no primeiro filho e
+   não justify-content: flex-end — com overflow, o flex-end deixa o começo da
+   conversa inalcançável pela rolagem quando ela passa da altura da tela.
+   O limite é o mesmo de --cf-coluna; media query não lê variável. */
+@media (max-width: 48rem) {
+  .cf__thread > :first-child { margin-top: auto; }
+}
+
 .cf__composer {
   display: flex;
   flex-wrap: wrap;
@@ -92,8 +120,11 @@
   border-top: 1px solid var(--cf-borda);
 }
 .cf__campo {
-  flex: 0 1 26rem;
-  min-width: 10rem;
+  /* Cresce até o teto e encolhe até caber. Com uma base larga e sem crescer,
+     numa tela estreita ele não encolhia: pulava para a linha de cima e
+     deixava o "Enviar" sozinho embaixo. */
+  flex: 1 1 8rem;
+  max-width: 26rem;
   padding: 0.75rem 0.9rem;
   border-radius: 8px;
   border: 1px solid var(--cf-borda);
@@ -122,6 +153,10 @@
 
 /* Um botão de opção é a resposta da pessoa antes de ela clicar: tem a mesma
    cara da bolha dela. */
+/* O botão de enviar não é o que cede espaço numa tela estreita — quem
+   encolhe é o campo ao lado dele. */
+.cf__composer .cf__botao { flex: 0 0 auto; }
+
 .cf__botao--opcao {
   position: relative;
   max-width: 100%;
@@ -133,7 +168,7 @@
      fileira só apertada. */
   padding-left: 1.5rem;
   padding-right: 1.5rem;
-  font-weight: 400;
+  font-weight: 600;
   /* Rótulo longo ("De R$ 500.000 a R$ 1.000.000") tem que quebrar dentro do
      botão. Sem isto ele empurra a conversa para fora da tela no celular. */
   white-space: normal;
