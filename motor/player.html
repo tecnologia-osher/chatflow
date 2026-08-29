@@ -41,6 +41,13 @@
     carregar(`${base}/destinos.json`, {})
   ])
 
+  // O tema fala em caminhos relativos à pasta do próprio cliente
+  // ("avatar": "logo.svg"). Quem sabe onde essa pasta está é este carregador,
+  // não o motor — ele recebe o caminho já pronto para usar.
+  if (tema.avatar && !/^(https?:)?\/\/|^data:/.test(tema.avatar)) {
+    tema.avatar = `${base}/${tema.avatar}`
+  }
+
   if (!fluxo) {
     document.getElementById("chat").textContent = `Não consegui carregar ${arquivoFluxo}.`
   } else {

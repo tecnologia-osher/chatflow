@@ -519,3 +519,97 @@ test("laco em fuga para de pausar em vez de arrastar por minutos", async () => {
   assert.ok(relogio.chamadas <= 25,
     `pausou ${relogio.chamadas} vezes: um fluxo quebrado ficaria minutos na tela`)
 })
+
+// ---------------------------------------------------------------------------
+// Como a conversa é montada na tela: retrato, lado e onde ficam os botões
+// ---------------------------------------------------------------------------
+
+const fluxoComOpcoes = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g_1" }],
+  grupos: [{
+    id: "g_1",
+    blocos: [
+      { id: "b_txt", tipo: "texto", conteudo: { texto: "Qual o seu nome?" } },
+      { id: "b_op", tipo: "entrada_botoes", salvar_em: "quem", conteudo: {
+        opcoes: [{ id: "a", label: "Ana" }, { id: "b", label: "Bia" }] } }
+    ]
+  }]
+}
+
+const temaComAvatar = { marca: "Osher", avatar: "logo.svg" }
+
+const linhas = (chat) => chat.hospedeiro.porClasse("cf__linha")
+const avatares = (chat) => chat.hospedeiro.porClasse("cf__avatar")
+
+test("cada fala do chat leva o retrato de quem fala", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDuasFalas, tema: temaComAvatar })
+  assert.equal(chat.bolhas().length, 2)
+  assert.equal(avatares(chat).length, 2, "faltou retrato em alguma fala")
+  assert.equal(avatares(chat)[0].src, "logo.svg")
+  assert.equal(avatares(chat)[0].alt, "Logo Osher")
+})
+
+test("a resposta da pessoa vai para o outro lado e sem retrato", async () => {
+  const chat = await montarChat({ fluxo: fluxoComOpcoes, tema: temaComAvatar })
+  await chat.escolher("Ana")
+  const daPessoa = linhas(chat).filter((l) => l.className.includes("cf__linha--pessoa"))
+  assert.equal(daPessoa.length, 1, "o eco da pessoa não ficou do lado dela")
+  assert.equal(daPessoa[0].porClasse("cf__avatar").length, 0,
+    "o retrato do chat apareceu na fala da pessoa")
+  assert.equal(avatares(chat).length, 1, "a pergunta perdeu o retrato")
+})
+
+test("tema sem avatar nao desenha retrato nenhum", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDuasFalas, tema: { marca: "Osher" } })
+  assert.equal(avatares(chat).length, 0)
+  assert.equal(chat.bolhas().length, 2, "a conversa parou de aparecer")
+})
+
+test("os botoes de opcao ficam na conversa, do lado de quem responde", async () => {
+  const chat = await montarChat({ fluxo: fluxoComOpcoes, tema: temaComAvatar })
+  const rodape = chat.hospedeiro.porClasse("cf__composer")[0]
+  assert.deepEqual(rodape.filhos, [], "os botões voltaram para o rodapé")
+
+  const caixa = chat.hospedeiro.porClasse("cf__opcoes")[0]
+  assert.ok(caixa, "as opções não foram parar na conversa")
+  assert.deepEqual(caixa.filhos.map((b) => b.textContent), ["Ana", "Bia"])
+  assert.ok(caixa.pai.className.includes("cf__linha--pessoa"),
+    "as opções não ficaram do lado de quem responde")
+  assert.ok(caixa.filhos.every((b) => b.className.includes("cf__botao--opcao")),
+    "sem a classe da opção o botão perde a bolinha de aviso")
+})
+
+test("responder tira os botoes da conversa antes do eco", async () => {
+  const chat = await montarChat({ fluxo: fluxoComOpcoes, tema: temaComAvatar })
+  await chat.escolher("Ana")
+  assert.equal(chat.hospedeiro.porClasse("cf__opcoes").length, 0,
+    "os botões ficaram na tela depois de respondidos")
+  assert.deepEqual(chat.bolhas(), ["Qual o seu nome?", "Ana"],
+    "o eco não entrou no lugar dos botões")
+})
+
+test("retomar a sessao nao redesenha botoes ja respondidos", async () => {
+  const armazenamento = criarArmazenamento()
+  const fluxo = structuredClone(fluxoComOpcoes)
+  fluxo.grupos[0].blocos.push({ id: "b_op2", tipo: "entrada_botoes", salvar_em: "outro",
+    conteudo: { opcoes: [{ id: "c", label: "Sim" }] } })
+
+  const primeira = await montarChat({ fluxo, tema: temaComAvatar, armazenamento })
+  await primeira.escolher("Ana")
+
+  const segunda = await montarChat({ fluxo, tema: temaComAvatar, armazenamento })
+  assert.deepEqual(segunda.bolhas(), primeira.bolhas(), "a conversa não voltou inteira")
+  assert.deepEqual(segunda.rotulos(), ["Sim"],
+    "voltaram botões mortos junto com a conversa retomada")
+})
+
+test("o link de saida tambem fica na conversa, do lado da pessoa", async () => {
+  const chat = await montarChat({ fluxo: fluxoQueDespede, destinos: destinosDeTeste() })
+  const caixa = chat.hospedeiro.porClasse("cf__opcoes")[0]
+  assert.ok(caixa, "o link de saída não foi para a conversa")
+  assert.equal(caixa.filhos[0].tagName, "A")
+  assert.ok(caixa.filhos[0].className.includes("cf__botao--opcao"),
+    "sem a classe da opção o link de saída perde a bolinha de aviso")
+  assert.ok(caixa.pai.className.includes("cf__linha--pessoa"))
+})

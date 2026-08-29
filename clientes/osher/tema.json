@@ -1,10 +1,18 @@
 {
   "marca": "Osher",
   "cores": {
-    "fundo": "#0C2340",
-    "superficie": "#1F3140",
-    "acento": "#BF9C5A",
-    "texto": "#EEF1F5"
+    "fundo": "#F5F5F6",
+    "superficie": "#FFFFFF",
+    "acento": "#0C2340",
+    "destaque": "#BF9C5A",
+    "texto": "#12181F",
+    "sobre-acento": "#FFFFFF",
+    "sobre-destaque": "#FFFFFF",
+    "aviso": "#D97757",
+    "borda": "#D9DDE3",
+    "erro": "#A6402F"
   },
-  "fonte": "Georgia, 'Times New Roman', serif"
+  "fonte": "'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  "fonte_url": "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap",
+  "avatar": "logo.svg"
 }

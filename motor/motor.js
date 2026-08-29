@@ -31,6 +31,24 @@ function atributosDoCampo(tipo) {
   }
 }
 
+// Fontes já pedidas nesta página. Sem o registro, dois chats na mesma tela
+// (ou um reiniciar) empilhariam <link> repetidos no <head>.
+const fontesPedidas = new Set()
+
+// A fonte é do cliente, não do motor: quem quiser uma fonte de fora declara a
+// URL da folha no seu tema.json. Fora do navegador (a suíte roda num DOM de
+// mentira, sem <head>) isto simplesmente não faz nada.
+function pedirFonte(url) {
+  if (!url || fontesPedidas.has(url)) return
+  const cabeca = globalThis.document?.head
+  if (!cabeca) return
+  fontesPedidas.add(url)
+  const link = document.createElement("link")
+  link.rel = "stylesheet"
+  link.href = url
+  cabeca.append(link)
+}
+
 const RITMO_PADRAO = { piso: 350, porCaractere: 10, teto: 1800 }
 const PAUSAS_POR_RODADA = 20
 
@@ -73,6 +91,12 @@ export function criarChat({
     raiz.style.setProperty(`--cf-${nome}`, valor)
   }
   if (tema.fonte) raiz.style.fontFamily = tema.fonte
+  pedirFonte(tema.fonte_url)
+
+  // Retrato de quem fala do outro lado. O caminho já vem resolvido por quem
+  // carregou o tema — o motor não sabe em que pasta o cliente mora.
+  const avatar = tema.avatar || ""
+  const nomeDeQuemFala = tema.marca ? `Logo ${tema.marca}` : ""
 
   const relatorio = validarFluxo(fluxo, { destinos: destinos.destinos || {} })
   if (!relatorio.valido) {
@@ -125,9 +149,11 @@ export function criarChat({
     const bolha = elementoCom("div", "cf__bolha cf__digitando")
     bolha.setAttribute("aria-label", "digitando")
     for (let i = 0; i < 3; i++) bolha.append(elementoCom("span", "cf__ponto"))
-    thread.append(bolha)
+    const linha = linhaDe("bot")
+    linha.append(bolha)
+    thread.append(linha)
     thread.scrollTop = thread.scrollHeight
-    return bolha
+    return linha
   }
 
   async function dizerComPausa(medida, item) {
@@ -143,18 +169,36 @@ export function criarChat({
     dizer(item)
   }
 
+  // Uma fala é uma linha: quem é do chat leva o retrato à esquerda, quem é da
+  // pessoa vai para a direita. O lado mora na linha e não na bolha para que a
+  // bolha continue com a largura do texto que carrega.
+  function linhaDe(lado) {
+    const daPessoa = lado === "pessoa"
+    const linha = elementoCom("div", daPessoa ? "cf__linha cf__linha--pessoa" : "cf__linha")
+    if (!daPessoa && avatar) {
+      const foto = document.createElement("img")
+      foto.className = "cf__avatar"
+      foto.src = avatar
+      foto.alt = nomeDeQuemFala
+      linha.append(foto)
+    }
+    return linha
+  }
+
   function desenhar(item) {
+    const linha = linhaDe(item.lado)
     if (item.imagem !== undefined) {
       const bolha = elementoCom("div", "cf__bolha")
       const img = document.createElement("img")
       img.src = item.imagem
       img.alt = item.alternativo || ""
       bolha.append(img)
-      thread.append(bolha)
+      linha.append(bolha)
     } else {
       const classe = item.lado === "pessoa" ? "cf__bolha cf__bolha--pessoa" : "cf__bolha"
-      thread.append(elementoCom("div", classe, item.texto))
+      linha.append(elementoCom("div", classe, item.texto))
     }
+    thread.append(linha)
     thread.scrollTop = thread.scrollHeight
   }
 
@@ -172,14 +216,37 @@ export function criarChat({
     dizer({ lado: "pessoa", texto })
   }
 
+  // As opções ficam na conversa, mas fora da transcrição: são um convite a
+  // responder, não uma fala já dita. Se entrassem, retomar a sessão
+  // redesenharia botões mortos no meio do que já foi conversado.
+  let opcoesNaTela = null
+
+  function limparOpcoes() {
+    if (!opcoesNaTela) return
+    opcoesNaTela.remove()
+    opcoesNaTela = null
+  }
+
+  // Pendura na conversa, do lado de quem responde, os botões de uma pergunta.
+  function oferecer(controles) {
+    const linha = linhaDe("pessoa")
+    const caixa = elementoCom("div", "cf__opcoes")
+    caixa.append(...controles)
+    linha.append(caixa)
+    thread.append(linha)
+    opcoesNaTela = linha
+    thread.scrollTop = thread.scrollHeight
+  }
+
   function limparComposer() {
     composer.replaceChildren()
+    limparOpcoes()
     erro.textContent = ""
   }
 
-  // Não limpa o composer: quem termina num redirecionamento precisa continuar
-  // vendo o botão de saída enquanto o lead é enviado. Nos outros caminhos o
-  // composer já foi esvaziado no começo de seguirInterno.
+  // Não limpa nada da tela: quem termina num redirecionamento precisa
+  // continuar vendo o botão de saída enquanto o lead é enviado. Nos outros
+  // caminhos o rodapé já foi esvaziado no começo de seguirInterno.
   async function finalizar() {
     await enviador.enviar({
       sessaoId,
@@ -245,18 +312,18 @@ export function criarChat({
       botao.addEventListener("click", () => responder(opcao.label))
       return botao
     })
-    composer.replaceChildren(...botoes)
+    oferecer(botoes)
   }
 
   function mostrarLink(bloco) {
     const url = interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado))
-    const link = elementoCom("a", "cf__botao", bloco.conteudo?.rotulo_botao || "Continuar")
+    const link = elementoCom("a", "cf__botao cf__botao--opcao", bloco.conteudo?.rotulo_botao || "Continuar")
     link.href = url
     if (bloco.conteudo?.nova_aba !== false) {
       link.target = "_blank"
       link.rel = "noopener noreferrer"
     }
-    composer.replaceChildren(link)
+    oferecer([link])
   }
 
   async function seguir() {
