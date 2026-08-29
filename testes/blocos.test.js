@@ -43,8 +43,8 @@ test("validacao de telefone aceita formatos brasileiros comuns", () => {
   assert.equal(tel.validar("+55 61 98228-6044"), true)
   assert.equal(tel.validar("55 (11) 99999-8888"), true)
   assert.equal(tel.validar(" (21) 98765-4321 "), true, "espaço em volta não invalida")
-  assert.notEqual(tel.validar("123"), true)
-  assert.notEqual(tel.validar("abcdefghijk"), true)
+  assert.equal(tel.validar("123"), false)
+  assert.equal(tel.validar("abcdefghijk"), false)
 })
 
 // Este caso existe porque o validador antigo só contava dígitos: qualquer
@@ -54,14 +54,8 @@ test("validacao de telefone aceita formatos brasileiros comuns", () => {
 test("validacao de telefone recusa numero que so parece telefone", () => {
   preparar()
   const tel = obter("entrada_telefone")
-  // Recusar é devolver o motivo, não `false`: a mensagem que a pessoa lê
-  // depende do que ela digitou.
-  const recusa = (valor, porque) => {
-    const veredito = tel.validar(valor)
-    assert.notEqual(veredito, true, `aceitou ${JSON.stringify(valor)}: ${porque}`)
-    assert.equal(typeof veredito, "string",
-      `recusou ${JSON.stringify(valor)} sem dizer por quê`)
-  }
+  const recusa = (valor, porque) =>
+    assert.equal(tel.validar(valor), false, `aceitou ${JSON.stringify(valor)}: ${porque}`)
 
   recusa("1234567890", "sequência de dez dígitos, sem o 9 do celular")
   recusa("0000000000", "só zeros")

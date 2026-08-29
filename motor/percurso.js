@@ -153,14 +153,7 @@ export function validarEntrada(bloco, valor) {
     return { ok: true, erro: null }
   }
   if (typeof definicao.validar !== "function") return { ok: true, erro: null }
-  const veredito = definicao.validar(valor)
-  // Um validador pode devolver o motivo em vez de só dizer "não". A frase
-  // certa depende do que a pessoa digitou — "faltam dois números" e "esse DDD
-  // não existe" mandam corrigir coisas diferentes, e uma mensagem genérica
-  // faz ela tentar de novo às cegas. Quem devolve só true/false continua
-  // valendo, com a mensagem fixa do tipo.
-  if (typeof veredito === "string") return { ok: false, erro: veredito }
-  if (veredito) return { ok: true, erro: null }
+  if (definicao.validar(valor)) return { ok: true, erro: null }
   return { ok: false, erro: definicao.erro || "Resposta inválida." }
 }
 

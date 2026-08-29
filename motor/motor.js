@@ -315,10 +315,14 @@ export function criarChat({
         const antes = campo.value
         const depois = filtrar(antes)
         if (depois === antes) return
+        // Onde o cursor cai é onde termina o mesmo prefixo depois de
+        // tratado: vale para um filtro que tira caracteres e para uma
+        // máscara que acrescenta. Sem isto o cursor salta para o fim a cada
+        // tecla digitada no meio do número.
         const posicao = campo.selectionStart ?? depois.length
-        const recusadosAtras = posicao - filtrar(antes.slice(0, posicao)).length
+        const novaPosicao = filtrar(antes.slice(0, posicao)).length
         campo.value = depois
-        campo.setSelectionRange?.(posicao - recusadosAtras, posicao - recusadosAtras)
+        campo.setSelectionRange?.(novaPosicao, novaPosicao)
       })
     }
     const rotulo = bloco.conteudo?.rotulo_botao || "Enviar"

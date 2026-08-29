@@ -25,47 +25,41 @@ export default {
   ],
   campo_html: { type: "tel", inputmode: "numeric" },
 
-  // O campo recusa letra na hora da digitação, não só na hora de enviar:
-  // quem digita "asdf" no telefone não vê o texto aparecer. O motor aplica
-  // isto a cada tecla; o `validar` abaixo continua sendo a palavra final,
-  // porque um valor colado ou um filtro que não rodou não podem passar.
-  filtrar_digitacao: (texto) => String(texto ?? "").replace(/\D/g, ""),
+  // Máscara: a pessoa digita só números e o campo escreve os parênteses e o
+  // traço sozinho. Letra nenhuma chega a aparecer, e passar de onze números
+  // não adianta — o que sobra não entra. Assim o campo só chega ao validador
+  // já no formato certo, e a única coisa que pode dar errado é faltar número.
+  filtrar_digitacao: (texto) => {
+    let d = String(texto ?? "").replace(/\D/g, "")
+    // Coladocom o DDI do Brasil na frente: "+55 61 98228-6044" é o mesmo
+    // número que "(61) 98228-6044", e cortar em onze deixaria "(55) 61982…",
+    // um número errado com cara de certo.
+    if (d.length > 11 && d.startsWith("55")) d = d.slice(2)
+    d = d.slice(0, 11)
+
+    if (d.length === 0) return ""
+    if (d.length <= 2) return `(${d}`
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  },
 
   // Celular, não telefone qualquer: quem responde isto está dando o número
   // pelo qual vai ser procurado, e desde 2016 todo celular brasileiro tem
   // nove dígitos começados em 9. Aceitar um fixo aqui seria aceitar um
   // número em que ninguém consegue mandar mensagem.
-  //
-  // Devolve o motivo em vez de só `false`: "faltam dois números" e "esse DDD
-  // não existe" mandam corrigir coisas diferentes.
   validar: (valor) => {
-    const bruto = String(valor ?? "").trim()
-    if (bruto === "") return "Digite o seu celular com DDD."
-    if (/[^\d\s()+.-]/.test(bruto)) return "Digite apenas números, sem letras."
-
-    let digitos = bruto.replace(/\D/g, "")
-    // O DDI do Brasil é opcional: "+55 61 ..." e "61 ..." são o mesmo número.
+    let digitos = String(valor ?? "").replace(/\D/g, "")
+    if (/[^\d\s()+.-]/.test(String(valor ?? ""))) return false
     if (digitos.length === 13 && digitos.startsWith("55")) digitos = digitos.slice(2)
-
-    const FORMATO = "São 11 números: os 2 do DDD, o 9, e mais 8."
-    if (digitos.length < 11) {
-      return `Faltam números. ${FORMATO} Você digitou ${digitos.length}.`
-    }
-    if (digitos.length > 11) {
-      return `Números demais. ${FORMATO} Você digitou ${digitos.length}.`
-    }
-
-    const ddd = digitos.slice(0, 2)
-    if (!DDDS.has(Number(ddd))) {
-      return `Não existe o DDD ${ddd}. Use os 2 números do DDD, como 61.`
-    }
+    if (digitos.length !== 11) return false
+    if (!DDDS.has(Number(digitos.slice(0, 2)))) return false
 
     const numero = digitos.slice(2)
-    if (numero[0] !== "9") return "Depois do DDD, o celular começa com 9."
+    if (numero[0] !== "9") return false
     // 999999999 e 888888888 não são de ninguém — são o que se digita para
     // se livrar do campo.
-    if (/^(\d)\1+$/.test(numero)) return "Esse número não parece ser de verdade."
+    if (/^(\d)\1+$/.test(numero)) return false
     return true
   },
-  erro: "Digite um celular com DDD, como 61982286044."
+  erro: "Digite o número correto."
 }

@@ -182,8 +182,7 @@ test("errar o telefone nao deixa a pessoa passar sem telefone", async () => {
   await chat.digitar("6198")      // de novo
 
   assert.ok(chat.campo(), "o chat desistiu de pedir o telefone")
-  assert.match(chat.erro(), /Faltam números/,
-    `o erro não diz o que corrigir: ${JSON.stringify(chat.erro())}`)
+  assert.equal(chat.erro(), "Digite o número correto.")
   assert.equal(chat.leads().length, 0, "mandou um lead sem esperar o telefone")
 
   await chat.digitar("61982286044")
