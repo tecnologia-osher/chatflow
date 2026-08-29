@@ -246,7 +246,7 @@ test("entrada invalida mostra o erro do tipo e nao avanca", async () => {
   const grupoAntes = chat.estado().grupoAtual
 
   await chat.digitar("123")
-  assert.match(chat.erro(), /telefone/)
+  assert.match(chat.erro(), /celular/)
   assert.equal(chat.estado().grupoAtual, grupoAntes)
   assert.equal(chat.estado().tentativas, 1)
 })

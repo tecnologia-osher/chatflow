@@ -41,8 +41,31 @@ test("validacao de telefone aceita formatos brasileiros comuns", () => {
   assert.equal(tel.validar("(61) 98228-6044"), true)
   assert.equal(tel.validar("61982286044"), true)
   assert.equal(tel.validar("+55 61 98228-6044"), true)
+  assert.equal(tel.validar("55 (11) 99999-8888"), true)
+  assert.equal(tel.validar(" (21) 98765-4321 "), true, "espaço em volta não invalida")
   assert.equal(tel.validar("123"), false)
   assert.equal(tel.validar("abcdefghijk"), false)
+})
+
+// Este caso existe porque o validador antigo só contava dígitos: qualquer
+// coisa entre 10 e 13 deles passava. Um lead com "1234567890" chegava no CRM
+// com o campo preenchido e ninguém para ligar — pior que chegar vazio, porque
+// ninguém desconfia de um telefone que parece um telefone.
+test("validacao de telefone recusa numero que so parece telefone", () => {
+  preparar()
+  const tel = obter("entrada_telefone")
+  const recusa = (valor, porque) =>
+    assert.equal(tel.validar(valor), false, `aceitou ${JSON.stringify(valor)}: ${porque}`)
+
+  recusa("1234567890", "sequência de dez dígitos, sem o 9 do celular")
+  recusa("0000000000", "só zeros")
+  recusa("61999999999", "número repetido depois do DDD")
+  recusa("abc 1234567890", "letras jogadas fora deixavam os dígitos passarem")
+  recusa("0198228 6044", "DDD 01 não existe")
+  recusa("2098228 6044", "DDD 20 não existe")
+  recusa("6182286044", "dez dígitos: fixo, não dá para mandar mensagem")
+  recusa("61812345678", "onze dígitos, mas não começa com o 9 do celular")
+  recusa("619822860449", "um dígito a mais")
 })
 
 test("validacao de numero", () => {
