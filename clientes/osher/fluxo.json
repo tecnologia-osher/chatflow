@@ -13,15 +13,6 @@
         "y": 40
       },
       "proximo": "g_abertura"
-    },
-    {
-      "tipo": "invalido",
-      "posicao": {
-        "x": 40,
-        "y": 220
-      },
-      "apos_tentativas": 2,
-      "proximo": "g_sem_dado"
     }
   ],
   "pontuacao": {
@@ -254,24 +245,6 @@
           }
         }
       ]
-    },
-    {
-      "id": "g_sem_dado",
-      "titulo": "Seguir sem o dado",
-      "posicao": {
-        "x": 40,
-        "y": 420
-      },
-      "blocos": [
-        {
-          "id": "b_sd",
-          "tipo": "texto",
-          "conteudo": {
-            "texto": "Sem problema, vamos seguir sem esse dado por enquanto."
-          }
-        }
-      ],
-      "proximo": "g_idade"
     }
   ]
 }

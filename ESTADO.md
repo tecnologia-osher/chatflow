@@ -60,9 +60,14 @@ Cinco perguntas, nove falas, 1 segundo de digitação antes de cada uma.
    [ Continuar no WhatsApp ]  → (61) 99969-9829
 ```
 
-Fora do caminho principal: se a pessoa errar o telefone duas vezes, o chat
-diz "Sem problema, vamos seguir sem esse dado por enquanto" e pula para a
-idade. **O lead chega sem `whatsapp`** — já aconteceu em produção.
+**Nome e telefone são obrigatórios.** O chat insiste até o dado ser válido:
+não há caminho que leve ao fim sem contato. Era o contrário até 29/08/2026 —
+um evento `invalido` dizia "seguir sem esse dado" depois de duas tentativas e
+saltava para a idade, então quem errava o telefone virava um lead sem
+telefone, e quem errava o **nome** perdia o nome e o telefone junto, porque o
+salto caía depois do grupo de contato. Nos dois casos o lead era enviado,
+pontuado e distribuído a um vendedor sem ninguém para ligar. Três testes em
+`testes/fluxo-osher.test.js` guardam isso agora.
 
 **Faixas:** quente ≥ 5 · morno ≥ 3 · frio abaixo. Das seis combinações
 possíveis, uma é frio, quatro são morno e uma é quente.

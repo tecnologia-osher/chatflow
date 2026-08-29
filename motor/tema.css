@@ -80,6 +80,7 @@
   overflow-wrap: anywhere;
 }
 .cf__bolha--pessoa {
+  font-weight: 600;
   border-color: var(--cf-acento);
   background: var(--cf-destaque);
   color: var(--cf-sobre-destaque);
@@ -167,7 +168,7 @@
      fileira só apertada. */
   padding-left: 1.5rem;
   padding-right: 1.5rem;
-  font-weight: 400;
+  font-weight: 600;
   /* Rótulo longo ("De R$ 500.000 a R$ 1.000.000") tem que quebrar dentro do
      botão. Sem isto ele empurra a conversa para fora da tela no celular. */
   white-space: normal;

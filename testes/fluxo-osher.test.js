@@ -157,3 +157,62 @@ test("as tres classificacoes sao alcancaveis", () => {
       `nenhuma combinação de respostas resulta em "${faixa}": a faixa é inalcançável`)
   }
 })
+
+// ---------------------------------------------------------------------------
+// O lead precisa chegar com contato
+//
+// Este caso existe porque o contrário aconteceu em produção: o fluxo tinha um
+// evento "invalido" que, depois de duas tentativas, dizia "seguir sem esse
+// dado" e saltava para a idade. Quem errava o telefone virava um lead sem
+// telefone; quem errava o nome perdia o nome E o telefone, porque o salto
+// caía depois do grupo de contato. Nos dois casos o lead era enviado,
+// pontuado e distribuído a um vendedor que não tinha para quem ligar.
+// ---------------------------------------------------------------------------
+
+test("errar o telefone nao deixa a pessoa passar sem telefone", async () => {
+  preparar()
+  const { montarChat } = await import("./apoio/chat.js")
+  const chat = await montarChat({
+    fluxo,
+    destinos: { destinos: { p: { url: "https://exemplo.invalido/p" } }, ao_finalizar: ["p"] },
+    chaveSessao: "osher-telefone"
+  })
+  await chat.digitar("Gustavo")
+  await chat.digitar("61982")     // curto demais
+  await chat.digitar("6198")      // de novo
+
+  assert.ok(chat.campo(), "o chat desistiu de pedir o telefone")
+  assert.equal(chat.erro(), "Digite um telefone com DDD.")
+  assert.equal(chat.leads().length, 0, "mandou um lead sem esperar o telefone")
+
+  await chat.digitar("61982286044")
+  assert.ok(
+    chat.bolhas().some((b) => b.includes("idade")),
+    `o telefone válido não destravou o fluxo: ${JSON.stringify(chat.bolhas())}`
+  )
+})
+
+test("errar o nome nao pula a pergunta do telefone", async () => {
+  preparar()
+  const { montarChat } = await import("./apoio/chat.js")
+  const chat = await montarChat({ fluxo, chaveSessao: "osher-nome" })
+  await chat.digitar("")
+  await chat.digitar("")
+
+  assert.ok(
+    !chat.bolhas().some((b) => b.includes("idade")),
+    "errar o nome levou o fluxo adiante, e o telefone junto"
+  )
+  await chat.digitar("Gustavo")
+  assert.ok(
+    chat.bolhas().some((b) => b.includes("telefone")),
+    `o telefone deixou de ser perguntado: ${JSON.stringify(chat.bolhas())}`
+  )
+})
+
+test("nenhum caminho do fluxo dispensa nome ou telefone", () => {
+  preparar()
+  const escape = (fluxo.eventos || []).find((e) => e.tipo === "invalido")
+  assert.equal(escape, undefined,
+    "voltou o desvio que deixa o lead passar sem os dados de contato")
+})
