@@ -568,8 +568,8 @@ test("tema sem avatar nao desenha retrato nenhum", async () => {
 
 test("os botoes de opcao ficam na conversa, do lado de quem responde", async () => {
   const chat = await montarChat({ fluxo: fluxoComOpcoes, tema: temaComAvatar })
-  const rodape = chat.hospedeiro.porClasse("cf__composer")[0]
-  assert.deepEqual(rodape.filhos, [], "os botões voltaram para o rodapé")
+  assert.equal(chat.hospedeiro.porClasse("cf__composer").length, 0,
+    "voltou a existir um rodapé fora da conversa")
 
   const caixa = chat.hospedeiro.porClasse("cf__opcoes")[0]
   assert.ok(caixa, "as opções não foram parar na conversa")
@@ -612,4 +612,44 @@ test("o link de saida tambem fica na conversa, do lado da pessoa", async () => {
   assert.ok(caixa.filhos[0].className.includes("cf__botao--opcao"),
     "sem a classe da opção o link de saída perde a bolinha de aviso")
   assert.ok(caixa.pai.className.includes("cf__linha--pessoa"))
+})
+
+test("o campo de texto tambem fica na conversa, do lado de quem responde", async () => {
+  const chat = await montarChat({ fluxo: exemplo(), tema: temaComAvatar })
+  const caixa = chat.hospedeiro.porClasse("cf__entrada")[0]
+  assert.ok(caixa, "o campo não foi para a conversa")
+  assert.ok(caixa.pai.className.includes("cf__linha--pessoa"),
+    "o campo não ficou do lado de quem responde")
+
+  const [campo, botao] = caixa.filhos
+  assert.equal(campo.className, "cf__campo")
+  assert.ok(botao.className.includes("cf__botao--enviar"),
+    "sem a classe do enviar o botão fica sem o ícone de avião")
+  assert.ok(botao.atributos["aria-label"],
+    "o botão virou um quadrado mudo: a folha esconde o texto e não sobrou rótulo")
+  assert.equal(botao.atributos["aria-label"], botao.textContent,
+    "o rótulo anunciado difere do que o fluxo declarou")
+})
+
+const fluxoDeDoisCampos = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{
+    id: "g1",
+    blocos: [
+      { id: "t1", tipo: "texto", conteudo: { texto: "Seu nome?" } },
+      { id: "e1", tipo: "entrada_texto", salvar_em: "nome", conteudo: {} },
+      { id: "t2", tipo: "texto", conteudo: { texto: "Sua cidade?" } },
+      { id: "e2", tipo: "entrada_texto", salvar_em: "cidade", conteudo: {} }
+    ]
+  }]
+}
+
+test("responder tira o campo da conversa, como tira os botoes", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDoisCampos, tema: temaComAvatar })
+  await chat.digitar("Ana")
+  assert.equal(chat.hospedeiro.porClasse("cf__entrada").length, 1,
+    "o campo antigo ficou na tela junto com o novo")
+  assert.deepEqual(chat.bolhas(), ["Seu nome?", "Ana", "Sua cidade?"],
+    "o eco não entrou no lugar do campo")
 })

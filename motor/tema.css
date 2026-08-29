@@ -10,6 +10,10 @@
 
   /* Largura da coluna da conversa. Um cliente pode alargá-la pelo tema. */
   --cf-coluna: 48rem;
+
+  /* Avião de papel do botão de enviar. É uma máscara, não uma imagem: a cor
+     vem de currentColor, então o ícone acompanha o tema sozinho. */
+  --cf-icone-enviar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/%3E%3C/svg%3E");
   --cf-borda: #d9dde3;
   --cf-erro: #a6402f;
 
@@ -32,7 +36,7 @@
    40px mais larga que a tela — barra de rolagem horizontal no celular. */
 .cf, .cf *, .cf *::before, .cf *::after { box-sizing: border-box; }
 
-.cf__thread, .cf__composer, .cf__erro {
+.cf__thread, .cf__erro {
   width: 100%;
   max-width: var(--cf-coluna);
   margin-inline: auto;
@@ -111,13 +115,14 @@
   .cf__thread > :first-child { margin-top: auto; }
 }
 
-.cf__composer {
+/* Campo de texto e botão de enviar, lado a lado, no mesmo lugar em que os
+   botões de escolha aparecem: dentro da conversa, do lado de quem responde,
+   logo abaixo da pergunta. */
+.cf__entrada {
+  max-width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
   gap: 0.5rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--cf-borda);
 }
 .cf__campo {
   /* Cresce até o teto e encolhe até caber. Com uma base larga e sem crescer,
@@ -155,7 +160,27 @@
    cara da bolha dela. */
 /* O botão de enviar não é o que cede espaço numa tela estreita — quem
    encolhe é o campo ao lado dele. */
-.cf__composer .cf__botao { flex: 0 0 auto; }
+.cf__botao--enviar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  /* O rótulo continua no botão e no aria-label, só deixa de ocupar espaço:
+     sem folha de estilo, ou com o ícone bloqueado, o botão ainda diz
+     "Enviar" em vez de virar um quadrado vazio. */
+  font-size: 0;
+}
+.cf__botao--enviar::before {
+  content: "";
+  width: 1.15rem;
+  height: 1.15rem;
+  background: currentColor;
+  -webkit-mask: var(--cf-icone-enviar) center / contain no-repeat;
+  mask: var(--cf-icone-enviar) center / contain no-repeat;
+}
 
 .cf__botao--opcao {
   position: relative;
@@ -199,7 +224,14 @@
   50% { opacity: 0.5; transform: translate(50%, -50%) scale(0.8); }
 }
 
-.cf__erro { color: var(--cf-erro); padding: 0 1.25rem 0.5rem; font-size: 0.9rem; }
+/* Alinhado à direita porque é sempre sobre o que a pessoa acabou de digitar,
+   e o campo dela está desse lado. */
+.cf__erro {
+  color: var(--cf-erro);
+  padding: 0 1.25rem 0.75rem;
+  font-size: 0.9rem;
+  text-align: right;
+}
 .cf__aviso {
   background: var(--cf-erro);
   color: var(--cf-superficie);
