@@ -18,7 +18,10 @@ trocar pelo arquivo oficial, ponha o PNG na pasta e mude `avatar` no
 Rodar: `motor/player.html?cliente=osher`
 Rodar sem enviar nada: `motor/player.html?cliente=osher&teste=1`
 
-Pontuação máxima: 12. Quente a partir de 9, morno de 5 a 8, frio até 4.
+Pontuação máxima: 5 — só motivo (1 ou 2) e valor (1, 2 ou 3) pontuam; a
+idade é demográfica e não entra na conta. Quente a partir de 5, morno de 3 a
+4, frio até 2. (Os números 12/9/5 que estavam aqui eram do fluxo anterior à
+reescrita de 28/08/2026.)
 
 ## Receptor
 

@@ -1,4 +1,4 @@
-# Estado do chatflow — 28/08/2026
+# Estado do chatflow — 29/08/2026
 
 ## Sub-projeto 1: EM PRODUÇÃO
 
@@ -10,7 +10,7 @@ O chat da Osher está no ar desde 27/08/2026:
 - `&teste=1` — pré-visualiza sem enviar nada a lugar nenhum
 
 Publicado com GitHub Pages a partir de `main`, repositório público em
-github.com/tecnologia-osher/chatflow. **161 testes passando.**
+github.com/tecnologia-osher/chatflow. **183 testes passando.**
 
 **Armadilha que vai se repetir no próximo cliente:** o GitHub Pages roda
 Jekyll por padrão, e Jekyll **ignora todo arquivo que começa com `_`**. O
@@ -106,14 +106,64 @@ do MazyOS.
    respostas!". O `preferencias.md` da marca bane exclamação e um teste
    barra. Estão publicados sem o ponto. Ou mantém a regra, ou a gente
    relaxa ela para o chat e ajusta o teste.
-2. **Lead sem WhatsApp.** Quem erra o telefone duas vezes entra no CRM sem
-   forma de contato. Dá para barrar no Make, ou tornar o campo obrigatório
-   no fluxo — mas aí quem não conseguir digitar trava e você perde o lead.
+2. ~~**Lead sem WhatsApp.**~~ Resolvido em 29/08/2026 — ver a seção da
+   conversa acima. O campo virou obrigatório e o validador passou a exigir
+   um celular de verdade.
 3. **Formato do payload instável.** Campos só existem se a pergunta foi
    alcançada, então todo destino precisa tolerar ausência. Está em standby
    por decisão sua: o motor poderia sempre enviar todas as variáveis
    declaradas no fluxo, com vazio nas não respondidas.
 4. **Barra de progresso** ("pergunta 3 de 8"), que o Typebot antigo tinha.
+
+## O que mudou em 29/08/2026
+
+**A cara do chat.** Fundo claro; a fala do chat em azul `#0C2340` com texto
+branco e retrato redondo da marca ao lado; a resposta de quem conversa em
+dourado `#BF9C5A` com texto branco e borda fina azul. Open Sans, pedida pelo
+`fonte_url` do tema. A conversa vive numa coluna de 48rem centrada no
+computador e ocupa a tela toda no celular, onde as falas ficam ancoradas no
+rodapé e sobem, como num aplicativo de mensagens.
+
+**O rodapé deixou de existir.** Botões de escolha, link de saída, campo de
+texto e botão de enviar vivem todos dentro da conversa, do lado de quem
+responde, logo abaixo da pergunta. Nada disso entra na transcrição: retomar
+a sessão não redesenha controle morto. Cada opção leva um selo laranja
+`#D97757` a cavalo na quina, e o enviar troca o rótulo por um avião de papel
+(máscara CSS, então o ícone toma a cor do tema sozinho; o rótulo continua no
+`aria-label`).
+
+**O telefone.** Era o buraco sério, e tinha duas metades:
+
+- O fluxo tinha um evento `invalido` que, depois de duas tentativas, dizia
+  "seguir sem esse dado" e saltava para a idade. Errar o telefone dava um
+  lead sem telefone; errar o **nome** dava um lead sem nome e sem telefone,
+  porque o salto caía depois do grupo de contato e a pergunta nem chegava a
+  ser feita. Nos dois casos o lead era enviado, pontuado e distribuído.
+- O validador só contava dígitos: qualquer coisa entre 10 e 13 passava.
+  `1234567890`, `0000000000` e `abc 1234567890` viravam leads. **Telefone
+  falso que parece telefone é pior que campo vazio** — ninguém no CRM
+  desconfia, e o vendedor descobre na ligação.
+
+**Leads gravados antes de 29/08/2026 podem ter números assim.** Vale revisar
+os que ainda não foram contatados.
+
+**Novidades do formato do tema**, todas opcionais: `avatar` (retrato, caminho
+relativo à pasta do cliente, resolvido pelo player), `fonte_url` (folha de
+fonte externa), e as cores `destaque`, `sobre-acento`, `sobre-destaque`,
+`borda` e `aviso`. Sem elas o motor desenha como antes.
+
+**Sobre os testes.** A suíte foi de 161 para 183, e cada trecho novo passou
+por mutação — defeito reintroduzido de propósito, para confirmar que algum
+teste falha. Três lições que valem para o próximo:
+
+- Um mutante que "escapa" às vezes acusa **código redundante**, não teste
+  fraco. Dois `limparOpcoes()` cobriam um ao outro; a correção foi apagar um.
+- O navegador de mentira precisou aprender `value = ""` e
+  `selectionStart`/`setSelectionRange`. Sem eles, um cursor saltando para o
+  lugar errado não tinha como falhar num teste — e de fato não tinha.
+- Screenshot não prova layout. O transbordo horizontal só apareceu medindo
+  `scrollWidth` contra a viewport, e o Chrome headless tem viewport mínimo
+  de 500px, o que faz uma captura de 390px parecer cortada sem estar.
 
 ## O que vem depois
 
