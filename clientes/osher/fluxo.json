@@ -83,7 +83,7 @@
           "id": "b_zap",
           "tipo": "entrada_telefone",
           "conteudo": {
-            "placeholder": "(61) 90000-0000",
+            "placeholder": "(61) 98228-6044",
             "rotulo_botao": "Enviar"
           },
           "salvar_em": "whatsapp"

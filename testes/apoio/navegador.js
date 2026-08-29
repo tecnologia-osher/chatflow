@@ -18,6 +18,18 @@ class Elemento {
     this.ouvintes = {}
     this.scrollTop = 0
     this.scrollHeight = 0
+    // Um <input> de verdade nasce com value "", não undefined. Sem isto o
+    // falso mente: `campo.value += "a"` daria "undefineda" aqui e "a" no
+    // navegador.
+    if (this.tagName === "INPUT") {
+      this.value = ""
+      // Onde está o cursor. O motor lê isto para recolocá-lo depois de a
+      // máscara reescrever o campo; sem o par selectionStart/setSelectionRange
+      // aqui, um cursor que salta para o lugar errado não teria como falhar
+      // num teste.
+      this.selectionStart = 0
+      this.selectionEnd = 0
+    }
     this._texto = ""
     this.style = {
       propriedades: {},
@@ -47,6 +59,11 @@ class Elemento {
   setAttribute(nome, valor) {
     this.atributos[nome] = String(valor)
     if (nome === "type") this.type = String(valor)
+  }
+
+  setSelectionRange(inicio, fim) {
+    this.selectionStart = inicio
+    this.selectionEnd = fim ?? inicio
   }
 
   addEventListener(evento, fn) { (this.ouvintes[evento] ||= []).push(fn) }

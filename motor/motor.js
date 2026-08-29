@@ -49,6 +49,16 @@ function pedirFonte(url) {
   cabeca.append(link)
 }
 
+// Filtro de digitação declarado pelo tipo, se houver. Fica no tipo e não
+// numa lista aqui dentro pelo mesmo motivo dos atributos do campo.
+function filtroDoCampo(tipo) {
+  try {
+    return obter(tipo).filtrar_digitacao || null
+  } catch {
+    return null
+  }
+}
+
 const RITMO_PADRAO = { piso: 350, porCaractere: 10, teto: 1800 }
 const PAUSAS_POR_RODADA = 20
 
@@ -82,9 +92,8 @@ export function criarChat({
 
   const raiz = elementoCom("div", "cf")
   const thread = elementoCom("div", "cf__thread")
-  const composer = elementoCom("div", "cf__composer")
   const erro = elementoCom("div", "cf__erro")
-  raiz.append(thread, erro, composer)
+  raiz.append(thread, erro)
   elemento.replaceChildren(raiz)
 
   for (const [nome, valor] of Object.entries(tema.cores || {})) {
@@ -216,37 +225,38 @@ export function criarChat({
     dizer({ lado: "pessoa", texto })
   }
 
-  // As opções ficam na conversa, mas fora da transcrição: são um convite a
-  // responder, não uma fala já dita. Se entrassem, retomar a sessão
-  // redesenharia botões mortos no meio do que já foi conversado.
-  let opcoesNaTela = null
+  // O que a pessoa pode acionar agora fica na conversa, mas fora da
+  // transcrição: é um convite a responder, não uma fala já dita. Se entrasse,
+  // retomar a sessão redesenharia campos e botões mortos no meio do que já
+  // foi conversado.
+  let entradaNaTela = null
 
-  function limparOpcoes() {
-    if (!opcoesNaTela) return
-    opcoesNaTela.remove()
-    opcoesNaTela = null
+  function limparEntrada() {
+    if (!entradaNaTela) return
+    entradaNaTela.remove()
+    entradaNaTela = null
   }
 
-  // Pendura na conversa, do lado de quem responde, os botões de uma pergunta.
-  function oferecer(controles) {
+  // Pendura na conversa, do lado de quem responde, os controles de uma
+  // pergunta: os botões de uma escolha, ou o campo de texto e o enviar.
+  function oferecer(controles, classe) {
     const linha = linhaDe("pessoa")
-    const caixa = elementoCom("div", "cf__opcoes")
+    const caixa = elementoCom("div", classe)
     caixa.append(...controles)
     linha.append(caixa)
     thread.append(linha)
-    opcoesNaTela = linha
+    entradaNaTela = linha
     thread.scrollTop = thread.scrollHeight
   }
 
   function limparComposer() {
-    composer.replaceChildren()
-    limparOpcoes()
+    limparEntrada()
     erro.textContent = ""
   }
 
   // Não limpa nada da tela: quem termina num redirecionamento precisa
   // continuar vendo o botão de saída enquanto o lead é enviado. Nos outros
-  // caminhos o rodapé já foi esvaziado no começo de seguirInterno.
+  // caminhos a entrada já foi retirada no começo de seguirInterno.
   async function finalizar() {
     await enviador.enviar({
       sessaoId,
@@ -256,7 +266,7 @@ export function criarChat({
     })
   }
 
-  // Enquanto o chat "digita", o composer já está vazio — mas um duplo clique
+  // Enquanto o chat "digita", a entrada já saiu da tela — mas um duplo clique
   // rápido pode disparar dois responder() antes disso. A guarda fecha a porta.
   let ocupado = false
 
@@ -295,13 +305,38 @@ export function criarChat({
       campo.setAttribute(nome, valor)
     }
     campo.placeholder = interpolar(bloco.conteudo?.placeholder || "", contexto(fluxo, estado))
-    const botao = elementoCom("button", "cf__botao", bloco.conteudo?.rotulo_botao || "Enviar")
+
+    // O que o tipo não aceita nem chega a aparecer no campo. O cursor é
+    // recolocado onde estava, descontando o que foi recusado antes dele —
+    // sem isso ele salta para o fim a cada tecla no meio do número.
+    const filtrar = filtroDoCampo(bloco.tipo)
+    if (filtrar) {
+      campo.addEventListener("input", () => {
+        const antes = campo.value
+        const depois = filtrar(antes)
+        if (depois === antes) return
+        // Onde o cursor cai é onde termina o mesmo prefixo depois de
+        // tratado: vale para um filtro que tira caracteres e para uma
+        // máscara que acrescenta. Sem isto o cursor salta para o fim a cada
+        // tecla digitada no meio do número.
+        const posicao = campo.selectionStart ?? depois.length
+        const novaPosicao = filtrar(antes.slice(0, posicao)).length
+        campo.value = depois
+        campo.setSelectionRange?.(novaPosicao, novaPosicao)
+      })
+    }
+    const rotulo = bloco.conteudo?.rotulo_botao || "Enviar"
+    // O rótulo fica no botão e também no aria-label: a folha troca o texto
+    // por um ícone, e sem o rótulo o botão viraria um quadrado mudo para
+    // quem navega por leitor de tela.
+    const botao = elementoCom("button", "cf__botao cf__botao--enviar", rotulo)
     botao.type = "button"
+    botao.setAttribute("aria-label", rotulo)
     botao.addEventListener("click", () => responder(campo.value.trim()))
     campo.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") { ev.preventDefault(); botao.click() }
     })
-    composer.replaceChildren(campo, botao)
+    oferecer([campo, botao], "cf__entrada")
     campo.focus()
   }
 
@@ -312,7 +347,7 @@ export function criarChat({
       botao.addEventListener("click", () => responder(opcao.label))
       return botao
     })
-    oferecer(botoes)
+    oferecer(botoes, "cf__opcoes")
   }
 
   function mostrarLink(bloco) {
@@ -323,7 +358,7 @@ export function criarChat({
       link.target = "_blank"
       link.rel = "noopener noreferrer"
     }
-    oferecer([link])
+    oferecer([link], "cf__opcoes")
   }
 
   async function seguir() {

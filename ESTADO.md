@@ -60,6 +60,18 @@ Cinco perguntas, nove falas, 1 segundo de digitação antes de cada uma.
    [ Continuar no WhatsApp ]  → (61) 99969-9829
 ```
 
+**O telefone tem que ser um celular de verdade.** O campo tem máscara: a
+pessoa digita só números e ele escreve `(61) 98228-6044` sozinho. Letra não
+aparece, passar de onze números não entra, e colar com o `+55` na frente não
+vira um número errado. O validador exige DDD de 2 números que existe na lista
+oficial, o nono dígito começado em 9, e recusa número repetido. Enquanto o
+número não estiver certo, o fluxo não anda — a mensagem é uma só:
+"Digite o número correto." Era só uma contagem de 10 a 13 dígitos até
+29/08/2026, então `1234567890`, `0000000000` e até `abc 1234567890` passavam
+— e um telefone falso que parece telefone é pior que um campo vazio, porque
+ninguém desconfia dele. Leads gravados antes dessa data podem ter números
+assim.
+
 **Nome e telefone são obrigatórios.** O chat insiste até o dado ser válido:
 não há caminho que leve ao fim sem contato. Era o contrário até 29/08/2026 —
 um evento `invalido` dizia "seguir sem esse dado" depois de duas tentativas e

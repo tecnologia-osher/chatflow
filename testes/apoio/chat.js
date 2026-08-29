@@ -42,10 +42,11 @@ export async function montarChat({
     }
   })
 
-  const composer = () => hospedeiro.porClasse("cf__composer")[0]
-  // Botões de opção e o link de saída moram na conversa, do lado de quem
-  // responde; campo de texto e o botão de enviar continuam no rodapé. Um
-  // teste não deveria ter que saber de qual dos dois cada coisa veio.
+  // Tudo o que a pessoa aciona mora na conversa, do lado dela: o campo de
+  // texto com o enviar numa caixa, os botões de escolha e o link de saída
+  // noutra. Um teste não deveria ter que saber de qual das duas cada coisa
+  // veio.
+  const entrada = () => hospedeiro.porClasse("cf__entrada")[0]
   const opcoes = () => hospedeiro.porClasse("cf__opcoes")[0]
 
   const painel = {
@@ -62,7 +63,7 @@ export async function montarChat({
     erro: () => hospedeiro.porClasse("cf__erro")[0]?.textContent ?? "",
     aviso: () => hospedeiro.porClasse("cf__aviso")[0]?.textContent ?? "",
     campo: () => hospedeiro.porClasse("cf__campo")[0] ?? null,
-    controles: () => [...(composer()?.filhos ?? []), ...(opcoes()?.filhos ?? [])],
+    controles: () => [...(entrada()?.filhos ?? []), ...(opcoes()?.filhos ?? [])],
     rotulos: () => painel.controles().map((c) => c.textContent),
 
     // O que foi para a rede
@@ -73,7 +74,7 @@ export async function montarChat({
 
     // O que a pessoa faz
     async digitar(valor) {
-      const [campo, botao] = composer().filhos
+      const [campo, botao] = entrada().filhos
       campo.value = valor
       botao.click()
       await assentar()

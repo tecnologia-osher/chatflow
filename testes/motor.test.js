@@ -157,7 +157,7 @@ const atributosEsperados = {
   entrada_texto: { type: "text" },
   entrada_numero: { type: "text", inputmode: "decimal" },
   entrada_email: { type: "email", inputmode: "email" },
-  entrada_telefone: { type: "tel" },
+  entrada_telefone: { type: "tel", inputmode: "numeric" },
   entrada_data: { type: "text", inputmode: "numeric" }
 }
 
@@ -246,7 +246,8 @@ test("entrada invalida mostra o erro do tipo e nao avanca", async () => {
   const grupoAntes = chat.estado().grupoAtual
 
   await chat.digitar("123")
-  assert.match(chat.erro(), /telefone/)
+  assert.equal(chat.erro(), "Digite o número correto.",
+    "o erro do tipo não chegou na tela")
   assert.equal(chat.estado().grupoAtual, grupoAntes)
   assert.equal(chat.estado().tentativas, 1)
 })
@@ -568,8 +569,8 @@ test("tema sem avatar nao desenha retrato nenhum", async () => {
 
 test("os botoes de opcao ficam na conversa, do lado de quem responde", async () => {
   const chat = await montarChat({ fluxo: fluxoComOpcoes, tema: temaComAvatar })
-  const rodape = chat.hospedeiro.porClasse("cf__composer")[0]
-  assert.deepEqual(rodape.filhos, [], "os botões voltaram para o rodapé")
+  assert.equal(chat.hospedeiro.porClasse("cf__composer").length, 0,
+    "voltou a existir um rodapé fora da conversa")
 
   const caixa = chat.hospedeiro.porClasse("cf__opcoes")[0]
   assert.ok(caixa, "as opções não foram parar na conversa")
@@ -612,4 +613,171 @@ test("o link de saida tambem fica na conversa, do lado da pessoa", async () => {
   assert.ok(caixa.filhos[0].className.includes("cf__botao--opcao"),
     "sem a classe da opção o link de saída perde a bolinha de aviso")
   assert.ok(caixa.pai.className.includes("cf__linha--pessoa"))
+})
+
+test("o campo de texto tambem fica na conversa, do lado de quem responde", async () => {
+  const chat = await montarChat({ fluxo: exemplo(), tema: temaComAvatar })
+  const caixa = chat.hospedeiro.porClasse("cf__entrada")[0]
+  assert.ok(caixa, "o campo não foi para a conversa")
+  assert.ok(caixa.pai.className.includes("cf__linha--pessoa"),
+    "o campo não ficou do lado de quem responde")
+
+  const [campo, botao] = caixa.filhos
+  assert.equal(campo.className, "cf__campo")
+  assert.ok(botao.className.includes("cf__botao--enviar"),
+    "sem a classe do enviar o botão fica sem o ícone de avião")
+  assert.ok(botao.atributos["aria-label"],
+    "o botão virou um quadrado mudo: a folha esconde o texto e não sobrou rótulo")
+  assert.equal(botao.atributos["aria-label"], botao.textContent,
+    "o rótulo anunciado difere do que o fluxo declarou")
+})
+
+const fluxoDeDoisCampos = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{
+    id: "g1",
+    blocos: [
+      { id: "t1", tipo: "texto", conteudo: { texto: "Seu nome?" } },
+      { id: "e1", tipo: "entrada_texto", salvar_em: "nome", conteudo: {} },
+      { id: "t2", tipo: "texto", conteudo: { texto: "Sua cidade?" } },
+      { id: "e2", tipo: "entrada_texto", salvar_em: "cidade", conteudo: {} }
+    ]
+  }]
+}
+
+test("responder tira o campo da conversa, como tira os botoes", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDoisCampos, tema: temaComAvatar })
+  await chat.digitar("Ana")
+  assert.equal(chat.hospedeiro.porClasse("cf__entrada").length, 1,
+    "o campo antigo ficou na tela junto com o novo")
+  assert.deepEqual(chat.bolhas(), ["Seu nome?", "Ana", "Sua cidade?"],
+    "o eco não entrou no lugar do campo")
+})
+
+// ---------------------------------------------------------------------------
+// Letra não entra no campo de telefone
+// ---------------------------------------------------------------------------
+
+const fluxoDeTelefone = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{
+    id: "g1",
+    blocos: [
+      { id: "t", tipo: "texto", conteudo: { texto: "Seu celular?" } },
+      { id: "e", tipo: "entrada_telefone", salvar_em: "zap", conteudo: {} }
+    ]
+  }]
+}
+
+// Digita caractere a caractere, como um teclado de verdade: o filtro do motor
+// roda no evento "input", então escrever o valor de uma vez não o exercita.
+function teclar(campo, texto) {
+  for (const tecla of texto) {
+    campo.value += tecla
+    for (const ouvinte of campo.ouvintes.input || []) ouvinte({})
+  }
+  return campo.value
+}
+
+test("o campo de telefone recusa letra e escreve a mascara sozinho", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  const campo = chat.campo()
+  assert.equal(teclar(campo, "abc"), "", "as letras entraram no campo")
+  assert.equal(teclar(campo, "61x9y8228z6044"), "(61) 98228-6044",
+    "as letras no meio do número passaram, ou a máscara não foi escrita")
+})
+
+test("a mascara do telefone se monta a cada tecla", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  const campo = chat.campo()
+  const passos = []
+  campo.value = ""
+  for (const tecla of "61982286044") {
+    campo.value += tecla
+    for (const ouvinte of campo.ouvintes.input || []) ouvinte({})
+    passos.push(campo.value)
+  }
+  assert.equal(passos[0], "(6")
+  assert.equal(passos[1], "(61")
+  assert.equal(passos[2], "(61) 9")
+  assert.equal(passos.at(-1), "(61) 98228-6044")
+})
+
+test("passar de onze numeros nao entra no campo", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  assert.equal(teclar(chat.campo(), "6198228604499999"), "(61) 98228-6044",
+    "o campo aceitou mais números do que um celular tem")
+})
+
+test("colar o numero com o DDI nao vira um numero errado", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  // Cortar em onze cegamente deixaria "(55) 61982-2860": DDD que existe,
+  // formato plausível, número de outra pessoa.
+  assert.equal(teclar(chat.campo(), "5561982286044"), "(61) 98228-6044")
+})
+
+test("o campo de texto comum nao filtra nada", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDoisCampos })
+  assert.equal(teclar(chat.campo(), "Ana Maria"), "Ana Maria",
+    "o filtro do telefone vazou para os outros campos")
+})
+
+test("numero incompleto ou invalido trava o fluxo com uma mensagem so", async () => {
+  for (const valor of ["619822860", "0198228604", "61812345678", "61999999999", ""]) {
+    const chat = await montarChat({ fluxo: fluxoDeTelefone, chaveSessao: `t-${valor}` })
+    await chat.digitar(valor)
+    assert.equal(chat.erro(), "Digite o número correto.",
+      `para ${JSON.stringify(valor)} a pessoa leu outra coisa`)
+    assert.ok(chat.campo(), "o chat avançou mesmo com o número recusado")
+    assert.equal(chat.estado().respostas.zap, undefined, "guardou um número que não presta")
+  }
+})
+
+test("celular de verdade passa e o fluxo segue", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  await chat.digitar("61982286044")
+  assert.equal(chat.erro(), "")
+  assert.equal(chat.estado().respostas.zap, "61982286044")
+})
+
+test("o cursor acompanha o que a mascara acrescenta", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  const campo = chat.campo()
+  const digitar = (tecla) => {
+    campo.value = campo.value.slice(0, campo.selectionStart) + tecla +
+      campo.value.slice(campo.selectionStart)
+    campo.selectionStart += tecla.length
+    for (const ouvinte of campo.ouvintes.input || []) ouvinte({})
+  }
+
+  digitar("6"); digitar("1")
+  assert.equal(campo.value, "(61")
+  assert.equal(campo.selectionStart, 3, "o cursor não ficou no fim do que já existe")
+
+  // Esta tecla faz a máscara inserir ") " antes do dígito. O cursor tem que
+  // pular os dois caracteres novos, senão a próxima tecla cai dentro do
+  // separador e o número sai embaralhado.
+  digitar("9")
+  assert.equal(campo.value, "(61) 9")
+  assert.equal(campo.selectionStart, 6,
+    `o cursor ficou em ${campo.selectionStart}, dentro do separador que a máscara acabou de inserir`)
+})
+
+test("corrigir um digito no meio nao joga o cursor para o fim", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  const campo = chat.campo()
+  teclar(campo, "61982286044")
+  assert.equal(campo.value, "(61) 98228-6044")
+
+  // A pessoa volta o cursor para logo depois do 9 e digita um dígito ali.
+  campo.selectionStart = 6
+  campo.value = "(61) 9" + "7" + "8228-6044"
+  campo.selectionStart = 7
+  for (const ouvinte of campo.ouvintes.input || []) ouvinte({})
+
+  assert.equal(campo.value, "(61) 97822-8604", "a máscara não recompôs o número")
+  assert.equal(campo.selectionStart, 7,
+    `o cursor foi para ${campo.selectionStart} em vez de ficar onde a pessoa está digitando`)
 })
