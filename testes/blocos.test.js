@@ -43,8 +43,8 @@ test("validacao de telefone aceita formatos brasileiros comuns", () => {
   assert.equal(tel.validar("+55 61 98228-6044"), true)
   assert.equal(tel.validar("55 (11) 99999-8888"), true)
   assert.equal(tel.validar(" (21) 98765-4321 "), true, "espaço em volta não invalida")
-  assert.equal(tel.validar("123"), false)
-  assert.equal(tel.validar("abcdefghijk"), false)
+  assert.notEqual(tel.validar("123"), true)
+  assert.notEqual(tel.validar("abcdefghijk"), true)
 })
 
 // Este caso existe porque o validador antigo só contava dígitos: qualquer
@@ -54,13 +54,22 @@ test("validacao de telefone aceita formatos brasileiros comuns", () => {
 test("validacao de telefone recusa numero que so parece telefone", () => {
   preparar()
   const tel = obter("entrada_telefone")
-  const recusa = (valor, porque) =>
-    assert.equal(tel.validar(valor), false, `aceitou ${JSON.stringify(valor)}: ${porque}`)
+  // Recusar é devolver o motivo, não `false`: a mensagem que a pessoa lê
+  // depende do que ela digitou.
+  const recusa = (valor, porque) => {
+    const veredito = tel.validar(valor)
+    assert.notEqual(veredito, true, `aceitou ${JSON.stringify(valor)}: ${porque}`)
+    assert.equal(typeof veredito, "string",
+      `recusou ${JSON.stringify(valor)} sem dizer por quê`)
+  }
 
   recusa("1234567890", "sequência de dez dígitos, sem o 9 do celular")
   recusa("0000000000", "só zeros")
   recusa("61999999999", "número repetido depois do DDD")
   recusa("abc 1234567890", "letras jogadas fora deixavam os dígitos passarem")
+  recusa("abc61982286044", "letras em volta de um número válido: o filtro da"
+    + " digitação não roda em valor colado por script")
+  recusa("61982286044x", "letra no fim")
   recusa("0198228 6044", "DDD 01 não existe")
   recusa("2098228 6044", "DDD 20 não existe")
   recusa("6182286044", "dez dígitos: fixo, não dá para mandar mensagem")

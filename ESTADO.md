@@ -60,9 +60,12 @@ Cinco perguntas, nove falas, 1 segundo de digitação antes de cada uma.
    [ Continuar no WhatsApp ]  → (61) 99969-9829
 ```
 
-**O telefone tem que ser um celular de verdade.** O validador exige 11
-dígitos, DDD que existe na lista oficial e o nono dígito começado em 9, e
-recusa número repetido. Era só uma contagem de 10 a 13 dígitos até
+**O telefone tem que ser um celular de verdade.** O campo recusa letra na
+própria digitação — só número aparece — e o validador exige 11 dígitos, DDD
+de 2 números que existe na lista oficial e o nono dígito começado em 9, e
+recusa número repetido. O erro diz o que corrigir ("faltam números", "não
+existe o DDD 01", "depois do DDD começa com 9") em vez de uma frase genérica
+que faz a pessoa tentar de novo às cegas. Era só uma contagem de 10 a 13 dígitos até
 29/08/2026, então `1234567890`, `0000000000` e até `abc 1234567890` passavam
 — e um telefone falso que parece telefone é pior que um campo vazio, porque
 ninguém desconfia dele. Leads gravados antes dessa data podem ter números

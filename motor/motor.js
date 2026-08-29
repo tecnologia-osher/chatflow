@@ -49,6 +49,16 @@ function pedirFonte(url) {
   cabeca.append(link)
 }
 
+// Filtro de digitação declarado pelo tipo, se houver. Fica no tipo e não
+// numa lista aqui dentro pelo mesmo motivo dos atributos do campo.
+function filtroDoCampo(tipo) {
+  try {
+    return obter(tipo).filtrar_digitacao || null
+  } catch {
+    return null
+  }
+}
+
 const RITMO_PADRAO = { piso: 350, porCaractere: 10, teto: 1800 }
 const PAUSAS_POR_RODADA = 20
 
@@ -295,6 +305,22 @@ export function criarChat({
       campo.setAttribute(nome, valor)
     }
     campo.placeholder = interpolar(bloco.conteudo?.placeholder || "", contexto(fluxo, estado))
+
+    // O que o tipo não aceita nem chega a aparecer no campo. O cursor é
+    // recolocado onde estava, descontando o que foi recusado antes dele —
+    // sem isso ele salta para o fim a cada tecla no meio do número.
+    const filtrar = filtroDoCampo(bloco.tipo)
+    if (filtrar) {
+      campo.addEventListener("input", () => {
+        const antes = campo.value
+        const depois = filtrar(antes)
+        if (depois === antes) return
+        const posicao = campo.selectionStart ?? depois.length
+        const recusadosAtras = posicao - filtrar(antes.slice(0, posicao)).length
+        campo.value = depois
+        campo.setSelectionRange?.(posicao - recusadosAtras, posicao - recusadosAtras)
+      })
+    }
     const rotulo = bloco.conteudo?.rotulo_botao || "Enviar"
     // O rótulo fica no botão e também no aria-label: a folha troca o texto
     // por um ícone, e sem o rótulo o botão viraria um quadrado mudo para

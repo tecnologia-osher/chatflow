@@ -157,7 +157,7 @@ const atributosEsperados = {
   entrada_texto: { type: "text" },
   entrada_numero: { type: "text", inputmode: "decimal" },
   entrada_email: { type: "email", inputmode: "email" },
-  entrada_telefone: { type: "tel" },
+  entrada_telefone: { type: "tel", inputmode: "numeric" },
   entrada_data: { type: "text", inputmode: "numeric" }
 }
 
@@ -246,7 +246,8 @@ test("entrada invalida mostra o erro do tipo e nao avanca", async () => {
   const grupoAntes = chat.estado().grupoAtual
 
   await chat.digitar("123")
-  assert.match(chat.erro(), /celular/)
+  assert.match(chat.erro(), /Faltam números/,
+    `o erro do tipo não chegou na tela: ${JSON.stringify(chat.erro())}`)
   assert.equal(chat.estado().grupoAtual, grupoAntes)
   assert.equal(chat.estado().tentativas, 1)
 })
@@ -652,4 +653,67 @@ test("responder tira o campo da conversa, como tira os botoes", async () => {
     "o campo antigo ficou na tela junto com o novo")
   assert.deepEqual(chat.bolhas(), ["Seu nome?", "Ana", "Sua cidade?"],
     "o eco não entrou no lugar do campo")
+})
+
+// ---------------------------------------------------------------------------
+// Letra não entra no campo de telefone
+// ---------------------------------------------------------------------------
+
+const fluxoDeTelefone = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{
+    id: "g1",
+    blocos: [
+      { id: "t", tipo: "texto", conteudo: { texto: "Seu celular?" } },
+      { id: "e", tipo: "entrada_telefone", salvar_em: "zap", conteudo: {} }
+    ]
+  }]
+}
+
+// Digita caractere a caractere, como um teclado de verdade: o filtro do motor
+// roda no evento "input", então escrever o valor de uma vez não o exercita.
+function teclar(campo, texto) {
+  for (const tecla of texto) {
+    campo.value += tecla
+    for (const ouvinte of campo.ouvintes.input || []) ouvinte({})
+  }
+  return campo.value
+}
+
+test("letra digitada no campo de telefone nao chega a aparecer", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  const campo = chat.campo()
+  assert.equal(teclar(campo, "abc"), "", "as letras entraram no campo")
+  assert.equal(teclar(campo, "61x9y8228z6044"), "61982286044",
+    "as letras no meio do número não foram recusadas")
+})
+
+test("o campo de texto comum nao filtra nada", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeDoisCampos })
+  assert.equal(teclar(chat.campo(), "Ana Maria"), "Ana Maria",
+    "o filtro do telefone vazou para os outros campos")
+})
+
+test("o erro diz o que corrigir, nao so que esta errado", async () => {
+  const casos = [
+    ["619822860", /Faltam números/],
+    ["6198228604499", /Números demais/],
+    ["0198228604", /DDD/],
+    ["61812345678", /começa com 9/]
+  ]
+  for (const [valor, esperado] of casos) {
+    const chat = await montarChat({ fluxo: fluxoDeTelefone, chaveSessao: `t-${valor}` })
+    await chat.digitar(valor)
+    assert.match(chat.erro(), esperado,
+      `para ${JSON.stringify(valor)} a pessoa leu: ${JSON.stringify(chat.erro())}`)
+    assert.ok(chat.campo(), "o chat avançou mesmo com o número recusado")
+  }
+})
+
+test("celular de verdade passa e o fluxo segue", async () => {
+  const chat = await montarChat({ fluxo: fluxoDeTelefone })
+  await chat.digitar("61982286044")
+  assert.equal(chat.erro(), "")
+  assert.equal(chat.estado().respostas.zap, "61982286044")
 })

@@ -18,6 +18,10 @@ class Elemento {
     this.ouvintes = {}
     this.scrollTop = 0
     this.scrollHeight = 0
+    // Um <input> de verdade nasce com value "", não undefined. Sem isto o
+    // falso mente: `campo.value += "a"` daria "undefineda" aqui e "a" no
+    // navegador.
+    if (this.tagName === "INPUT") this.value = ""
     this._texto = ""
     this.style = {
       propriedades: {},
