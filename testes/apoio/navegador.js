@@ -10,7 +10,7 @@
 // Continua valendo a regra de zero dependências: nada aqui vem de fora.
 
 class Elemento {
-  constructor(tag) {
+  constructor(tag, svg = false) {
     this.tagName = String(tag).toUpperCase()
     this.filhos = []
     this.className = ""
@@ -34,6 +34,21 @@ class Elemento {
     this.style = {
       propriedades: {},
       setProperty(nome, valor) { this.propriedades[nome] = valor }
+    }
+
+    // Por último, depois de toda a inicialização: em SVG de verdade
+    // `className` é um SVGAnimatedString somente leitura, e atribuir lança
+    // TypeError que derruba o render inteiro. O dublê recusa igual — senão o
+    // teste passa e a página abre em branco.
+    if (svg) {
+      let classe = this.className || ""
+      Object.defineProperty(this, "className", {
+        get: () => classe,
+        set: () => {
+          throw new TypeError('className de elemento SVG é somente leitura — use setAttribute("class", …)')
+        }
+      })
+      this.definirClasse = (v) => { classe = String(v) }
     }
   }
 
@@ -59,6 +74,10 @@ class Elemento {
   setAttribute(nome, valor) {
     this.atributos[nome] = String(valor)
     if (nome === "type") this.type = String(valor)
+    if (nome === "class") {
+      if (this.definirClasse) this.definirClasse(valor)
+      else this.className = String(valor)
+    }
   }
 
   setSelectionRange(inicio, fim) {
@@ -94,7 +113,7 @@ export function instalarNavegador() {
   const ouvintesDoDocumento = {}
   globalThis.document = {
     createElement: (tag) => new Elemento(tag),
-    createElementNS: (_ns, tag) => new Elemento(tag),
+    createElementNS: (_ns, tag) => new Elemento(tag, true),
     addEventListener(evento, fn) { (ouvintesDoDocumento[evento] ||= []).push(fn) },
     removeEventListener(evento, fn) {
       ouvintesDoDocumento[evento] = (ouvintesDoDocumento[evento] || []).filter((x) => x !== fn)

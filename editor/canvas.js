@@ -17,7 +17,9 @@ function el(tag, classe, texto) {
 
 function svg(tag, classe) {
   const e = document.createElementNS(SVG, tag)
-  if (classe) e.className = classe
+  // Em SVG, `className` é somente leitura. Atribuir lança TypeError e leva o
+  // render inteiro junto — a página abre em branco com um erro no console.
+  if (classe) e.setAttribute("class", classe)
   return e
 }
 
