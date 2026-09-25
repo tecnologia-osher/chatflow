@@ -3,7 +3,7 @@
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { cartoes, setas } from "../editor/modelo.js"
+import { cartoes, setas, caixas } from "../editor/modelo.js"
 
 const fluxo = {
   versao: 2,
@@ -111,4 +111,19 @@ test("destino inexistente vira seta marcada, nao some", () => {
 test("nao duplica seta quando dois caminhos levam ao mesmo grupo", () => {
   const s = setas(fluxo).filter((x) => x.de === "g2" && x.para === "g3")
   assert.equal(s.length, 1)
+})
+
+// --- caixas ----------------------------------------------------------------
+
+test("a caixa do cartao cresce com a quantidade de blocos", () => {
+  const mapa = caixas(cartoes(fluxo))
+  assert.ok(mapa.get("g1").altura > mapa.get("g3").altura,
+    "grupo com dois blocos precisa ser mais alto que um vazio")
+  assert.equal(mapa.get("g1").x, 320)
+  assert.ok(mapa.get("g1").largura > 0)
+})
+
+test("a caixa existe para todo cartao, inclusive o vazio", () => {
+  const mapa = caixas(cartoes(fluxo))
+  for (const c of cartoes(fluxo)) assert.ok(mapa.get(c.id), `sem caixa para ${c.id}`)
 })

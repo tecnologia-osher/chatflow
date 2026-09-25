@@ -67,6 +67,14 @@ class Elemento {
   }
 
   addEventListener(evento, fn) { (this.ouvintes[evento] ||= []).push(fn) }
+  removeEventListener(evento, fn) {
+    this.ouvintes[evento] = (this.ouvintes[evento] || []).filter((x) => x !== fn)
+  }
+  disparar(evento, detalhe = {}) {
+    const e = { type: evento, preventDefault() {}, stopPropagation() {}, target: this, ...detalhe }
+    for (const fn of [...(this.ouvintes[evento] || [])]) fn(e)
+    return e
+  }
   click() { for (const fn of this.ouvintes.click || []) fn({ preventDefault() {} }) }
   focus() {}
 
@@ -83,7 +91,21 @@ class Elemento {
 const avisosCapturados = []
 
 export function instalarNavegador() {
-  globalThis.document = { createElement: (tag) => new Elemento(tag) }
+  const ouvintesDoDocumento = {}
+  globalThis.document = {
+    createElement: (tag) => new Elemento(tag),
+    createElementNS: (_ns, tag) => new Elemento(tag),
+    addEventListener(evento, fn) { (ouvintesDoDocumento[evento] ||= []).push(fn) },
+    removeEventListener(evento, fn) {
+      ouvintesDoDocumento[evento] = (ouvintesDoDocumento[evento] || []).filter((x) => x !== fn)
+    },
+    // Só para os testes: dispara no documento o que o navegador dispararia.
+    disparar(evento, detalhe = {}) {
+      const e = { type: evento, preventDefault() {}, stopPropagation() {}, ...detalhe }
+      for (const fn of [...(ouvintesDoDocumento[evento] || [])]) fn(e)
+      return e
+    }
+  }
   globalThis.crypto ??= {}
   globalThis.crypto.randomUUID ??= () => "sessao-de-teste"
 

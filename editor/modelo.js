@@ -120,3 +120,28 @@ export function setas(fluxo) {
   }
   return [...porPar.values()]
 }
+
+// --- tamanho do cartão -----------------------------------------------------
+
+// O canvas não mede nada: o tamanho é calculado. Medir exigiria o elemento já
+// desenhado, e aí as setas só saberiam onde ancorar depois de um quadro — o
+// desenho apareceria torto e se corrigiria sozinho, que é pior que estar fixo.
+const CARTAO_LARGURA = 260
+const CARTAO_CABECALHO = 44
+const CARTAO_BLOCO = 52
+const CARTAO_RODAPE = 12
+
+export function caixas(listaDeCartoes) {
+  const mapa = new Map()
+  for (const cartao of listaDeCartoes) {
+    mapa.set(cartao.id, {
+      x: cartao.posicao.x,
+      y: cartao.posicao.y,
+      largura: CARTAO_LARGURA,
+      altura: CARTAO_CABECALHO + cartao.blocos.length * CARTAO_BLOCO + CARTAO_RODAPE
+    })
+  }
+  return mapa
+}
+
+export const MEDIDAS = { CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_RODAPE }
