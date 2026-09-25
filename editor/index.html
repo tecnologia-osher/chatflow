@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chatflow — editor</title>
+<link rel="stylesheet" href="editor.css">
+<link rel="stylesheet" href="../motor/tema.css">
+</head>
+<body>
+<div id="editor"></div>
+<script type="module">
+  import { criarEditor } from "./app.js"
+
+  const parametros = new URLSearchParams(location.search)
+  const cliente = parametros.get("cliente")
+  const base = cliente ? `../clientes/${cliente}` : "../exemplos"
+  const arquivo = cliente ? `${base}/fluxo.json` : `${base}/captacao-simples.json`
+
+  const alvo = document.getElementById("editor")
+
+  function baixar(texto, nome) {
+    const url = URL.createObjectURL(new Blob([texto], { type: "application/json" }))
+    const a = document.createElement("a")
+    a.href = url
+    a.download = nome
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  try {
+    const resposta = await fetch(arquivo)
+    if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
+    criarEditor({ elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo", aoBaixar: baixar })
+  } catch (falha) {
+    alvo.textContent = `Não consegui abrir ${arquivo}. ${falha.message}`
+  }
+</script>
+</body>
+</html>

@@ -259,8 +259,38 @@ Primeira fatia combinada em 25/09/2026:
 
 Fora da fatia: arrastar seta, desfazer/refazer, abas Theme e Settings, publicar.
 
-**Feito até agora:** `editor/modelo.js` — leitura do fluxo em cartões e setas,
-lógica pura, 10 testes validados por mutação. Decisões que já valem: grupo sem
-`posicao` ganha uma em grade (senão some atrás dos outros), e **seta para
-grupo inexistente continua sendo desenhada, marcada como órfã** — sumir com
-ela esconderia o erro que a pessoa precisa ver.
+**A primeira fatia está pronta.** 268 testes no total, ~80 deles do editor,
+todos validados por mutação. Arquivos:
+
+| Arquivo | O que é |
+|---|---|
+| `editor/modelo.js` | fluxo → cartões e setas, e o tamanho do cartão |
+| `editor/vista.js` | pan, zoom ancorado no cursor, geometria das setas |
+| `editor/edicoes.js` | todas as edições, puras e imutáveis |
+| `editor/catalogo.js` | acesso ao catálogo do motor, tolerante a tipo desconhecido |
+| `editor/canvas.js` | cartões, setas, arrastar |
+| `editor/painel.js` | formulário montado a partir dos `campos` do tipo |
+| `editor/app.js` | paleta, barra, validação ao vivo, preview |
+| `editor/index.html` + `editor.css` | a página |
+
+Abre em `editor/index.html?cliente=osher`.
+
+**Decisões que os testes fixaram:**
+
+- Grupo sem `posicao` ganha uma em grade, senão todos nascem na origem e o
+  fluxo parece vazio.
+- **Seta para grupo inexistente continua sendo desenhada**, marcada como
+  órfã. Sumir com ela esconderia o erro que a pessoa precisa ver. O canvas
+  chegou a contradizer isso com um `continue` bem comentado — o teste pegou.
+- Arrastar cartão divide o deslocamento pela escala; sem isso o cartão foge
+  do cursor assim que há zoom.
+- Campo em branco **some** do JSON em vez de virar `""`.
+- Bloco de entrada nasce com `salvar_em`, senão o fluxo fica inválido entre
+  um clique e outro.
+- Pontuação de opção vira número: em texto, a soma concatena.
+- A última opção de um bloco de botões não pode ser removida.
+- O preview roda em `modo: teste` com um `buscar` que recusa — nenhuma tecla
+  digitada no editor vira linha na planilha do cliente.
+
+**Ainda não editável:** as `regras` de condição. O painel avisa em vez de
+fingir que não existem.
