@@ -1,0 +1,100 @@
+// Pan, zoom e por onde a seta sai e chega. Matemática pura: erra em silêncio
+// e só aparece como "o canvas está estranho", então vem coberta.
+
+import { test } from "node:test"
+import assert from "node:assert/strict"
+import {
+  criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, ESCALA_MIN, ESCALA_MAX
+} from "../editor/vista.js"
+
+const perto = (a, b, tol = 0.001) =>
+  assert.ok(Math.abs(a - b) < tol, `esperava ~${b}, veio ${a}`)
+
+test("a vista comeca na origem, sem zoom", () => {
+  const v = criarVista()
+  assert.deepEqual(v, { x: 0, y: 0, escala: 1 })
+})
+
+test("arrastar desloca e nao mexe na escala", () => {
+  const v = arrastar(criarVista(), { dx: 30, dy: -20 })
+  assert.deepEqual(v, { x: 30, y: -20, escala: 1 })
+})
+
+test("arrastar nao modifica a vista recebida", () => {
+  const v = criarVista()
+  arrastar(v, { dx: 10, dy: 10 })
+  assert.deepEqual(v, { x: 0, y: 0, escala: 1 })
+})
+
+test("tela e mundo sao o inverso um do outro", () => {
+  const v = aplicarZoom(arrastar(criarVista(), { dx: 47, dy: -13 }), { delta: -3, ponto: { x: 200, y: 150 } })
+  const mundo = paraMundo(v, { x: 321, y: 87 })
+  const volta = paraTela(v, mundo)
+  perto(volta.x, 321)
+  perto(volta.y, 87)
+})
+
+test("o zoom mantem parado o ponto sob o cursor", () => {
+  const v = arrastar(criarVista(), { dx: 12, dy: 34 })
+  const cursor = { x: 400, y: 300 }
+  const antes = paraMundo(v, cursor)
+
+  const depois = paraMundo(aplicarZoom(v, { delta: -5, ponto: cursor }), cursor)
+
+  perto(depois.x, antes.x)
+  perto(depois.y, antes.y)
+})
+
+test("zoom para dentro aumenta a escala, para fora diminui", () => {
+  const v = criarVista()
+  assert.ok(aplicarZoom(v, { delta: -1, ponto: { x: 0, y: 0 } }).escala > 1)
+  assert.ok(aplicarZoom(v, { delta: 1, ponto: { x: 0, y: 0 } }).escala < 1)
+})
+
+test("a escala tem teto e chao", () => {
+  let v = criarVista()
+  for (let i = 0; i < 100; i++) v = aplicarZoom(v, { delta: -10, ponto: { x: 0, y: 0 } })
+  assert.equal(v.escala, ESCALA_MAX)
+  for (let i = 0; i < 200; i++) v = aplicarZoom(v, { delta: 10, ponto: { x: 0, y: 0 } })
+  assert.equal(v.escala, ESCALA_MIN)
+})
+
+// --- âncoras ---------------------------------------------------------------
+
+const caixa = (x, y) => ({ x, y, largura: 260, altura: 120 })
+
+test("destino a direita: sai pela direita, entra pela esquerda", () => {
+  const a = ancoras(caixa(0, 0), caixa(500, 0))
+  assert.equal(a.de.lado, "direita")
+  assert.equal(a.para.lado, "esquerda")
+  perto(a.de.x, 260)
+  perto(a.de.y, 60)
+  perto(a.para.x, 500)
+})
+
+test("destino a esquerda: sai pela esquerda, entra pela direita", () => {
+  const a = ancoras(caixa(500, 0), caixa(0, 0))
+  assert.equal(a.de.lado, "esquerda")
+  assert.equal(a.para.lado, "direita")
+})
+
+test("destino abaixo e quase alinhado: sai por baixo, entra por cima", () => {
+  const a = ancoras(caixa(0, 0), caixa(20, 400))
+  assert.equal(a.de.lado, "baixo")
+  assert.equal(a.para.lado, "cima")
+})
+
+test("o caminho e um path SVG que comeca na ancora de saida", () => {
+  const a = ancoras(caixa(0, 0), caixa(500, 200))
+  assert.match(a.caminho, /^M /)
+  assert.match(a.caminho, /C /)
+  assert.ok(a.caminho.startsWith(`M ${a.de.x} ${a.de.y}`))
+  assert.ok(a.caminho.endsWith(`${a.para.x} ${a.para.y}`))
+})
+
+test("grupo que aponta para si mesmo nao vira caminho degenerado", () => {
+  const c = caixa(100, 100)
+  const a = ancoras(c, c)
+  assert.ok(a.caminho.length > 10)
+  assert.notEqual(a.de.lado, a.para.lado, "entrada e saída no mesmo lado desenham uma linha invisível")
+})
