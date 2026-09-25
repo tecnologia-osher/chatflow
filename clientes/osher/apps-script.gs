@@ -38,6 +38,22 @@ const ABA_PARCIAIS = "Chatflow Parciais";
 // colunas próprias para eles.
 const CONTROLE = ["event", "sessaoId", "grupoId", "blocoId", "em"];
 
+// Marca da versão publicada. Serve para conferir de fora, com um GET, se o
+// que está no ar é o que está no repositório — sem depender de abrir a
+// planilha e procurar aba. Trocar quando o arquivo mudar de verdade.
+const VERSAO = "2026-09-25-parciais";
+
+// GET devolve a versão e as abas existentes. Não escreve nada.
+function doGet() {
+  const ss = SpreadsheetApp.openById(ID_DA_PLANILHA);
+  return ContentService
+    .createTextOutput(JSON.stringify({
+      versao: VERSAO,
+      abas: ss.getSheets().map(function (s) { return s.getName(); })
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   // O chat dispara os eventos em rajada, um por bloco exibido, quase ao
   // mesmo tempo. Sem a trava, duas execuções simultâneas reescrevem o
