@@ -781,3 +781,57 @@ test("corrigir um digito no meio nao joga o cursor para o fim", async () => {
   assert.equal(campo.selectionStart, 7,
     `o cursor foi para ${campo.selectionStart} em vez de ficar onde a pessoa está digitando`)
 })
+
+// ---------------------------------------------------------------------------
+// O evento de funil carrega o lead parcial
+//
+// Quem abandona no meio nunca chega ao envio final, então o evento de funil é
+// o único lugar onde as respostas já dadas podem sair do navegador. Sem isso,
+// um visitante que respondeu nome e telefone e desistiu na pergunta seguinte
+// some sem deixar contato.
+// ---------------------------------------------------------------------------
+
+test("o evento de funil leva as respostas ja dadas ate ali", async () => {
+  const chat = await montarChat({ fluxo: exemplo(), destinos: destinosDeTeste() })
+  const antesDaResposta = chat.eventos().length
+
+  await chat.digitar("Ana")
+
+  const novos = chat.eventos().slice(antesDaResposta)
+  assert.ok(novos.length > 0, "nenhum evento novo foi emitido depois da resposta")
+  for (const evento of novos) {
+    assert.equal(evento.nome, "Ana",
+      `o evento do bloco ${evento.blocoId} saiu sem a resposta que já tinha sido dada`)
+  }
+})
+
+test("os eventos anteriores a resposta nao inventam o que ainda nao foi dito", async () => {
+  const chat = await montarChat({ fluxo: exemplo(), destinos: destinosDeTeste() })
+  for (const evento of chat.eventos()) {
+    assert.equal(evento.nome, undefined,
+      `o evento do bloco ${evento.blocoId} trouxe um nome que ninguém respondeu`)
+  }
+})
+
+// Um cliente é livre para nomear seus campos, e o receptor separa lead de
+// evento olhando só a chave "event". Uma resposta chamada "event" não pode
+// derrubar essa marca, senão o parcial desembarca na aba dos leads.
+const fluxoQueSalvaEmEvent = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", proximo: "g2", blocos: [
+      { id: "b_campo", tipo: "entrada_texto", conteudo: { rotulo_botao: "Enviar" }, salvar_em: "event" }
+    ] },
+    { id: "g2", blocos: [{ id: "b_fim", tipo: "texto", conteudo: { texto: "Fim." } }] }
+  ]
+}
+
+test("resposta com nome reservado nao descaracteriza o evento de funil", async () => {
+  const chat = await montarChat({ fluxo: fluxoQueSalvaEmEvent, destinos: destinosDeTeste() })
+  await chat.digitar("qualquer coisa")
+
+  const doFim = chat.eventos().find((e) => e.blocoId === "b_fim")
+  assert.ok(doFim, "o evento do último bloco não foi emitido")
+  assert.equal(doFim.event, true, "o evento perdeu a marca e seria gravado como lead")
+})

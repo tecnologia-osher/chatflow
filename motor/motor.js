@@ -388,6 +388,11 @@ export function criarChat({
       if (!bloco) { estado = avancar(fluxo, estado); continue }
 
       enviador.enviarEvento({
+        // As respostas vêm primeiro de propósito: quem abandona no meio nunca
+        // chega ao envio final, então este é o único lugar por onde o parcial
+        // sai do navegador. Vir primeiro deixa as chaves de controle abaixo
+        // vencerem, caso um cliente batize um campo com o nome de uma delas.
+        ...contexto(fluxo, estado),
         // Marca que separa evento de funil de lead finalizado no destino.
         // A chave é em inglês porque é o contrato que o receptor já espera;
         // sem ela, um destino que recebe os dois num endereço só não tem

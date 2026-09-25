@@ -30,10 +30,27 @@ Apps Script. É um script avulso, então a planilha de destino é declarada por
 ID na constante `ID_DA_PLANILHA`, no topo do arquivo.
 
 Destino: planilha **Leads Osher Backup**, que já guarda os leads históricos de
-2025. O chat escreve só em duas abas próprias, `Chatflow` (um lead por pessoa
-que termina) e `Chatflow Eventos` (o funil, ~16 linhas por visitante). As abas
-antigas não são tocadas. Para renomear, mexa nas constantes `ABA_LEADS` e
-`ABA_EVENTOS` — as abas são criadas com o nome que estiver lá.
+2025. O chat escreve só em três abas próprias. As abas antigas não são
+tocadas. Para renomear, mexa nas constantes no topo do arquivo — as abas são
+criadas com o nome que estiver lá.
+
+| Aba | O que tem | Para quem |
+| --- | --- | --- |
+| `Chatflow` | um lead por pessoa que termina | é o que também vai para o CRM |
+| `Chatflow Parciais` | uma linha por pessoa, reescrita a cada passo | vendedor: quem parou no meio e deixou telefone |
+| `Chatflow Eventos` | uma linha por pergunta exibida, ~16 por visitante | análise de funil |
+
+A aba de parciais existe porque quem abandona no meio nunca chega ao envio
+final: o evento de funil é o único lugar por onde as respostas já dadas saem
+do navegador. A coluna `situacao` vira `concluído` quando a pessoa termina —
+serve para o vendedor não ligar para quem já entrou no CRM pelo caminho
+normal.
+
+Leads parciais **não vão para o CRM**, só para a planilha: os eventos têm um
+destino só (`"eventos": "planilha"` no `destinos.json`), e o CRM recebe apenas
+o que está em `ao_finalizar`. Mandar parcial para o CRM hoje quebraria o lead
+bom — a Edge Function `lead-intake` usa o `sessaoId` como chave de
+deduplicação e descarta o segundo envio da mesma sessão.
 
 Ao editar esse arquivo, republique: **Implantar → Gerenciar implantações →
 editar → Versão: Nova versão**. Só salvar não muda o que está no ar, e a URL
