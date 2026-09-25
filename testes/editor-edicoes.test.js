@@ -5,7 +5,8 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
-  moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo
+  moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
+  definirOpcao, acrescentarOpcao, removerOpcao
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -135,4 +136,60 @@ test("operacao sobre grupo ou bloco inexistente devolve o fluxo intacto", () => 
   const f = base()
   assert.deepEqual(definirCampo(f, { grupo: "nao_existe", bloco: "b1", campo: "texto", valor: "x" }), f)
   assert.deepEqual(removerBloco(f, { grupo: "g1", bloco: "nao_existe" }), f)
+})
+
+// --- opções do bloco de botões ---------------------------------------------
+
+const comBotoes = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{ id: "g1", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo: "entrada_botoes", salvar_em: "bem", conteudo: { opcoes: [
+      { id: "o1", label: "Imóvel", pontos: 2, proximo: "g2" },
+      { id: "o2", label: "Automóvel", pontos: 1 }
+    ] } }] },
+    { id: "g2", posicao: { x: 300, y: 0 }, blocos: [] }]
+})
+const opcoes = (f) => f.grupos[0].blocos[0].conteudo.opcoes
+
+test("definirOpcao troca so o campo daquela opcao", () => {
+  const f = definirOpcao(comBotoes(), { grupo: "g1", bloco: "b", opcao: "o2", campo: "label", valor: "Carro" })
+  assert.equal(opcoes(f)[1].label, "Carro")
+  assert.equal(opcoes(f)[1].pontos, 1)
+  assert.equal(opcoes(f)[0].label, "Imóvel")
+})
+
+test("pontos vira numero, nao texto do campo", () => {
+  const f = definirOpcao(comBotoes(), { grupo: "g1", bloco: "b", opcao: "o2", campo: "pontos", valor: "3" })
+  assert.strictEqual(opcoes(f)[1].pontos, 3, "pontuação em texto quebraria a soma")
+})
+
+test("pontos em branco some, e a opcao deixa de pontuar", () => {
+  const f = definirOpcao(comBotoes(), { grupo: "g1", bloco: "b", opcao: "o1", campo: "pontos", valor: "" })
+  assert.equal("pontos" in opcoes(f)[0], false)
+})
+
+test("acrescentar e remover opcao", () => {
+  let f = acrescentarOpcao(comBotoes(), { grupo: "g1", bloco: "b" })
+  assert.equal(opcoes(f).length, 3)
+  assert.ok(opcoes(f)[2].id && opcoes(f)[2].label !== undefined)
+  f = removerOpcao(f, { grupo: "g1", bloco: "b", opcao: "o1" })
+  assert.deepEqual(opcoes(f).map((o) => o.id).slice(0, 1), ["o2"])
+})
+
+test("id de opcao novo nao colide", () => {
+  let f = comBotoes()
+  const vistos = new Set(opcoes(f).map((o) => o.id))
+  for (let i = 0; i < 20; i++) {
+    f = acrescentarOpcao(f, { grupo: "g1", bloco: "b" })
+    const id = opcoes(f).at(-1).id
+    assert.equal(vistos.has(id), false, `id repetido: ${id}`)
+    vistos.add(id)
+  }
+})
+
+test("a ultima opcao nao pode ser removida", () => {
+  let f = removerOpcao(comBotoes(), { grupo: "g1", bloco: "b", opcao: "o1" })
+  f = removerOpcao(f, { grupo: "g1", bloco: "b", opcao: "o2" })
+  assert.equal(opcoes(f).length, 1, "botões sem nenhuma opção deixam a pessoa sem saída")
 })

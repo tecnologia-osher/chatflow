@@ -138,3 +138,46 @@ export function criarGrupo(fluxo, { x = 0, y = 0, titulo } = {}) {
 }
 
 export { todos as tiposDisponiveis }
+
+// --- opções do bloco de botões ---------------------------------------------
+
+function trocarOpcoes(fluxo, grupo, bloco, transformar) {
+  return trocarBloco(fluxo, grupo, bloco, (b) => {
+    const conteudo = b.conteudo || {}
+    const atuais = Array.isArray(conteudo.opcoes) ? conteudo.opcoes.filter(Boolean) : []
+    const novas = transformar(atuais)
+    if (novas === atuais) return b
+    return { ...b, conteudo: { ...conteudo, opcoes: novas } }
+  })
+}
+
+export function definirOpcao(fluxo, { grupo, bloco, opcao, campo, valor }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    const indice = opcoes.findIndex((o) => o.id === opcao)
+    if (indice === -1) return opcoes
+    // Pontuação precisa ser número: em texto, a soma vira concatenação e a
+    // classificação sai errada sem ninguém perceber.
+    const tratado = campo === "pontos" && String(valor).trim() !== "" ? Number(valor) : valor
+    if (campo === "pontos" && tratado !== "" && Number.isNaN(tratado)) return opcoes
+    return opcoes.map((o, i) => (i === indice ? comCampo(o, campo, tratado) : o))
+  })
+}
+
+export function acrescentarOpcao(fluxo, { grupo, bloco }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    const usados = new Set(opcoes.map((o) => o.id))
+    let n = 1
+    while (usados.has(`o${n}`)) n++
+    return [...opcoes, { id: `o${n}`, label: `Opção ${n}` }]
+  })
+}
+
+export function removerOpcao(fluxo, { grupo, bloco, opcao }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    // Botões sem opção nenhuma deixam a pessoa sem saída no chat: o bloco
+    // espera resposta e não oferece nenhuma.
+    if (opcoes.length <= 1) return opcoes
+    const restantes = opcoes.filter((o) => o.id !== opcao)
+    return restantes.length === opcoes.length ? opcoes : restantes
+  })
+}
