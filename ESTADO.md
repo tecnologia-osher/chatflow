@@ -1,4 +1,4 @@
-# Estado do chatflow — 29/08/2026
+# Estado do chatflow — 25/09/2026
 
 ## Sub-projeto 1: EM PRODUÇÃO
 
@@ -10,7 +10,7 @@ O chat da Osher está no ar desde 27/08/2026:
 - `&teste=1` — pré-visualiza sem enviar nada a lugar nenhum
 
 Publicado com GitHub Pages a partir de `main`, repositório público em
-github.com/tecnologia-osher/chatflow. **183 testes passando.**
+github.com/tecnologia-osher/chatflow. **186 testes passando.**
 
 **Armadilha que vai se repetir no próximo cliente:** o GitHub Pages roda
 Jekyll por padrão, e Jekyll **ignora todo arquivo que começa com `_`**. O
@@ -24,6 +24,9 @@ chat no navegador
   ├── planilha "Leads Osher Backup"
   │      aba Chatflow          — um lead por pessoa que termina
   │      aba Chatflow Eventos  — ~1 linha por pergunta exibida (funil)
+  │      aba Chatflow Parciais — uma linha por PESSOA, reescrita a cada
+  │                              passo. Quem deixa telefone e abandona
+  │                              aparece aqui e em lugar nenhum mais
   └── webhook do Make
          └── Edge Function lead-intake (Supabase pidzzwlpsffjznbzukhj)
                 └── rodízio de vendedor → tabela deals → e-mail
@@ -193,3 +196,41 @@ desenho do editor em vez de a gente adivinhar.
 - Registro de execução, com as decisões e o porquê de cada uma:
   `.superpowers/sdd/2026-08-27-motor-chatflow/progress.md` *(fora do git —
   não rode `git clean -fdx`)*
+
+
+## 25/09/2026 — o que esta sessão fechou
+
+**Quem abandona no meio deixa rastro.** O evento de funil passou a carregar
+as respostas dadas até ali, e o receptor mantém a aba `Chatflow Parciais`,
+uma linha por pessoa. Antes, quem digitava o telefone e parava na pergunta
+seguinte sumia. Provado no ar: a aba nasceu sozinha no primeiro envio.
+
+**O receptor agora diz qual versão está publicada.** Um `GET` na URL do
+Apps Script devolve `{ versao, abas }`. Serve para conferir de fora se o que
+está no ar é o que está no repositório, sem abrir a planilha e procurar aba.
+Trocar a constante `VERSAO` quando o arquivo mudar de verdade.
+
+**Três enganos que custaram tempo, anotados para não se repetirem:**
+
+1. `curl -L` num Apps Script devolve **405** e parece destino morto. Não é:
+   o `302` é normal, o `doPost` já rodou e gravou; o 405 é o curl virando
+   POST em GET ao seguir. **Confira pelo efeito** (a planilha foi escrita?),
+   nunca pelo código de status.
+2. `git push origin main` **estando em outra branch** empurra a `main` local,
+   que não mudou — e sai com sucesso. O trabalho ficou três semanas parado
+   na `leads-parciais` sem ninguém notar. Conferir `git status -sb` antes.
+3. O layout mudou em 29/08 e `cf__composer` deixou de existir. Scripts de
+   verificação no scratchpad envelhecem junto com o produto.
+
+## O problema que sobrou, e não é de código
+
+**Ninguém usa o chat.** Desde o fim de agosto não há tráfego: 1 lead no CRM
+em 45 dias, e é teste do próprio Gustavo. A planilha sem escrita desde 02/09
+não era destino quebrado — era ausência de visita.
+
+O chat funciona, captura, classifica e entrega em dois destinos. Está vazio
+porque o link não está na frente de ninguém. Enquanto isso não mudar,
+nenhuma linha de código altera o resultado — e o sub-projeto 2 (editor
+visual) resolveria uma pergunta que ninguém está fazendo.
+
+**A próxima tarefa do chatflow é de distribuição, não de engenharia.**
