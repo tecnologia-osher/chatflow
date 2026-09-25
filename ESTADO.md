@@ -234,3 +234,33 @@ nenhuma linha de código altera o resultado — e o sub-projeto 2 (editor
 visual) resolveria uma pergunta que ninguém está fazendo.
 
 **A próxima tarefa do chatflow é de distribuição, não de engenharia.**
+
+
+## Sub-projeto 2 em andamento — branch `editor-visual`
+
+⚠️ **O trabalho do editor vive na branch `editor-visual`, não na `main`.**
+O Pages serve a `main`: enquanto não houver merge, nada do editor está no ar.
+Em setembro esse mesmo esquecimento deixou três semanas de trabalho parado —
+conferir `git status -sb` antes de dar push.
+
+Primeira fatia combinada em 25/09/2026:
+
+- `editor/index.html`, estático, zero dependência, aberto com `?cliente=osher`
+- Paleta à esquerda, canvas no meio, preview à direita — como no Typebot
+- Cartões nas `posicao` já gravadas; setas de `proximo`, das opções e do
+  `entao` das condições; pan, zoom e arrastar grupo
+- Painel de propriedades montado a partir dos `campos` do tipo, sem código
+  específico por tipo
+- Acrescentar, apagar e reordenar bloco; criar grupo
+- Ligar grupos por seletor `próximo: ▾`, **não** arrastando seta — liga tudo
+  que o arrastar ligaria, por uma fração do trabalho
+- Preview com o motor de verdade em `modo: teste`
+- Salvar = baixar o `fluxo.json`. Salvar de verdade é o sub-projeto 3
+
+Fora da fatia: arrastar seta, desfazer/refazer, abas Theme e Settings, publicar.
+
+**Feito até agora:** `editor/modelo.js` — leitura do fluxo em cartões e setas,
+lógica pura, 10 testes validados por mutação. Decisões que já valem: grupo sem
+`posicao` ganha uma em grade (senão some atrás dos outros), e **seta para
+grupo inexistente continua sendo desenhada, marcada como órfã** — sumir com
+ela esconderia o erro que a pessoa precisa ver.
