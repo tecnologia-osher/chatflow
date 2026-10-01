@@ -4,7 +4,9 @@
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
 import { cartoes, setas, caixas, eventosDoCanvas, caixasDeEventos } from "./modelo.js"
-import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm } from "./vista.js"
+import {
+  criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
+} from "./vista.js"
 
 const SVG = "http://www.w3.org/2000/svg"
 
@@ -43,6 +45,7 @@ export function criarCanvas({
   let fluxoAtual = null
   let selecao = { grupo: null, bloco: null }
   const FOLGA_DO_CLIQUE = 3
+  const nosDeCartoes = new Map()
   let editandoTitulo = null
   // Se o último mousedown virou arrasto. O clique no nome consulta isto.
   let arrastou = false
@@ -113,7 +116,19 @@ export function criarCanvas({
     const partida = paraMundo(vista, noPalco(ev))
 
     function mover(e) {
-      fioTemporario = { de: partida, para: paraMundo(vista, noPalco(e)) }
+      const ponto = paraMundo(vista, noPalco(e))
+      const alvo = alvoDaLigacao(ponto)
+      marcarAlvo(alvo)
+      if (alvo) {
+        // Grudou: o fio deixa o cursor e vai para a borda do cartão, no mesmo
+        // ponto por onde a seta de verdade vai entrar depois.
+        const caixa = caixasAtuais.get(alvo)
+        const { para, ladoPara } = ancoras(
+          { x: partida.x, y: partida.y, largura: 1, altura: 1 }, caixa)
+        fioTemporario = { de: partida, para, ladoPara }
+      } else {
+        fioTemporario = { de: partida, para: ponto }
+      }
       desenharFio()
     }
     function soltar(e) {
@@ -121,7 +136,8 @@ export function criarCanvas({
       document.removeEventListener("mouseup", soltar)
       fioTemporario = null
       desenharFio()
-      const destino = caixaEm(caixasAtuais, paraMundo(vista, noPalco(e)))
+      marcarAlvo(null)
+      const destino = alvoDaLigacao(paraMundo(vista, noPalco(e)))
       if (destino) avisar(origem, destino)
     }
     document.addEventListener("mousemove", mover)
@@ -129,16 +145,45 @@ export function criarCanvas({
   }
 
   function desenharFio() {
-    const antigo = tela.porClasse
-      ? tela.porClasse("ed__seta--arrastando")[0]
-      : tela.querySelector(".ed__seta--arrastando")
-    if (antigo) antigo.remove()
+    for (const classe of ["ed__seta--arrastando", "ed__ponta--arrastando"]) {
+      const antigo = tela.porClasse ? tela.porClasse(classe)[0] : tela.querySelector(`.${classe}`)
+      if (antigo) antigo.remove()
+    }
     if (!fioTemporario) return
-    const { de, para } = fioTemporario
+    const { de, para, ladoPara } = fioTemporario
     const linha = svg("path", "ed__seta ed__seta--arrastando")
     linha.setAttribute("d", `M ${de.x} ${de.y} L ${para.x} ${para.y}`)
     linha.setAttribute("fill", "none")
     tela.append(linha)
+
+    const ponta = svg("path", "ed__ponta ed__ponta--arrastando")
+    ponta.setAttribute("d", pontaDaSeta(para, ladoPara || ladoDeChegada(de, para)))
+    tela.append(ponta)
+  }
+
+  // Por qual lado a seta chega, quando ninguém disse: pelo lado contrário ao
+  // movimento. Serve para a ponta do fio solto não apontar para qualquer lado.
+  function ladoDeChegada(de, para) {
+    const dx = para.x - de.x
+    const dy = para.y - de.y
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "esquerda" : "direita"
+    return dy >= 0 ? "cima" : "baixo"
+  }
+
+  // O ímã: chegar perto do cartão já conta como acertar nele. A medida é de
+  // tela, não de fluxo — a mão não fica mais firme porque o zoom afastou.
+  const IMA_NA_TELA = 28
+
+  function alvoDaLigacao(ponto) {
+    const margem = IMA_NA_TELA / (vista.escala || 1)
+    return caixaEm(caixasAtuais, ponto) || caixaEm(caixasAtuais, ponto, margem)
+  }
+
+  function marcarAlvo(id) {
+    for (const [grupo, no] of nosDeCartoes) {
+      const base = no.className.replace(" ed__cartao--alvo", "")
+      no.className = grupo === id ? `${base} ed__cartao--alvo` : base
+    }
   }
 
   function desenharSetas(lista, mapa) {
@@ -160,7 +205,7 @@ export function criarCanvas({
       const caixaDeSaida = origem || caixasEventoAtuais.get(seta.evento) || {
         x: destino.x - 260, y: destino.y - 120, largura: 200, altura: 60
       }
-      const { caminho } = ancoras(caixaDeSaida, destino)
+      const { caminho, para: fim, ladoPara } = ancoras(caixaDeSaida, destino)
       const classes = ["ed__seta", `ed__seta--${seta.origens[0]}`]
       if (seta.orfa) classes.push("ed__seta--orfa")
       if (seta.evento) classes.push("ed__seta--evento")
@@ -169,6 +214,10 @@ export function criarCanvas({
       linha.setAttribute("d", caminho)
       linha.setAttribute("fill", "none")
       tela.append(linha)
+
+      const ponta = svg("path", classes.map((c) => c.replace("ed__seta", "ed__ponta")).join(" "))
+      ponta.setAttribute("d", pontaDaSeta(fim, ladoPara))
+      tela.append(ponta)
     }
   }
 
@@ -203,6 +252,7 @@ export function criarCanvas({
   }
 
   function desenharCartoes(lista, mapa) {
+    nosDeCartoes.clear()
     camadaCartoes.replaceChildren()
     for (const cartao of lista) {
       const caixa = mapa.get(cartao.id)
@@ -343,6 +393,7 @@ export function criarCanvas({
       rodape.append(pontoDeSaida(cartao))
       no.append(rodape)
 
+      nosDeCartoes.set(cartao.id, no)
       camadaCartoes.append(no)
     }
   }

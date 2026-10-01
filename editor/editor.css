@@ -183,6 +183,14 @@ html, body { margin: 0; height: 100%; }
 /* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
    daquela resposta até outro grupo. Dentro, pareceria decoração. */
 .ed__seta--arrastando { stroke: var(--ed-entrada); stroke-width: 2; stroke-dasharray: 5 4; }
+/* A ponta: mesma cor da linha, por isso cada tipo repete a regra no fill. */
+.ed__ponta { fill: var(--ed-seta); stroke: none; }
+.ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-entrada); }
+.ed__ponta--condicao { fill: var(--ed-logica); }
+.ed__ponta--orfa { fill: var(--ed-erro); }
+/* O cartão que o ímã pegou: quem arrasta precisa ver onde vai soltar. */
+.ed__cartao--alvo { border-color: var(--ed-entrada);
+  box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
 
 /* --- lateral --- */
 /* O painel flutua à direita e só existe enquanto há algo que a caixa do

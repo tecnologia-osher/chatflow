@@ -664,3 +664,83 @@ test("renomear continua funcionando depois de arrastar um cartao", () => {
   titulo.disparar("click")
   assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1)
 })
+
+// --- seta com ponta, e o ímã -----------------------------------------------
+
+test("cada seta desenhada tem uma ponta, e da cor dela", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
+  const linhas = hospedeiro.porClasse("ed__seta")
+  const pontas = hospedeiro.porClasse("ed__ponta")
+  assert.equal(pontas.length, linhas.length, "linha sem ponta não diz quem liga quem")
+  const daOpcao = pontas.find((p) => p.className.includes("ed__ponta--opcao"))
+  assert.ok(daOpcao, "a ponta precisa herdar o tipo da seta para herdar a cor")
+  assert.match(daOpcao.atributos.d, /^M -?[\d.]+ -?[\d.]+ L/)
+})
+
+test("o fio arrastado tambem tem ponta, apontando para onde vai", () => {
+  const { hospedeiro } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 600, clientY: 400 })
+  const ponta = hospedeiro.porClasse("ed__ponta--arrastando")[0]
+  assert.ok(ponta, "fio sem ponta não mostra o sentido da ligação")
+  document.disparar("mouseup", { clientX: 600, clientY: 400 })
+  assert.equal(hospedeiro.porClasse("ed__ponta--arrastando").length, 0, "a ponta do fio precisa sumir")
+})
+
+test("chegar perto do cartao gruda o fio nele e acende o cartao", () => {
+  const { hospedeiro, canvas } = montarBotoes()
+  const caixa = caixas(cartoesDoFluxo(comBotoes)).get("g2")
+  // 20px acima do canto de g2: fora do cartão, dentro do ímã.
+  const perto = { clientX: caixa.x + 10, clientY: caixa.y - 20 }
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", perto)
+
+  const alvos = hospedeiro.porClasse("ed__cartao").filter((c) => c.className.includes("ed__cartao--alvo"))
+  assert.equal(alvos.length, 1, "o ímã precisa acender o cartão que vai receber")
+  const fio = hospedeiro.porClasse("ed__seta--arrastando")[0]
+  const fim = fio.atributos.d.match(/L (-?[\d.]+) (-?[\d.]+)/)
+  assert.notEqual(Number(fim[1]), perto.clientX, "grudado, o fio deixa o cursor e vai à borda")
+  document.disparar("mouseup", perto)
+  assert.equal(hospedeiro.porClasse("ed__cartao").filter((c) => c.className.includes("ed__cartao--alvo")).length, 0,
+    "o aceso precisa apagar ao soltar")
+})
+
+test("soltar perto do cartao liga nele, sem precisar acertar dentro", () => {
+  const { hospedeiro, ligacoes } = montarSaida()
+  const caixa = caixas(cartoesDoFluxo(fluxo)).get("g2")
+  const perto = { clientX: caixa.x - 18, clientY: caixa.y + 10 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", perto)
+  document.disparar("mouseup", perto)
+  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", destino: "g2" })
+})
+
+test("longe de todo cartao o fio segue o cursor e nao liga nada", () => {
+  const { hospedeiro, ligacoes } = montarSaida()
+  const longe = { clientX: 5000, clientY: 5000 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", longe)
+  const fio = hospedeiro.porClasse("ed__seta--arrastando")[0]
+  assert.match(fio.atributos.d, /L 5000 5000$/)
+  document.disparar("mouseup", longe)
+  assert.deepEqual(ligacoes, [])
+})
+
+test("a ponta da seta gira com o lado por onde ela chega no cartao", () => {
+  const empilhado = {
+    versao: 2, eventos: [],
+    grupos: [
+      { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, proximo: "g2", blocos: [] },
+      { id: "g2", titulo: "b", posicao: { x: 0, y: 400 }, blocos: [] }
+    ]
+  }
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(empilhado)
+  const d = hospedeiro.porClasse("ed__ponta")[0].atributos.d
+  const n = d.match(/-?[\d.]+/g).map(Number)
+  // Cartões empilhados: a seta desce e entra por cima, então o bico fica
+  // embaixo da base. Com a ponta presa num lado só, isto deita.
+  assert.ok(n[3] < n[1] && n[5] < n[1], `ponta deitada: ${d}`)
+  assert.notEqual(n[2], n[4], "a base tem largura na horizontal")
+})

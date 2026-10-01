@@ -82,7 +82,7 @@ export function ancoras(a, b) {
   const caminho =
     `M ${de.x} ${de.y} C ${de.x + c1.x} ${de.y + c1.y}, ${para.x + c2.x} ${para.y + c2.y}, ${para.x} ${para.y}`
 
-  return { de, para, caminho }
+  return { de, para, caminho, ladoDe, ladoPara }
 }
 
 // Enquadra todo o conteúdo na área visível. Sem isto, um fluxo mais alto que
@@ -121,12 +121,37 @@ export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
 // Qual grupo está sob um ponto do fluxo. Serve para saber onde a ligação foi
 // solta. Percorre de trás para frente: com cartões sobrepostos, o de cima é o
 // que a pessoa vê e acredita estar acertando.
-export function caixaEm(mapaDeCaixas, ponto) {
+//
+// A `margem` é o alcance do ímã: com ela, chegar perto do cartão já conta como
+// acertar. Zero é o encaixe exato.
+export function caixaEm(mapaDeCaixas, ponto, margem = 0) {
   const entradas = [...(mapaDeCaixas?.entries?.() || [])]
   for (let i = entradas.length - 1; i >= 0; i--) {
     const [id, c] = entradas[i]
-    if (ponto.x >= c.x && ponto.x <= c.x + c.largura &&
-        ponto.y >= c.y && ponto.y <= c.y + c.altura) return id
+    if (ponto.x >= c.x - margem && ponto.x <= c.x + c.largura + margem &&
+        ponto.y >= c.y - margem && ponto.y <= c.y + c.altura + margem) return id
   }
   return null
+}
+
+// A ponta da seta: um triângulo apontando para dentro da caixa que recebe a
+// ligação. Linha sem ponta não diz quem liga quem — os dois lados parecem
+// iguais, e num fluxo com volta ninguém sabe para onde o lead vai.
+const PONTA = 9
+
+export function pontaDaSeta(ponto, lado, tamanho = PONTA) {
+  // O lado é o da caixa que recebe: entrando pela esquerda, a seta aponta
+  // para a direita.
+  const direcao = {
+    esquerda: { x: 1, y: 0 }, direita: { x: -1, y: 0 },
+    cima: { x: 0, y: 1 }, baixo: { x: 0, y: -1 }
+  }[lado] || { x: 1, y: 0 }
+
+  // Base do triângulo, perpendicular à direção.
+  const lateral = { x: -direcao.y, y: direcao.x }
+  const base = { x: ponto.x - direcao.x * tamanho, y: ponto.y - direcao.y * tamanho }
+  const meia = tamanho * 0.5
+  const a = { x: base.x + lateral.x * meia, y: base.y + lateral.y * meia }
+  const b = { x: base.x - lateral.x * meia, y: base.y - lateral.y * meia }
+  return `M ${ponto.x} ${ponto.y} L ${a.x} ${a.y} L ${b.x} ${b.y} Z`
 }

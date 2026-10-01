@@ -5,7 +5,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, enquadrar, caixaEm,
-  ESCALA_MIN, ESCALA_MAX
+  pontaDaSeta, ESCALA_MIN, ESCALA_MAX
 } from "../editor/vista.js"
 
 const perto = (a, b, tol = 0.001) =>
@@ -163,4 +163,45 @@ test("com caixas sobrepostas, a de cima vence", () => {
   const mapa = new Map([["debaixo", caixa(0, 0)], ["emcima", caixa(10, 10)]])
   assert.equal(caixaEm(mapa, { x: 50, y: 50 }), "emcima",
     "a última desenhada é a que a pessoa vê e acha que está clicando")
+})
+
+// --- ponta da seta ---------------------------------------------------------
+
+test("a ponta aponta para dentro da caixa que recebe a ligacao", () => {
+  // Entrando pela esquerda, o bico fica no ponto e a base à esquerda dele.
+  const d = pontaDaSeta({ x: 100, y: 50 }, "esquerda", 10)
+  const pontos = d.match(/-?\d+(\.\d+)?/g).map(Number)
+  assert.deepEqual(pontos.slice(0, 2), [100, 50], "o bico fica no ponto de encontro")
+  assert.ok(pontos[2] < 100 && pontos[4] < 100, "a base fica atrás do bico")
+  assert.notEqual(pontos[3], pontos[5], "a base tem largura")
+})
+
+test("a ponta gira com o lado de chegada", () => {
+  const porCima = pontaDaSeta({ x: 100, y: 50 }, "cima", 10)
+  const pontos = porCima.match(/-?\d+(\.\d+)?/g).map(Number)
+  assert.deepEqual(pontos.slice(0, 2), [100, 50])
+  assert.ok(pontos[3] < 50 && pontos[5] < 50, "entrando por cima, a base fica acima")
+  assert.notEqual(pontos[2], pontos[4], "a base tem largura")
+})
+
+test("lado desconhecido nao derruba o desenho", () => {
+  assert.match(pontaDaSeta({ x: 0, y: 0 }, undefined, 8), /^M 0 0 L/)
+})
+
+test("ancoras dizem por onde a seta sai e por onde chega", () => {
+  const a = { x: 0, y: 0, largura: 100, altura: 50 }
+  const b = { x: 400, y: 0, largura: 100, altura: 50 }
+  const { ladoDe, ladoPara } = ancoras(a, b)
+  assert.equal(ladoDe, "direita")
+  assert.equal(ladoPara, "esquerda")
+})
+
+// --- ímã -------------------------------------------------------------------
+
+test("com margem, chegar perto do cartao ja conta como acertar", () => {
+  const mapa = new Map([["g1", { x: 100, y: 100, largura: 60, altura: 40 }]])
+  const quaseEmCima = { x: 90, y: 110 }
+  assert.equal(caixaEm(mapa, quaseEmCima), null, "sem ímã, só o encaixe exato")
+  assert.equal(caixaEm(mapa, quaseEmCima, 20), "g1", "com ímã, 10px fora conta")
+  assert.equal(caixaEm(mapa, { x: 40, y: 110 }, 20), null, "longe continua longe")
 })
