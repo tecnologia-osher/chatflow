@@ -158,6 +158,18 @@ test("cartao com botoes nao cobra o rodape, que ele nao tem", () => {
     MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_OPCOES_TOPO + 2 * MEDIDAS.CARTAO_OPCAO)
 })
 
+test("resumo sem espaco onde quebrar conta as linhas igual, nao vira uma so", () => {
+  // A URL do WhatsApp não tem espaço: ela quebra no meio da palavra e ocupa
+  // três linhas no cartão. Enquanto o modelo contava uma, o cartão vinha 32px
+  // mais baixo do que é — e no desenho o link saía pela direita.
+  const link = "https://wa.me/5561999699829?text=Ola,%20vim%20do%20site%20e%20quero%20falar"
+  const cartao = { id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo: "redirecionar", resumo: link }] }
+  const esperado = MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_RODAPE +
+    MEDIDAS.CARTAO_BLOCO + 3 * MEDIDAS.CARTAO_LINHA
+  assert.equal(caixas([cartao]).get("g").altura, esperado)
+})
+
 // --- campo principal -------------------------------------------------------
 
 test("o campo principal e o primeiro texto que o tipo declara", async () => {
