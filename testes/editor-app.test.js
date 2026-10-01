@@ -82,24 +82,11 @@ test("criar grupo acrescenta um cartao", () => {
   assert.equal(porClasse(hospedeiro, "ed__cartao").length, 3)
 })
 
-test("o preview monta o chat de verdade e refaz a cada edicao", async () => {
-  const { hospedeiro } = montar()
-  await assentar()
-  assert.ok(porClasse(hospedeiro, "cf__bolha").length > 0, "o preview precisa mostrar a conversa")
-  assert.match(porClasse(hospedeiro, "cf__bolha")[0].textContent, /Olá/)
-
-  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
-  const campo = porClasse(hospedeiro, "ed__campo")[0]
-  campo.value = "Bom dia"
-  campo.disparar("input")
-  await assentar()
-  assert.match(porClasse(hospedeiro, "cf__bolha")[0].textContent, /Bom dia/)
-})
-
 test("o preview nao envia nada a lugar nenhum", async () => {
   const chamadas = []
   globalThis.fetch = async (u) => { chamadas.push(u); return { ok: true } }
   const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
   await assentar()
   assert.deepEqual(chamadas, [], "preview que dispara webhook suja a planilha do cliente a cada tecla")
 })
@@ -126,4 +113,67 @@ test("o aviso de validacao aparece quando o fluxo quebra", () => {
 test("fluxo valido nao mostra problema nenhum", () => {
   const { hospedeiro } = montar()
   assert.equal(porClasse(hospedeiro, "ed__problemas")[0].textContent.trim(), "")
+})
+
+// --- botões de teste -------------------------------------------------------
+
+test("o canvas comeca sem preview ocupando espaco", () => {
+  const { hospedeiro } = montar()
+  assert.equal(porClasse(hospedeiro, "ed__preview").length, 0)
+  assert.equal(porClasse(hospedeiro, "cf__bolha").length, 0, "o chat só aparece quando pedido")
+})
+
+test("o botao Testar abre o preview do inicio", async () => {
+  const { hospedeiro } = montar()
+  const botao = porClasse(hospedeiro, "ed__testar")[0]
+  assert.match(botao.textContent, /Test/i)
+  botao.disparar("click")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__preview").length, 1)
+  assert.match(porClasse(hospedeiro, "cf__bolha")[0].textContent, /Olá/)
+})
+
+test("cada cartao tem um play que comeca o teste dali", async () => {
+  const fluxo = fluxoBase()
+  fluxo.grupos[1].blocos.push({ id: "b2", tipo: "texto", conteudo: { texto: "Fim do papo" } })
+  const { hospedeiro } = montar(fluxo)
+  const plays = porClasse(hospedeiro, "ed__play")
+  assert.equal(plays.length, 2, "um por grupo")
+  plays[1].disparar("click")
+  await assentar()
+  assert.match(porClasse(hospedeiro, "cf__bolha")[0].textContent, /Fim do papo/)
+  assert.equal(
+    porClasse(hospedeiro, "cf__bolha").some((b) => /Olá/.test(b.textContent)),
+    false,
+    "começar do segundo grupo não pode mostrar a fala do primeiro"
+  )
+})
+
+test("o play do cartao nao seleciona o grupo nem arrasta", async () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__play")[1].disparar("click")
+  await assentar()
+  assert.equal(editor.selecao().grupo, null, "clicar no play não é clicar no cabeçalho")
+})
+
+test("editar com o preview aberto refaz a conversa", async () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
+  await assentar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__campo")[0]
+  campo.value = "Bom dia"
+  campo.disparar("input")
+  await assentar()
+  assert.match(porClasse(hospedeiro, "cf__bolha")[0].textContent, /Bom dia/)
+})
+
+test("editar com o preview fechado nao o abre sozinho", async () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__campo")[0]
+  campo.value = "Bom dia"
+  campo.disparar("input")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__preview").length, 0)
 })

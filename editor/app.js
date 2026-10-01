@@ -8,7 +8,7 @@ import { criarPainel } from "./painel.js"
 import { todos } from "./catalogo.js"
 import { acrescentarBloco, criarGrupo, moverGrupo } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
-import { criarChat } from "../motor/motor.js"
+import { criarPreview } from "./preview.js"
 
 const NOME_DA_CATEGORIA = {
   fala: "Fala", entrada: "Entrada", logica: "Lógica", conexao: "Conexão"
@@ -34,17 +34,21 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   const problemas = el("div", "ed__problemas")
   const lateral = el("aside", "ed__lateral")
   const areaPainel = el("div", "ed__area-painel")
+  lateral.append(areaPainel)
+  // O preview vive fora da coluna: aparece sobreposto quando pedido, para o
+  // canvas ficar com a tela inteira enquanto se monta o fluxo.
   const areaPreview = el("div", "ed__area-preview")
-  lateral.append(areaPainel, areaPreview)
   centro.append(barra, palcoCanvas, problemas)
-  raiz.append(paleta, centro, lateral)
+  raiz.append(paleta, centro, lateral, areaPreview)
   elemento.replaceChildren(raiz)
 
   const canvas = criarCanvas({
     elemento: palcoCanvas,
     aoSelecionar: (nova) => { selecao = nova; recado = ""; desenharPainel(); desenharPaleta() },
-    aoMover: (grupo, { x, y }) => { atual = moverGrupo(atual, { grupo, x, y }); redesenhar({ manterVista: true }) }
+    aoMover: (grupo, { x, y }) => { atual = moverGrupo(atual, { grupo, x, y }); redesenhar({ manterVista: true }) },
+    aoTestar: (grupo) => preview.abrir(atual, grupo)
   })
+  const preview = criarPreview({ elemento: areaPreview })
   const painel = criarPainel({
     elemento: areaPainel,
     aoEditar: (novo) => { atual = novo; redesenhar() }
@@ -61,11 +65,15 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     redesenhar()
   })
 
+  const testar = el("button", "ed__testar", "▶ Testar")
+  testar.setAttribute("type", "button")
+  testar.addEventListener("click", () => preview.abrir(atual, null))
+
   const baixar = el("button", "ed__baixar", "Baixar fluxo.json")
   baixar.setAttribute("type", "button")
   baixar.addEventListener("click", () => aoBaixar(JSON.stringify(atual, null, 2), "fluxo.json"))
 
-  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), criar, baixar)
+  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), testar, criar, baixar)
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
@@ -107,21 +115,6 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     paleta.replaceChildren(caixa)
   }
 
-  // --- preview ---------------------------------------------------------
-  // Remonta a cada edição. `modo: teste` e um `buscar` que recusa garantem
-  // que nenhuma tecla digitada aqui vire linha na planilha do cliente.
-  function desenharPreview() {
-    const chat = criarChat({
-      elemento: areaPreview,
-      fluxo: atual,
-      modo: "teste",
-      armazenamento: undefined,
-      ritmo: { piso: 0, porCaractere: 0, teto: 0 },
-      buscar: async () => { throw new Error("preview não envia") }
-    })
-    chat.reiniciar({ retomar: false })
-  }
-
   function desenharProblemas() {
     const relatorio = validarFluxo(atual, { destinos: {} })
     problemas.textContent = relatorio.valido ? "" : relatorio.erros.join(" · ")
@@ -137,7 +130,7 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     desenharPainel()
     desenharPaleta()
     desenharProblemas()
-    desenharPreview()
+    preview.atualizar(atual)
   }
 
   redesenhar()

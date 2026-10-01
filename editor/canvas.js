@@ -23,7 +23,7 @@ function svg(tag, classe) {
   return e
 }
 
-export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () => {} }) {
+export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {} }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
   const tela = svg("svg", "ed__setas")
@@ -113,7 +113,20 @@ export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () =>
       no.style.setProperty("transform", `translate(${caixa.x}px, ${caixa.y}px)`)
       no.style.setProperty("width", `${caixa.largura}px`)
 
-      const cabecalho = el("div", "ed__cabecalho", cartao.titulo)
+      const cabecalho = el("div", "ed__cabecalho")
+      cabecalho.append(el("span", "ed__cabecalho-titulo", cartao.titulo))
+
+      // Testar a partir daqui. Para o clique e o mousedown: sem isso ele
+      // selecionaria o grupo e começaria um arrasto junto.
+      const play = el("button", "ed__play", "▶")
+      play.setAttribute("type", "button")
+      play.setAttribute("title", `Testar a partir de ${cartao.titulo}`)
+      play.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      play.addEventListener("click", (ev) => {
+        ev.stopPropagation?.()
+        aoTestar(cartao.id)
+      })
+      cabecalho.append(play)
       cabecalho.addEventListener("click", () => {
         selecao = { grupo: cartao.id, bloco: null }
         desenhar(fluxoAtual)
