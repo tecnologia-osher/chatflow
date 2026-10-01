@@ -97,6 +97,25 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
       atual = definirOpcao(atual, { grupo, bloco, opcao, campo: "proximo", valor: destino })
       redesenhar()
     },
+    // Apagar a ligação é apagar o destino de quem a criou. Qual campo é
+    // depende de onde a seta nasceu — e é a própria seta que diz.
+    aoApagarLigacao: (seta) => {
+      if (seta.evento) {
+        atual = definirProximoDoEvento(atual, { tipo: seta.evento, destino: "" })
+      } else if (seta.saida?.opcao) {
+        atual = definirOpcao(atual, {
+          grupo: seta.de, bloco: seta.saida.bloco, opcao: seta.saida.opcao,
+          campo: "proximo", valor: ""
+        })
+      } else if (seta.saida?.bloco) {
+        atual = definirCampo(atual, {
+          grupo: seta.de, bloco: seta.saida.bloco, campo: "destino", valor: ""
+        })
+      } else {
+        atual = definirProximo(atual, { grupo: seta.de, valor: "" })
+      }
+      redesenhar()
+    },
     aoAbrirDetalhes: ({ grupo, bloco }) => {
       selecao = { grupo, bloco }
       detalhesAbertos = true

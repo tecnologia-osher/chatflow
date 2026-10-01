@@ -31,6 +31,7 @@ function svg(tag, classe) {
 
 export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
+  aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
@@ -50,6 +51,8 @@ export function criarCanvas({
   let selecao = { grupo: null, bloco: null }
   const FOLGA_DO_CLIQUE = 3
   const nosDeCartoes = new Map()
+  let setaSelecionada = null
+  let menuAberto = null
   let editandoTitulo = null
   // Se o último mousedown virou arrasto. O clique no nome consulta isto.
   let arrastou = false
@@ -97,6 +100,7 @@ export function criarCanvas({
   }
 
   palco.addEventListener("mousedown", (ev) => {
+    limparLigacao()
     const base = { x: vista.x, y: vista.y }
     iniciarArrasto(ev, (dx, dy) => {
       vista = { ...vista, x: base.x + dx, y: base.y + dy }
@@ -106,6 +110,7 @@ export function criarCanvas({
 
   palco.addEventListener("wheel", (ev) => {
     ev.preventDefault?.()
+    fecharMenu()
     vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: noPalco(ev) })
     aplicarVista()
   })
@@ -160,6 +165,55 @@ export function criarCanvas({
   // de verdade: sai perpendicular à borda do cartão de origem, pelo lado que
   // olha para o cursor, e curva até ele. Era uma reta, e por isso o desenho
   // mudava de forma no instante em que a ligação era feita.
+  function selecionarLigacao(seta) {
+    setaSelecionada = seta.chave
+    fecharMenu()
+    desenhar(fluxoAtual)
+    aoSelecionarLigacao(seta)
+  }
+
+  function limparLigacao() {
+    if (!setaSelecionada && !menuAberto) return
+    setaSelecionada = null
+    fecharMenu()
+    desenhar(fluxoAtual)
+  }
+
+  function fecharMenu() {
+    menuAberto?.remove()
+    menuAberto = null
+  }
+
+  // O menu da ligação mora no palco, não no mundo: assim não cresce nem
+  // encolhe com o zoom, e aparece onde a pessoa clicou.
+  function abrirMenuDaLigacao(ev, seta) {
+    fecharMenu()
+    const onde = noPalco(ev)
+    const menu = el("div", "ed__menu-ligacao")
+    menu.style.setProperty("left", `${onde.x}px`)
+    menu.style.setProperty("top", `${onde.y}px`)
+    menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
+
+    // Caminho que o editor não sabe refazer não ganha botão de apagar: ficar
+    // sem a ligação e sem como recriá-la é pior que não poder apagar.
+    if (seta.origens.includes("condicao")) {
+      menu.append(el("span", "ed__menu-aviso",
+        "Este caminho vem de uma regra de condição, que ainda não se edita aqui."))
+    } else {
+      const apagar = el("button", "ed__menu-excluir", "Excluir")
+      apagar.setAttribute("type", "button")
+      apagar.addEventListener("click", (e) => {
+        e.stopPropagation?.()
+        fecharMenu()
+        setaSelecionada = null
+        aoApagarLigacao(seta)
+      })
+      menu.append(apagar)
+    }
+    palco.append(menu)
+    menuAberto = menu
+  }
+
   function desenharFio() {
     for (const classe of ["ed__seta--arrastando", "ed__ponta--arrastando"]) {
       const antigo = tela.porClasse ? tela.porClasse(classe)[0] : tela.querySelector(`.${classe}`)
@@ -237,11 +291,31 @@ export function criarCanvas({
       const classes = ["ed__seta", `ed__seta--${seta.origens[0]}`]
       if (seta.orfa) classes.push("ed__seta--orfa")
       if (seta.evento) classes.push("ed__seta--evento")
+      if (seta.chave === setaSelecionada) classes.push("ed__seta--selecionada")
 
       const linha = svg("path", classes.join(" "))
       linha.setAttribute("d", caminho)
       linha.setAttribute("fill", "none")
       tela.append(linha)
+
+      // Uma faixa larga e invisível por cima da linha: 2px de traço não se
+      // acerta com o mouse. É ela que recebe o clique.
+      const faixa = svg("path", "ed__seta-faixa")
+      faixa.setAttribute("d", caminho)
+      faixa.setAttribute("fill", "none")
+      faixa.dadosSeta = seta
+      faixa.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      faixa.addEventListener("click", (ev) => {
+        ev.stopPropagation?.()
+        selecionarLigacao(seta)
+      })
+      faixa.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault?.()
+        ev.stopPropagation?.()
+        selecionarLigacao(seta)
+        abrirMenuDaLigacao(ev, seta)
+      })
+      tela.append(faixa)
 
       const ponta = svg("path", classes.map((c) => c.replace("ed__seta", "ed__ponta")).join(" "))
       ponta.setAttribute("d", pontaDaSeta(fim, ladoPara))

@@ -470,3 +470,24 @@ copiados:
    arredondados (`segments.ts` + `svg-round-corners`), não curvas de Bézier.
    É escolha de linguagem visual, não de comportamento, e mudá-la mexeria em
    todo o desenho — fica para quando for decisão de design, não de física.
+
+### Clicar na linha: esquerdo seleciona, direito exclui
+
+477 testes. Cada seta ganhou uma faixa invisível de 16px por cima dela — 2px de
+traço não se acerta com o mouse, e era por isso que a camada de setas ignorava
+clique. Clique esquerdo seleciona (a linha engrossa e fica laranja); clique
+direito abre um menu no ponto clicado com **Excluir**. Clicar no fundo larga a
+seleção e fecha o menu; o zoom também fecha.
+
+Excluir apaga o destino de quem criou a ligação, e qual campo é depende de onde
+a seta nasceu — a própria seta diz: `proximo` do grupo, `proximo` da opção,
+`proximo` do evento, `destino` do `ir_para`. O campo sai do JSON em vez de ficar
+como texto vazio.
+
+**Linha de condição não ganha Excluir**, e o menu explica por quê: as `regras`
+ainda não se editam no editor, então apagar seria tirar um caminho que não há
+como recriar. É a única exceção, e está escrita na tela.
+
+De passagem: apagar a ligação do Start fazia o aviso dizer `aponta para o grupo
+"", que não existe` — mandava procurar um grupo que nunca existiu. Agora diz
+"O início não aponta para nenhum grupo: ligue o Start ao primeiro grupo".

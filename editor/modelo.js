@@ -152,6 +152,10 @@ export function setas(fluxo) {
     // Seta órfã continua sendo desenhada de propósito: sumir com ela
     // esconderia justamente o erro que a pessoa precisa ver.
     porPar.set(chave, {
+      // A chave identifica a seta entre um desenho e o seguinte: é por ela
+      // que o canvas sabe qual linha continua selecionada depois de
+      // redesenhar, sem guardar o objeto antigo.
+      chave,
       de: de ?? null, para, origens: [origem], saida,
       orfa: destinoQuebrado(para), evento: evento || null
     })

@@ -921,3 +921,94 @@ test("dois grupos com bloco de mesmo id: acende o do cartao mirado", () => {
   assert.equal(acesos[0].dadosGrupo, "g2")
   document.disparar("mouseup", dentro)
 })
+
+// --- clicar na linha -------------------------------------------------------
+
+test("clicar na linha a seleciona, e avisa qual foi", () => {
+  const hospedeiro = new Elemento("div")
+  const escolhidas = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoSelecionarLigacao: (s) => escolhidas.push(s) })
+  canvas.desenhar(fluxo)
+  const faixas = hospedeiro.porClasse("ed__seta-faixa")
+  assert.equal(faixas.length, hospedeiro.porClasse("ed__seta").length,
+    "sem faixa larga, acertar a linha com o mouse seria sorte")
+
+  faixas[0].disparar("click")
+  assert.equal(escolhidas.length, 1)
+  const marcadas = hospedeiro.porClasse("ed__seta").filter((s) => s.className.includes("--selecionada"))
+  assert.equal(marcadas.length, 1, "a linha escolhida precisa aparecer escolhida")
+})
+
+test("clicar no fundo larga a selecao", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  hospedeiro.porClasse("ed__seta-faixa")[0].disparar("click")
+  hospedeiro.porClasse("ed__palco")[0].disparar("mousedown", { clientX: 5, clientY: 5, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__seta").filter((s) => s.className.includes("--selecionada")).length, 0)
+})
+
+test("botao direito na linha abre o menu onde se clicou, com Excluir", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  const faixa = hospedeiro.porClasse("ed__seta-faixa")[0]
+  let barrou = false
+  faixa.disparar("contextmenu", { clientX: 420, clientY: 160, preventDefault() { barrou = true } })
+
+  assert.equal(barrou, true, "sem barrar, o menu do navegador cobre o nosso")
+  const menu = hospedeiro.porClasse("ed__menu-ligacao")[0]
+  assert.ok(menu, "o menu precisa aparecer")
+  assert.equal(menu.style.propriedades.left, "420px")
+  assert.equal(menu.style.propriedades.top, "160px")
+  assert.equal(hospedeiro.porClasse("ed__menu-excluir")[0].textContent, "Excluir")
+})
+
+test("o Excluir avisa qual ligacao apagar, e fecha o menu", () => {
+  const hospedeiro = new Elemento("div")
+  const apagadas = []
+  criarCanvas({ elemento: hospedeiro, aoApagarLigacao: (s) => apagadas.push(s) }).desenhar(fluxo)
+  const faixa = hospedeiro.porClasse("ed__seta-faixa").find((f) => f.dadosSeta.de === "g1")
+  faixa.disparar("contextmenu", { clientX: 10, clientY: 10 })
+  hospedeiro.porClasse("ed__menu-excluir")[0].disparar("click")
+
+  assert.equal(apagadas.length, 1)
+  assert.equal(apagadas[0].de, "g1")
+  assert.equal(hospedeiro.porClasse("ed__menu-ligacao").length, 0, "o menu precisa fechar")
+})
+
+test("clicar no fundo fecha o menu", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__seta-faixa")[0].disparar("contextmenu", { clientX: 10, clientY: 10 })
+  hospedeiro.porClasse("ed__palco")[0].disparar("mousedown", { clientX: 5, clientY: 5, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__menu-ligacao").length, 0)
+})
+
+test("linha de condicao nao oferece Excluir: o editor nao sabe refazer", () => {
+  const comCondicao = {
+    versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, blocos: [
+        { id: "b_c", tipo: "condicao", conteudo: { regras: [
+          { se: { variavel: "v", vazio: true }, entao: "g2" }] } }] },
+      { id: "g2", titulo: "b", posicao: { x: 400, y: 0 }, blocos: [] }
+    ]
+  }
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comCondicao)
+  const faixa = hospedeiro.porClasse("ed__seta-faixa").find((f) => f.dadosSeta.origens.includes("condicao"))
+  faixa.disparar("contextmenu", { clientX: 10, clientY: 10 })
+  assert.equal(hospedeiro.porClasse("ed__menu-excluir").length, 0)
+  assert.match(hospedeiro.porClasse("ed__menu-aviso")[0].textContent, /condição/i)
+})
+
+test("arrastar o fundo nao e clicar na linha: a faixa nao move o canvas", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  const antes = canvas.vista()
+  hospedeiro.porClasse("ed__seta-faixa")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 200, clientY: 100 })
+  document.disparar("mouseup", {})
+  assert.deepEqual(canvas.vista(), antes)
+})

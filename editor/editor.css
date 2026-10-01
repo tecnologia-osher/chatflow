@@ -183,6 +183,20 @@ html, body { margin: 0; height: 100%; }
 /* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
    daquela resposta até outro grupo. Dentro, pareceria decoração. */
 .ed__seta--arrastando { stroke: var(--ed-entrada); stroke-width: 2; stroke-dasharray: 5 4; }
+/* A faixa de clique: larga, invisível, e a única coisa da camada de setas que
+   recebe mouse. Sem ela, acertar 2px de linha seria sorte. */
+.ed__seta-faixa { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+.ed__seta--selecionada { stroke-width: 3.5; stroke: var(--ed-entrada); }
+.ed__menu-ligacao { position: absolute; z-index: 30; transform: translate(-50%, -115%);
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 9px;
+  box-shadow: 0 6px 20px rgba(20,25,40,0.16); }
+.ed__menu-excluir { border: none; border-radius: 6px; padding: 0.3rem 0.6rem;
+  background: transparent; color: var(--ed-erro); font: inherit; font-size: 0.8rem;
+  cursor: pointer; white-space: nowrap; }
+.ed__menu-excluir:hover { background: var(--ed-problema-fundo); }
+.ed__menu-aviso { max-width: 15rem; padding: 0.2rem 0.4rem; font-size: 0.74rem;
+  color: var(--ed-suave); }
 /* A ponta: mesma cor da linha, por isso cada tipo repete a regra no fill. */
 .ed__ponta { fill: var(--ed-seta); stroke: none; }
 .ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-entrada); }

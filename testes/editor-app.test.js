@@ -553,3 +553,53 @@ test("a barra diz Centralizar, e explica o que faz", () => {
   assert.equal(botao.textContent, "Centralizar")
   assert.match(botao.atributos.title || "", /fluxo inteiro|tela/i)
 })
+
+// --- apagar uma ligação ----------------------------------------------------
+
+const faixaDe = (h, criterio) => porClasse(h, "ed__seta-faixa").find((f) => criterio(f.dadosSeta))
+function apagarLigacao(hospedeiro, criterio) {
+  const faixa = faixaDe(hospedeiro, criterio)
+  faixa.disparar("contextmenu", { clientX: 10, clientY: 10 })
+  porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
+}
+
+test("excluir a linha da saida do grupo apaga o proximo dele", () => {
+  const { hospedeiro, editor } = montar()
+  assert.equal(editor.fluxo().grupos[0].proximo, "g2")
+  apagarLigacao(hospedeiro, (s) => s.de === "g1" && !s.saida)
+  assert.equal("proximo" in editor.fluxo().grupos[0], false,
+    "destino apagado sai do JSON, não fica como texto vazio")
+})
+
+test("excluir a linha de uma opcao apaga so o destino daquela opcao", () => {
+  const f = comBotoes()
+  f.grupos[0].blocos[1].conteudo.opcoes[0].proximo = "g2"
+  const { hospedeiro, editor } = montar(f)
+  apagarLigacao(hospedeiro, (s) => s.saida?.opcao === "o1")
+  const opcoes = editor.fluxo().grupos[0].blocos[1].conteudo.opcoes
+  assert.equal("proximo" in opcoes[0], false)
+  assert.equal(editor.fluxo().grupos[0].proximo, "g2", "a saída do grupo não era essa")
+})
+
+test("excluir a linha do Start apaga o inicio, e o aviso aparece", () => {
+  const { hospedeiro, editor } = montar()
+  apagarLigacao(hospedeiro, (s) => s.evento === "inicio")
+  assert.equal("proximo" in editor.fluxo().eventos[0], false)
+  assert.match(porClasse(hospedeiro, "ed__problemas")[0].textContent, /início/i,
+    "fluxo sem início precisa gritar")
+})
+
+test("excluir a linha de um ir_para apaga o destino do bloco", () => {
+  const f = fluxoBase()
+  f.grupos[0].blocos.push({ id: "b_ir", tipo: "ir_para", conteudo: { destino: "g2" } })
+  const { hospedeiro, editor } = montar(f)
+  apagarLigacao(hospedeiro, (s) => s.origens.includes("ir_para"))
+  assert.equal("destino" in editor.fluxo().grupos[0].blocos[1].conteudo, false)
+})
+
+test("depois de excluir, a linha sai do desenho", () => {
+  const { hospedeiro } = montar()
+  const antes = porClasse(hospedeiro, "ed__seta").length
+  apagarLigacao(hospedeiro, (s) => s.de === "g1" && !s.saida)
+  assert.equal(porClasse(hospedeiro, "ed__seta").length, antes - 1)
+})

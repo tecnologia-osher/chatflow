@@ -68,6 +68,10 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   const inicio = eventos.find((e) => e.tipo === "inicio")
   if (!inicio) {
     erros.push("O fluxo precisa de um evento de início.")
+  } else if (!inicio.proximo) {
+    // Apagar a ligação do início é um clique. Dizer que ele aponta para o
+    // grupo "" manda a pessoa procurar um grupo que nunca existiu.
+    erros.push("O início não aponta para nenhum grupo: ligue o Start ao primeiro grupo.")
   } else {
     const problema = problemaNoDestino(inicio.proximo)
     if (problema) erros.push(`O início aponta para ${problema}.`)

@@ -377,3 +377,13 @@ test("caixaDaSaida de opcao que nao existe cai no bloco, e sem cartao da null", 
   assert.equal(caixaDaSaida(caixa, { bloco: "b", opcao: "o_sumiu" }).y, caixa.y + caixa.blocos[0].y)
   assert.equal(caixaDaSaida(null, null), null)
 })
+
+test("cada seta tem chave propria, estavel entre dois desenhos", () => {
+  const a = setas(fluxo)
+  const b = setas(JSON.parse(JSON.stringify(fluxo)))
+  assert.deepEqual(a.map((s) => s.chave), b.map((s) => s.chave), "a chave não pode mudar sozinha")
+  assert.equal(new Set(a.map((s) => s.chave)).size, a.length, "duas setas com a mesma chave viram uma")
+  const daOpcao = a.find((s) => s.saida?.opcao === "o1")
+  assert.notEqual(daOpcao.chave, a.find((s) => s.de === "g2" && s.origens[0] === "grupo").chave,
+    "conectores diferentes do mesmo cartão precisam de chaves diferentes")
+})

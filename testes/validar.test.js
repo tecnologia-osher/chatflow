@@ -323,3 +323,11 @@ test("inicio apontando para bloco ainda enxerga grupo orfao", () => {
   // vazia e o validador cala a boca sobre todos os órfãos de uma vez.
   assert.match(validarFluxo(fluxo).erros.join(" "), /g3/)
 })
+
+test("inicio sem destino diz isso, em vez de citar um grupo vazio", () => {
+  const fluxo = comDestinoDeBloco("g2")
+  fluxo.eventos = [{ tipo: "inicio" }]
+  const texto = validarFluxo(fluxo).erros.join(" ")
+  assert.match(texto, /não aponta para nenhum grupo/i)
+  assert.equal(/grupo ""/.test(texto), false, "nome vazio manda procurar o que não existe")
+})
