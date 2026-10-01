@@ -117,3 +117,16 @@ export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
     y: (altura || 0) / 2 - (minY + conteudo.altura / 2) * escala
   }
 }
+
+// Qual grupo está sob um ponto do fluxo. Serve para saber onde a ligação foi
+// solta. Percorre de trás para frente: com cartões sobrepostos, o de cima é o
+// que a pessoa vê e acredita estar acertando.
+export function caixaEm(mapaDeCaixas, ponto) {
+  const entradas = [...(mapaDeCaixas?.entries?.() || [])]
+  for (let i = entradas.length - 1; i >= 0; i--) {
+    const [id, c] = entradas[i]
+    if (ponto.x >= c.x && ponto.x <= c.x + c.largura &&
+        ponto.y >= c.y && ponto.y <= c.y + c.altura) return id
+  }
+  return null
+}

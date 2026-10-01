@@ -76,6 +76,10 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
       atual = removerOpcao(atual, { grupo, bloco, opcao })
       redesenhar()
     },
+    aoLigarOpcao: ({ grupo, bloco, opcao, destino }) => {
+      atual = definirOpcao(atual, { grupo, bloco, opcao, campo: "proximo", valor: destino })
+      redesenhar()
+    },
     aoAbrirDetalhes: ({ grupo, bloco }) => {
       selecao = { grupo, bloco }
       detalhesAbertos = true

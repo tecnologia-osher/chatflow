@@ -78,6 +78,9 @@ html, body { margin: 0; height: 100%; }
 .ed__cartoes { position: absolute; top: 0; left: 0; }
 .ed__cartao { position: absolute; top: 0; left: 0; background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 1px 3px rgba(20,25,40,0.07); }
+/* O bloco não pode recortar o círculo que fica para fora do cartão. */
+.ed__bloco { overflow: visible; }
+.ed__cartao { overflow: visible; }
 .ed__cartao--ativo { border-color: var(--ed-acento); box-shadow: 0 0 0 2px rgba(12,35,64,0.15); }
 .ed__cabecalho { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem 0.55rem 0.85rem;
   font-weight: 600; cursor: grab; border-bottom: 1px solid var(--ed-linha); }
@@ -118,15 +121,20 @@ html, body { margin: 0; height: 100%; }
 .ed__bloco-mais:hover { background: var(--ed-fundo); color: var(--ed-texto); }
 
 .ed__opcoes-cartao { display: grid; gap: 0.35rem; margin-top: 0.35rem; }
-.ed__opcao-cartao { display: flex; align-items: center; gap: 0.4rem; }
+.ed__opcao-cartao { position: relative; display: flex; align-items: center; }
 .ed__opcao-campo { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.5rem 0.7rem;
   border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
   color: var(--ed-texto); font: inherit; font-size: 0.86rem; }
 .ed__opcao-campo:focus { outline: none; border-color: var(--ed-entrada); }
 .ed__opcao-campo::placeholder { color: var(--ed-suave); }
-.ed__opcao-ponto { flex: none; width: 0.85rem; height: 0.85rem; border-radius: 50%;
+/* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
+   daquela resposta até outro grupo. Dentro, pareceria decoração. */
+.ed__opcao-ponto { position: absolute; right: -1.55rem; top: 50%; transform: translateY(-50%);
+  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
   border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
+.ed__opcao-ponto:hover { box-shadow: 0 0 0 4px rgba(234,123,60,0.18); }
 .ed__opcao-ponto--ligado { background: var(--ed-entrada); }
+.ed__seta--arrastando { stroke: var(--ed-entrada); stroke-width: 2; stroke-dasharray: 5 4; }
 
 /* --- lateral --- */
 /* O painel flutua à direita e só existe enquanto há algo que a caixa do

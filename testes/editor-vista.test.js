@@ -4,7 +4,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, enquadrar,
+  criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, enquadrar, caixaEm,
   ESCALA_MIN, ESCALA_MAX
 } from "../editor/vista.js"
 
@@ -139,4 +139,28 @@ test("sem caixa nenhuma devolve a vista inicial", () => {
 test("area sem tamanho ainda devolve vista utilizavel", () => {
   const v = enquadrar([caixa(0, 0)], { largura: 0, altura: 0 })
   assert.ok(Number.isFinite(v.x) && Number.isFinite(v.y) && v.escala > 0)
+})
+
+// --- quem está sob o ponto -------------------------------------------------
+
+test("caixaEm acha o grupo sob o ponto", () => {
+  const mapa = new Map([["g1", caixa(0, 0)], ["g2", caixa(400, 200)]])
+  assert.equal(caixaEm(mapa, { x: 10, y: 10 }), "g1")
+  assert.equal(caixaEm(mapa, { x: 500, y: 250 }), "g2")
+})
+
+test("ponto no vazio nao e grupo nenhum", () => {
+  const mapa = new Map([["g1", caixa(0, 0)]])
+  assert.equal(caixaEm(mapa, { x: 999, y: 999 }), null)
+})
+
+test("a borda conta como dentro", () => {
+  const mapa = new Map([["g1", caixa(0, 0)]])
+  assert.equal(caixaEm(mapa, { x: 260, y: 120 }), "g1")
+})
+
+test("com caixas sobrepostas, a de cima vence", () => {
+  const mapa = new Map([["debaixo", caixa(0, 0)], ["emcima", caixa(10, 10)]])
+  assert.equal(caixaEm(mapa, { x: 50, y: 50 }), "emcima",
+    "a última desenhada é a que a pessoa vê e acha que está clicando")
 })

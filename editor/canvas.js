@@ -4,7 +4,7 @@
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
 import { cartoes, setas, caixas } from "./modelo.js"
-import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar } from "./vista.js"
+import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm } from "./vista.js"
 
 const SVG = "http://www.w3.org/2000/svg"
 
@@ -27,7 +27,7 @@ export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
-  aoAbrirDetalhes = () => {}
+  aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {}
 }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
@@ -41,6 +41,8 @@ export function criarCanvas({
   let fluxoAtual = null
   let selecao = { grupo: null, bloco: null }
   let editandoTitulo = null
+  let caixasAtuais = new Map()
+  let fioTemporario = null
 
   function aplicarVista() {
     mundo.style.setProperty("transform",
@@ -80,6 +82,44 @@ export function criarCanvas({
     vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: { x: ev.clientX, y: ev.clientY } })
     aplicarVista()
   })
+
+  // Arrastar a ligação: um fio acompanha o cursor e, ao soltar, o grupo que
+  // estiver embaixo vira o destino. Soltar no vazio não faz nada — apagar uma
+  // ligação por acidente seria pior que exigir um clique a mais no painel.
+  function iniciarLigacao(ev, origem) {
+    if (ev.button !== undefined && ev.button !== 0) return
+    ev.preventDefault?.()
+    ev.stopPropagation?.()
+    const partida = paraMundo(vista, { x: ev.clientX, y: ev.clientY })
+
+    function mover(e) {
+      fioTemporario = { de: partida, para: paraMundo(vista, { x: e.clientX, y: e.clientY }) }
+      desenharFio()
+    }
+    function soltar(e) {
+      document.removeEventListener("mousemove", mover)
+      document.removeEventListener("mouseup", soltar)
+      fioTemporario = null
+      desenharFio()
+      const destino = caixaEm(caixasAtuais, paraMundo(vista, { x: e.clientX, y: e.clientY }))
+      if (destino) aoLigarOpcao({ ...origem, destino })
+    }
+    document.addEventListener("mousemove", mover)
+    document.addEventListener("mouseup", soltar)
+  }
+
+  function desenharFio() {
+    const antigo = tela.porClasse
+      ? tela.porClasse("ed__seta--arrastando")[0]
+      : tela.querySelector(".ed__seta--arrastando")
+    if (antigo) antigo.remove()
+    if (!fioTemporario) return
+    const { de, para } = fioTemporario
+    const linha = svg("path", "ed__seta ed__seta--arrastando")
+    linha.setAttribute("d", `M ${de.x} ${de.y} L ${para.x} ${para.y}`)
+    linha.setAttribute("fill", "none")
+    tela.append(linha)
+  }
 
   function desenharSetas(lista, mapa) {
     tela.replaceChildren()
@@ -249,8 +289,15 @@ export function criarCanvas({
       })
       linhaOpcao.append(campo)
 
+      // O círculo fica para fora do cartão e é a alça da ligação: arrasta-se
+      // dele até o grupo para onde essa resposta deve levar.
       const ponto = el("span", `ed__opcao-ponto${opcao.proximo ? " ed__opcao-ponto--ligado" : ""}`)
-      ponto.setAttribute("title", opcao.proximo ? `Vai para ${opcao.proximo}` : "Sem destino")
+      ponto.setAttribute("title", opcao.proximo
+        ? `Vai para ${opcao.proximo} — arraste para mudar`
+        : "Arraste até um grupo para ligar")
+      ponto.addEventListener("mousedown", (ev) => {
+        iniciarLigacao(ev, { grupo: cartao.id, bloco: bloco.id, opcao: opcao.id })
+      })
       linhaOpcao.append(ponto)
 
       caixa.append(linhaOpcao)
@@ -262,6 +309,7 @@ export function criarCanvas({
     fluxoAtual = fluxo
     const lista = cartoes(fluxo)
     const mapa = caixas(lista)
+    caixasAtuais = mapa
     desenharSetas(setas(fluxo), mapa)
     desenharCartoes(lista, mapa)
     aplicarVista()

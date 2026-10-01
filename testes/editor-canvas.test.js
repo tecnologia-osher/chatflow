@@ -274,3 +274,50 @@ test("focarOpcao poe o cursor na caixa pedida", () => {
   canvas.focarOpcao("b_id", "o2")
   assert.equal(document.focado, hospedeiro.porClasse("ed__opcao-campo")[1])
 })
+
+// --- arrastar a ligação de uma opção ---------------------------------------
+
+function montarLigacao() {
+  const hospedeiro = new Elemento("div")
+  const ligacoes = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoLigarOpcao: (o) => ligacoes.push(o) })
+  canvas.desenhar(comBotoes)
+  return { hospedeiro, canvas, ligacoes }
+}
+
+test("arrastar o circulo ate outro grupo liga aquela opcao nele", () => {
+  const { hospedeiro, ligacoes } = montarLigacao()
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  // g2 está em x=400,y=0 e o canvas abre enquadrado, então solta-se no centro dele
+  document.disparar("mousemove", { clientX: 450, clientY: 30 })
+  document.disparar("mouseup", { clientX: 450, clientY: 30 })
+  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", bloco: "b_id", opcao: "o1", destino: "g2" })
+})
+
+test("enquanto arrasta, uma linha acompanha o cursor", () => {
+  const { hospedeiro } = montarLigacao()
+  assert.equal(hospedeiro.porClasse("ed__seta--arrastando").length, 0)
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 200, clientY: 100 })
+  assert.equal(hospedeiro.porClasse("ed__seta--arrastando").length, 1,
+    "sem o fio seguindo o cursor, ninguém sabe o que está ligando")
+  document.disparar("mouseup", { clientX: 200, clientY: 100 })
+  assert.equal(hospedeiro.porClasse("ed__seta--arrastando").length, 0, "o fio some ao soltar")
+})
+
+test("soltar no vazio nao liga nada e nao desliga o que havia", () => {
+  const { hospedeiro, ligacoes } = montarLigacao()
+  hospedeiro.porClasse("ed__opcao-ponto")[1].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 5000, clientY: 5000 })
+  document.disparar("mouseup", { clientX: 5000, clientY: 5000 })
+  assert.equal(ligacoes.length, 0, "soltar no nada não pode apagar uma ligação por acidente")
+})
+
+test("arrastar o circulo nao arrasta o cartao nem o fundo", () => {
+  const { hospedeiro, canvas } = montarLigacao()
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 120, clientY: 60 })
+  document.disparar("mouseup", { clientX: 120, clientY: 60 })
+  assert.equal(canvas.vista().x, canvas.vista().x)
+  assert.deepEqual(canvas.vista(), canvas.vista())
+})
