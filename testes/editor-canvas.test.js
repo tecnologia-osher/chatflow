@@ -437,3 +437,17 @@ test("arrastar a saida nao arrasta o cartao", () => {
   document.disparar("mouseup", { clientX: 90, clientY: 40 })
   assert.deepEqual(canvas.vista(), antes)
 })
+
+test("a saida do grupo se chama padrao, e diz o que significa", () => {
+  const { hospedeiro } = montarSaida()
+  const rotulo = hospedeiro.porClasse("ed__rodape-rotulo")[0]
+  assert.ok(rotulo, "a saída sem nome não diz a quem serve")
+  assert.match(rotulo.textContent, /padrão/i)
+})
+
+test("o cartao com botoes explica que opcao sem destino cai no padrao", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
+  const rodape = hospedeiro.porClasse("ed__rodape")[0]
+  assert.match(rodape.atributos.title || "", /padrão|sem destino/i)
+})

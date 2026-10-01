@@ -300,7 +300,16 @@ export function criarCanvas({
       // A saída do grupo. No chatflow quem segue adiante é o grupo inteiro —
       // só os botões ramificam por opção — então é uma bolinha por cartão, no
       // canto de baixo, longe das bolinhas das opções.
+      // A saída do grupo É o padrão: no motor, opção de botão sem destino
+      // próprio segue por aqui. Nomear o que já existe evita criar um segundo
+      // controle para o mesmo valor — dois lugares para dizer a mesma coisa
+      // viram dois lugares para discordar.
+      const temBotoes = cartao.blocos.some((b) => b.opcoes)
       const rodape = el("div", "ed__rodape")
+      rodape.setAttribute("title", temBotoes
+        ? "Padrão: quem escolher uma opção sem destino próprio segue por aqui"
+        : "Padrão: para onde o grupo segue depois")
+      rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
       const saida = el("span", `ed__grupo-ponto${cartao.proximo ? " ed__grupo-ponto--ligado" : ""}`)
       saida.setAttribute("title", cartao.proximo
         ? `Segue para ${cartao.proximo} — arraste para mudar`

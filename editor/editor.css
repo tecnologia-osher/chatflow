@@ -125,7 +125,10 @@ html, body { margin: 0; height: 100%; }
 
 /* A saída do grupo: de onde se puxa para o próximo cartão. Fica no canto de
    baixo para não disputar espaço com as bolinhas das opções. */
-.ed__rodape { position: relative; height: 1.6rem; }
+.ed__rodape { position: relative; display: flex; align-items: center; justify-content: flex-end;
+  height: 1.7rem; padding: 0 0.85rem; }
+.ed__rodape-rotulo { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ed-suave); }
 
 /* Toda ligação se puxa do mesmo lugar visual: anel laranja, miolo branco.
    Uma só regra para as três — opção, saída do grupo e Start — para não
