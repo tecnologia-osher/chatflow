@@ -7,7 +7,7 @@ import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento
+  definirProximoDoEvento, moverEvento, limparOpcoesVazias
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -238,4 +238,67 @@ test("ligar evento nao modifica o fluxo recebido", () => {
   definirProximoDoEvento(f, { tipo: "inicio", destino: "g2" })
   moverEvento(f, { tipo: "inicio", x: 1, y: 1 })
   assert.deepEqual(f, copia)
+})
+
+test("grupo novo nao nasce em cima de outro", async () => {
+  const { cartoes, caixas } = await import("../editor/modelo.js")
+  let f = { versao: 2, eventos: [], grupos: [] }
+  for (let i = 0; i < 4; i++) f = criarGrupo(f, { x: 80, y: 80 })
+
+  const lista = [...caixas(cartoes(f)).values()]
+  for (let i = 0; i < lista.length; i++) {
+    for (let j = i + 1; j < lista.length; j++) {
+      const a = lista[i], b = lista[j]
+      const cruza = a.x < b.x + b.largura && b.x < a.x + a.largura &&
+        a.y < b.y + b.altura && b.y < a.y + a.altura
+      assert.equal(cruza, false, `o grupo ${i + 1} nasceu sobre o ${j + 1}`)
+    }
+  }
+
+  // Encostados também não serve: dois cabeçalhos colados viram um bloco só
+  // aos olhos de quem vai arrastar.
+  const empilhados = lista.slice().sort((a, b) => a.y - b.y)
+  for (let i = 1; i < empilhados.length; i++) {
+    const folga = empilhados[i].y - (empilhados[i - 1].y + empilhados[i - 1].altura)
+    assert.ok(folga >= 20, `folga de ${folga} entre os cartões ${i} e ${i + 1}`)
+  }
+})
+
+test("quando o lugar pedido esta livre, o grupo nasce exatamente ali", () => {
+  const f = criarGrupo({ versao: 2, eventos: [], grupos: [
+    { id: "g1", titulo: "x", posicao: { x: 900, y: 900 }, blocos: [] }] }, { x: 80, y: 80 })
+  assert.deepEqual(f.grupos.at(-1).posicao, { x: 80, y: 80 })
+})
+
+const comOpcoes = (...labels) => ({ versao: 2, eventos: [], grupos: [
+  { id: "g1", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "bb", tipo: "entrada_botoes", salvar_em: "v",
+      conteudo: { opcoes: labels.map((label, i) => ({ id: `o${i + 1}`, label })) } }] }] })
+
+const labelsDe = (f) => f.grupos[0].blocos[0].conteudo.opcoes.map((o) => o.label)
+
+test("limpar vazias tira a linha sem texto", () => {
+  assert.deepEqual(labelsDe(limparOpcoesVazias(comOpcoes("Sim", ""))), ["Sim"])
+})
+
+test("limpar vazias trata so-espaco como vazio", () => {
+  assert.deepEqual(labelsDe(limparOpcoesVazias(comOpcoes("Sim", "   "))), ["Sim"])
+})
+
+test("limpar vazias nao esvazia o bloco: a ultima fica", () => {
+  const f = limparOpcoesVazias(comOpcoes(""))
+  assert.equal(labelsDe(f).length, 1, "bloco de botões sem botão é fluxo inválido")
+})
+
+test("sem nada a limpar, o fluxo volta igual e sem copia nova", () => {
+  const f = comOpcoes("Sim", "Não")
+  assert.equal(limparOpcoesVazias(f), f,
+    "copiar sem motivo faz qualquer comparação por identidade mentir")
+})
+
+test("limpar vazias nao mexe em bloco sem opcoes", () => {
+  const f = { versao: 2, eventos: [], grupos: [
+    { id: "g1", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "" } }] }] }
+  assert.equal(limparOpcoesVazias(f), f)
 })

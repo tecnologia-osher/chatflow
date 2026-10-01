@@ -333,3 +333,31 @@ sobre o dublê de DOM:
 
 **O padrão:** um dublê só protege até onde é honesto. Quando simplifica demais,
 para de testar e passa a concordar.
+
+### Terceira fatia: o padrão como botão, e dois defeitos de layout
+
+389 testes. O "padrão" virou a última linha da lista de botões, no formato das
+outras mas tracejado e sem caixa de digitar: a bolinha dele continua sendo a
+saída do grupo. Clicar nele cria um botão vazio acima e o padrão desce. **Opção
+sem texto só existe enquanto o cursor está nela** — sair por qualquer caminho
+a desfaz, e o bloco nunca fica sem nenhum botão.
+
+Dois defeitos sérios, nenhum deles visível em teste, os dois achados medindo:
+
+1. **Os cartões se cobriam.** O modelo dizia que todo bloco tem 52px de altura;
+   o cartão de idade tinha 333 e era anunciado como 226. Com as posições
+   escritas em agosto, cada cartão cobria o seguinte — e o padrão do grupo de
+   idade ficava embaixo do cartão de cima, sem receber clique. As medidas agora
+   saem do navegador (bloco = 38 + 16 por linha de resumo; botões = 31 + 41 por
+   opção, contando o padrão; rodapé só sem botões), o fluxo da Osher foi
+   espalhado em duas colunas e **um teste no fluxo do cliente falha se dois
+   cartões voltarem a se cruzar**. Grupo novo também nasce em lugar livre.
+2. **Abrir o painel encolhia o canvas de 900 para 671px.** Painel e preview
+   flutuam, mas os invólucros deles eram itens da grade: bastava um ter filho
+   para a grade criar uma segunda linha. O canvas tem `overflow: hidden`, então
+   os cartões de baixo continuavam desenhados e paravam de receber clique.
+   Fora da grade, com tamanho zero, nada do que nasce ali rouba altura.
+
+**O padrão, de novo:** clique que não chega não deixa rastro. Antes de dizer
+que um controle funciona, vale perguntar ao navegador quem recebe o clique
+naquele ponto (`elementFromPoint`) — foi o que achou os dois.

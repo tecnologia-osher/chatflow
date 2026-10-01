@@ -10,7 +10,7 @@ import { campoPrincipal } from "./modelo.js"
 import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, definirProximo
+  definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
@@ -52,8 +52,9 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
       selecao = nova
       recado = ""
       detalhesAbertos = false
-      desenharPainel()
-      desenharPaleta()
+      // Redesenho inteiro, e não só painel e paleta: trocar de seleção é
+      // trocar de lugar na tela, e é aí que a opção que ninguém nomeou sai.
+      redesenhar()
     },
     aoEditarCampo: ({ grupo, bloco, campo, valor }) => {
       atual = definirCampo(atual, { grupo, bloco, campo, valor })
@@ -68,9 +69,12 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
       semRedesenharCartoes()
     },
     aoAcrescentarOpcao: ({ grupo, bloco, apos }) => {
+      // Varre antes de criar: se a linha anterior ficou vazia, ela sai agora.
+      // Depois não pode varrer — a recém-nascida está vazia de propósito.
+      atual = limparOpcoesVazias(atual)
       const nova = proximoIdDeOpcao(atual, { grupo, bloco })
       atual = acrescentarOpcao(atual, { grupo, bloco, apos })
-      redesenhar()
+      desenharTudo()
       canvas.focarOpcao(bloco, nova)
     },
     aoRemoverOpcao: ({ grupo, bloco, opcao }) => {
@@ -211,7 +215,16 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     preview.atualizar(atual)
   }
 
+  // Redesenhar os cartões significa que o cursor saiu de onde estava: é a
+  // hora de desfazer as opções que ninguém nomeou. O caminho normal é o blur
+  // da própria caixa, mas quando o clique cai num cabeçalho o navegador
+  // cancela o blur e o redesenho apaga a caixa sem avisar ninguém.
   function redesenhar() {
+    atual = limparOpcoesVazias(atual)
+    desenharTudo()
+  }
+
+  function desenharTudo() {
     canvas.desenhar(atual)
     canvas.selecionar(selecao)
     desenharPainel()

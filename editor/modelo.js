@@ -146,12 +146,40 @@ export function setas(fluxo) {
 // O canvas não mede nada: o tamanho é calculado. Medir exigiria o elemento já
 // desenhado, e aí as setas só saberiam onde ancorar depois de um quadro — o
 // desenho apareceria torto e se corrigiria sozinho, que é pior que estar fixo.
+// Estas medidas não são palpite: foram medidas no Chrome, em unidades de
+// fluxo (o que o CSS desenha dividido pela escala). Enquanto diziam "todo
+// bloco tem 52", um cartão de 333 era anunciado como 226 — e um cartão que
+// o editor acha mais baixo do que é deixa a seta mirar errado, o "ajustar à
+// tela" cortar o pé do fluxo e os cartões se cobrirem sem ninguém notar.
 const CARTAO_LARGURA = 260
 const CARTAO_CABECALHO = 44
-const CARTAO_BLOCO = 52
-// O rodapé é a faixa onde mora a saída do grupo. Sem faixa própria, a
-// bolinha disputava altura com as das opções e as duas se sobrepunham.
-const CARTAO_RODAPE = 26
+// O bloco sem o texto: rótulo, respiros e borda. Cada linha de resumo
+// acrescenta uma linha de altura, e o resumo quebra perto dos 36 caracteres.
+const CARTAO_BLOCO = 38
+const CARTAO_LINHA = 16
+const CARTAO_CARACTERES_POR_LINHA = 36
+// Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais o
+// padrão, que fecha a lista e ocupa uma linha como as outras.
+const CARTAO_OPCOES_TOPO = 31
+const CARTAO_OPCAO = 41
+// O rodapé é a faixa onde mora a saída do grupo. Só existe quando o cartão
+// não tem botões; com botões, a saída vive na linha do padrão.
+const CARTAO_RODAPE = 27
+
+function alturaDoBloco(bloco) {
+  if (bloco.opcoes) {
+    return CARTAO_OPCOES_TOPO + (bloco.opcoes.length + 1) * CARTAO_OPCAO
+  }
+  const letras = (bloco.resumo || "").length
+  const linhas = Math.max(1, Math.ceil(letras / CARTAO_CARACTERES_POR_LINHA))
+  return CARTAO_BLOCO + linhas * CARTAO_LINHA
+}
+
+export function alturaDoCartao(cartao) {
+  const temBotoes = cartao.blocos.some((b) => b.opcoes)
+  const blocos = cartao.blocos.reduce((total, b) => total + alturaDoBloco(b), 0)
+  return CARTAO_CABECALHO + blocos + (temBotoes ? 0 : CARTAO_RODAPE)
+}
 
 export function caixas(listaDeCartoes) {
   const mapa = new Map()
@@ -160,13 +188,16 @@ export function caixas(listaDeCartoes) {
       x: cartao.posicao.x,
       y: cartao.posicao.y,
       largura: CARTAO_LARGURA,
-      altura: CARTAO_CABECALHO + cartao.blocos.length * CARTAO_BLOCO + CARTAO_RODAPE
+      altura: alturaDoCartao(cartao)
     })
   }
   return mapa
 }
 
-export const MEDIDAS = { CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_RODAPE }
+export const MEDIDAS = {
+  CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_LINHA,
+  CARTAO_OPCOES_TOPO, CARTAO_OPCAO, CARTAO_RODAPE
+}
 
 
 // --- eventos como cartões --------------------------------------------------

@@ -341,6 +341,14 @@ export function criarCanvas({
       campo.addEventListener("input", () => aoEditarOpcao({
         grupo: cartao.id, bloco: bloco.id, opcao: opcao.id, valor: campo.value
       }))
+      // Botão que ninguém nomeou não é botão. Quem clicou no padrão sem
+      // querer, ou desistiu no meio, sai de perto e a linha se desfaz —
+      // sem precisar apagar nada. A última opção é protegida em edicoes.js.
+      campo.addEventListener("blur", () => {
+        if (campo.value.trim() === "") {
+          aoRemoverOpcao({ grupo: cartao.id, bloco: bloco.id, opcao: opcao.id })
+        }
+      })
       campo.addEventListener("keydown", (ev) => {
         if (ev.key === "Enter" && !ev.shiftKey) {
           ev.preventDefault?.()
@@ -379,7 +387,13 @@ export function criarCanvas({
       // no último campo de uma lista.
       const rotulo = el("span", "ed__opcao-padrao", "padrão")
       rotulo.setAttribute("title", "Clique para criar um botão novo acima")
-      rotulo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      // preventDefault segura o cursor onde está. Sem isso o clique daqui
+      // tira o foco da caixa vazia, ela se desfaz, o cartão é redesenhado e
+      // este mesmo clique morre no caminho — a pessoa clica e nada acontece.
+      rotulo.addEventListener("mousedown", (ev) => {
+        ev.preventDefault?.()
+        ev.stopPropagation?.()
+      })
       rotulo.addEventListener("click", (ev) => {
         ev.stopPropagation?.()
         aoAcrescentarOpcao({ grupo: cartao.id, bloco: bloco.id, apos: bloco.opcoes.at(-1)?.id })

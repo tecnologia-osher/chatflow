@@ -3,7 +3,7 @@
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { cartoes, setas, caixas } from "../editor/modelo.js"
+import { cartoes, setas, caixas, MEDIDAS } from "../editor/modelo.js"
 
 const fluxo = {
   versao: 2,
@@ -126,6 +126,36 @@ test("a caixa do cartao cresce com a quantidade de blocos", () => {
 test("a caixa existe para todo cartao, inclusive o vazio", () => {
   const mapa = caixas(cartoes(fluxo))
   for (const c of cartoes(fluxo)) assert.ok(mapa.get(c.id), `sem caixa para ${c.id}`)
+})
+
+test("a caixa conta cada opcao empilhada, e o padrao que fecha a lista", () => {
+  const comDuas = { id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }] }] }
+  const comQuatro = { ...comDuas, blocos: [
+    { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }, { id: "o3" }, { id: "o4" }] }] }
+  const [a, b] = [caixas([comDuas]).get("g").altura, caixas([comQuatro]).get("g").altura]
+  assert.equal(b - a, 2 * MEDIDAS.CARTAO_OPCAO, "duas opções a mais, duas linhas a mais")
+  assert.ok(a > MEDIDAS.CARTAO_CABECALHO + 2 * MEDIDAS.CARTAO_OPCAO,
+    "o padrão também ocupa uma linha")
+})
+
+test("resumo que nao cabe numa linha deixa o bloco mais alto", () => {
+  const curto = { id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo: "texto", resumo: "Oi" }] }
+  const longo = { ...curto, blocos: [
+    { id: "b", tipo: "texto", resumo: "Bem-vindo à Osher Capital, queremos te conhecer melhor." }] }
+  assert.equal(caixas([longo]).get("g").altura - caixas([curto]).get("g").altura,
+    MEDIDAS.CARTAO_LINHA, "uma linha de texto a mais, uma linha de altura a mais")
+})
+
+test("cartao com botoes nao cobra o rodape, que ele nao tem", () => {
+  const base = { id: "g", titulo: "x", posicao: { x: 0, y: 0 } }
+  const comBotoes = { ...base, blocos: [{ id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }] }] }
+  const semBotoes = { ...base, blocos: [{ id: "b", tipo: "texto", resumo: "Oi" }] }
+  assert.equal(caixas([semBotoes]).get("g").altura,
+    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_BLOCO + MEDIDAS.CARTAO_LINHA + MEDIDAS.CARTAO_RODAPE)
+  assert.equal(caixas([comBotoes]).get("g").altura,
+    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_OPCOES_TOPO + 2 * MEDIDAS.CARTAO_OPCAO)
 })
 
 // --- campo principal -------------------------------------------------------

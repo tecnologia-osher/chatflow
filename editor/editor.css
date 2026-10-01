@@ -179,7 +179,14 @@ html, body { margin: 0; height: 100%; }
 /* O painel flutua à direita e só existe enquanto há algo que a caixa do
    cartão não resolve. Coluna fixa dizendo "selecione alguma coisa" é espaço
    gasto para não informar nada. */
-.ed__area-painel:empty { display: none; }
+/* Painel e preview flutuam, mas os invólucros deles eram itens da grade:
+   bastava o painel abrir para a grade criar uma segunda linha, e a linha do
+   canvas encolhia de 900 para 671px. O canvas tem overflow hidden, então os
+   cartões de baixo continuavam desenhados e deixavam de receber clique —
+   ninguém vê um clique que não chega. Fora da grade, com tamanho zero, nada
+   do que nasce aqui dentro pode roubar altura do canvas. */
+.ed__area-painel, .ed__area-preview {
+  position: fixed; top: 0; left: 0; width: 0; height: 0; }
 .ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);
   overflow-y: auto; z-index: 15; padding: 1rem 1rem 1.2rem; background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
@@ -190,7 +197,7 @@ html, body { margin: 0; height: 100%; }
 
 /* O preview fica sobreposto, não numa coluna: enquanto não é pedido, o canvas
    usa a tela inteira. */
-.ed__area-preview:empty { display: none; }
+
 .ed__preview { position: fixed; top: 0; right: 0; bottom: 0; width: 24rem; z-index: 20;
   display: grid; grid-template-rows: auto auto 1fr; background: var(--ed-superficie);
   border-left: 1px solid var(--ed-linha); box-shadow: -8px 0 24px rgba(20,25,40,0.09); }

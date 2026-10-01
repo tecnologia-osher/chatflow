@@ -4,6 +4,7 @@
 // dos `campos` que ele mesmo declara.
 
 import { obter, todos } from "./catalogo.js"
+import { cartoes, caixas, alturaDoCartao } from "./modelo.js"
 
 function trocarGrupo(fluxo, id, transformar) {
   const grupos = fluxo.grupos || []
@@ -127,12 +128,32 @@ export function moverBloco(fluxo, { grupo, bloco, direcao }) {
 
 // --- grupos ----------------------------------------------------------------
 
+// Quanto um cartão respira do outro. A mesma folga usada para espalhar o
+// fluxo da Osher, para o espaçamento ser um só no produto.
+const MARGEM_ENTRE_CARTOES = 60
+
+// Cartão em cima de cartão não recebe clique: o de baixo fica inalcançável
+// sem ninguém entender por quê. Então o grupo novo desce até achar lugar.
+function lugarLivre(fluxo, x, y) {
+  const ocupadas = [...caixas(cartoes(fluxo)).values()]
+  const vazio = { largura: 260, altura: alturaDoCartao({ blocos: [] }) }
+  let lugar = { x: Math.round(x), y: Math.round(y) }
+  for (let voltas = 0; voltas <= ocupadas.length; voltas++) {
+    const choque = ocupadas.find((c) =>
+      lugar.x < c.x + c.largura && c.x < lugar.x + vazio.largura &&
+      lugar.y < c.y + c.altura && c.y < lugar.y + vazio.altura)
+    if (!choque) break
+    lugar = { x: lugar.x, y: choque.y + choque.altura + MARGEM_ENTRE_CARTOES }
+  }
+  return lugar
+}
+
 export function criarGrupo(fluxo, { x = 0, y = 0, titulo } = {}) {
   const id = idNovo(fluxo, "g")
   return {
     ...fluxo,
     grupos: [...(fluxo.grupos || []), {
-      id, titulo: titulo || `Grupo ${id}`, posicao: { x: Math.round(x), y: Math.round(y) }, blocos: []
+      id, titulo: titulo || `Grupo ${id}`, posicao: lugarLivre(fluxo, x, y), blocos: []
     }]
   }
 }
@@ -179,6 +200,27 @@ export function acrescentarOpcao(fluxo, { grupo, bloco, apos = null, label = "" 
 
 // Qual id a próxima opção vai receber. O editor precisa saber antes de
 // acrescentar, para já pôr o cursor nela.
+// Opção sem texto não é botão: é uma linha que alguém abriu e não usou.
+// Ela existe enquanto o cursor está nela; qualquer outra coisa que aconteça
+// na tela a desfaz. A última do bloco fica, porque bloco de botões sem botão
+// nenhum seria fluxo inválido.
+export function limparOpcoesVazias(fluxo) {
+  let mudou = false
+  const grupos = (fluxo.grupos || []).map((grupo) => ({
+    ...grupo,
+    blocos: (grupo.blocos || []).map((bloco) => {
+      const opcoes = bloco.conteudo?.opcoes
+      if (!Array.isArray(opcoes)) return bloco
+      const cheias = opcoes.filter((o) => String(o.label || "").trim() !== "")
+      const restam = cheias.length ? cheias : opcoes.slice(0, 1)
+      if (restam.length === opcoes.length) return bloco
+      mudou = true
+      return { ...bloco, conteudo: { ...bloco.conteudo, opcoes: restam } }
+    })
+  }))
+  return mudou ? { ...fluxo, grupos } : fluxo
+}
+
 export function proximoIdDeOpcao(fluxo, { grupo, bloco }) {
   const g = (fluxo.grupos || []).find((x) => x && x.id === grupo)
   const b = (g?.blocos || []).find((x) => x && x.id === bloco)

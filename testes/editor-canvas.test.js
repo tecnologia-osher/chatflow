@@ -528,3 +528,37 @@ test("cartao com dois blocos de botoes tem um padrao so, no ultimo", () => {
   hospedeiro.porClasse("ed__opcao-padrao")[0].disparar("click")
   assert.equal(eventos.at(-1).bloco, "b2", "o padrão pertence ao último bloco de botões")
 })
+
+test("sair de uma opcao vazia desfaz a linha: a lista volta ao padrao", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  const campo = hospedeiro.porClasse("ed__opcao-campo")[0]
+  campo.value = ""
+  campo.disparar("blur")
+  assert.deepEqual(eventos.at(-1), { tipo: "remover", grupo: "g1", bloco: "b_id", opcao: "o1" })
+})
+
+test("sair de uma opcao escrita nao apaga nada", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-campo")[0].disparar("blur")
+  assert.equal(eventos.some((e) => e.tipo === "remover"), false)
+})
+
+test("so o espaco nao conta como botao preenchido", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  const campo = hospedeiro.porClasse("ed__opcao-campo")[0]
+  campo.value = "   "
+  campo.disparar("blur")
+  assert.equal(eventos.at(-1).tipo, "remover")
+})
+
+test("puxar a ligacao de uma opcao vazia nao a perde pelo caminho", () => {
+  const { hospedeiro } = montarBotoes()
+  let segurouOFoco = false
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", {
+    clientX: 0, clientY: 0, button: 0, preventDefault() { segurouOFoco = true }
+  })
+  document.disparar("mouseup", { clientX: 0, clientY: 0 })
+  // Sem preventDefault o clique no círculo tira o foco da caixa, ela sai
+  // vazia e a opção que se estava ligando desaparece no meio do arrasto.
+  assert.equal(segurouOFoco, true)
+})
