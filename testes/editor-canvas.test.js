@@ -321,3 +321,23 @@ test("arrastar o circulo nao arrasta o cartao nem o fundo", () => {
   assert.equal(canvas.vista().x, canvas.vista().x)
   assert.deepEqual(canvas.vista(), canvas.vista())
 })
+
+test("o canvas desconta a propria posicao na janela", () => {
+  const hospedeiro = new Elemento("div")
+  const ligacoes = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoLigarOpcao: (o) => ligacoes.push(o) })
+  canvas.desenhar(comBotoes)
+  // paleta de 272px à esquerda e barra de 57px em cima, como no navegador
+  hospedeiro.porClasse("ed__palco")[0].deslocamento = { left: 272, top: 57 }
+
+  const alvo = canvas.vista()
+  const g2 = { x: 400 + 130, y: 0 + 28 }   // centro aproximado do cartão g2
+  const naJanela = { x: g2.x * alvo.escala + alvo.x + 272, y: g2.y * alvo.escala + alvo.y + 57 }
+
+  hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 300, clientY: 100, button: 0 })
+  document.disparar("mousemove", { clientX: naJanela.x, clientY: naJanela.y })
+  document.disparar("mouseup", { clientX: naJanela.x, clientY: naJanela.y })
+
+  assert.equal(ligacoes.at(-1)?.destino, "g2",
+    "sem descontar a origem do palco, a ligação cai num grupo que não é o de baixo do cursor")
+})

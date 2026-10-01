@@ -22,6 +22,11 @@ class Elemento {
     // por zero e o teste passaria com uma vista que o navegador não produz.
     this.clientWidth = 900
     this.clientHeight = 700
+    // Onde o elemento está na janela. Por padrão na origem; um teste que
+    // queira provar deslocamento (paleta à esquerda, barra em cima) troca
+    // isto. Sem o método, o código tem de chutar que canvas e janela
+    // coincidem — e foi esse chute que levou a ligação para o lugar errado.
+    this.deslocamento = { left: 0, top: 0 }
     // Um <input> de verdade nasce com value "", não undefined. Sem isto o
     // falso mente: `campo.value += "a"` daria "undefineda" aqui e "a" no
     // navegador.
@@ -99,6 +104,15 @@ class Elemento {
     return e
   }
   click() { for (const fn of this.ouvintes.click || []) fn({ preventDefault() {} }) }
+  getBoundingClientRect() {
+    return {
+      left: this.deslocamento.left, top: this.deslocamento.top,
+      right: this.deslocamento.left + this.clientWidth,
+      bottom: this.deslocamento.top + this.clientHeight,
+      width: this.clientWidth, height: this.clientHeight
+    }
+  }
+
   focus() {
     // Quem está com o cursor. Sem isto, "a caixa nova recebe o foco" não teria
     // como falhar num teste.

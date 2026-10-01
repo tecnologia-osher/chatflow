@@ -44,6 +44,14 @@ export function criarCanvas({
   let caixasAtuais = new Map()
   let fioTemporario = null
 
+  // clientX/clientY são da JANELA; o palco começa depois da paleta e da
+  // barra. Sem descontar a origem dele, o zoom ancora no ponto errado e a
+  // ligação é solta num grupo que não é o que está sob o cursor.
+  function noPalco(ev) {
+    const caixa = palco.getBoundingClientRect?.() || { left: 0, top: 0 }
+    return { x: ev.clientX - caixa.left, y: ev.clientY - caixa.top }
+  }
+
   function aplicarVista() {
     mundo.style.setProperty("transform",
       `translate(${vista.x}px, ${vista.y}px) scale(${vista.escala})`)
@@ -79,7 +87,7 @@ export function criarCanvas({
 
   palco.addEventListener("wheel", (ev) => {
     ev.preventDefault?.()
-    vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: { x: ev.clientX, y: ev.clientY } })
+    vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: noPalco(ev) })
     aplicarVista()
   })
 
@@ -90,10 +98,10 @@ export function criarCanvas({
     if (ev.button !== undefined && ev.button !== 0) return
     ev.preventDefault?.()
     ev.stopPropagation?.()
-    const partida = paraMundo(vista, { x: ev.clientX, y: ev.clientY })
+    const partida = paraMundo(vista, noPalco(ev))
 
     function mover(e) {
-      fioTemporario = { de: partida, para: paraMundo(vista, { x: e.clientX, y: e.clientY }) }
+      fioTemporario = { de: partida, para: paraMundo(vista, noPalco(e)) }
       desenharFio()
     }
     function soltar(e) {
@@ -101,7 +109,7 @@ export function criarCanvas({
       document.removeEventListener("mouseup", soltar)
       fioTemporario = null
       desenharFio()
-      const destino = caixaEm(caixasAtuais, paraMundo(vista, { x: e.clientX, y: e.clientY }))
+      const destino = caixaEm(caixasAtuais, paraMundo(vista, noPalco(e)))
       if (destino) aoLigarOpcao({ ...origem, destino })
     }
     document.addEventListener("mousemove", mover)
