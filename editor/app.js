@@ -7,7 +7,10 @@ import { criarCanvas } from "./canvas.js"
 import { criarPainel } from "./painel.js"
 import { todos } from "./catalogo.js"
 import { campoPrincipal } from "./modelo.js"
-import { acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo } from "./edicoes.js"
+import {
+  acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
+  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao
+} from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 
@@ -26,6 +29,7 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   let atual = fluxo
   let selecao = { grupo: null, bloco: null }
   let recado = ""
+  let detalhesAbertos = false
 
   const raiz = el("div", "ed")
   const paleta = el("aside", "ed__paleta")
@@ -43,7 +47,13 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
 
   const canvas = criarCanvas({
     elemento: palcoCanvas,
-    aoSelecionar: (nova) => { selecao = nova; recado = ""; desenharPainel(); desenharPaleta() },
+    aoSelecionar: (nova) => {
+      selecao = nova
+      recado = ""
+      detalhesAbertos = false
+      desenharPainel()
+      desenharPaleta()
+    },
     aoEditarCampo: ({ grupo, bloco, campo, valor }) => {
       atual = definirCampo(atual, { grupo, bloco, campo, valor })
       semRedesenharCartoes()
@@ -51,6 +61,25 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     aoRenomearGrupo: ({ grupo, valor }) => {
       atual = definirTitulo(atual, { grupo, valor })
       semRedesenharCartoes()
+    },
+    aoEditarOpcao: ({ grupo, bloco, opcao, valor }) => {
+      atual = definirOpcao(atual, { grupo, bloco, opcao, campo: "label", valor })
+      semRedesenharCartoes()
+    },
+    aoAcrescentarOpcao: ({ grupo, bloco, apos }) => {
+      const nova = proximoIdDeOpcao(atual, { grupo, bloco })
+      atual = acrescentarOpcao(atual, { grupo, bloco, apos })
+      redesenhar()
+      canvas.focarOpcao(bloco, nova)
+    },
+    aoRemoverOpcao: ({ grupo, bloco, opcao }) => {
+      atual = removerOpcao(atual, { grupo, bloco, opcao })
+      redesenhar()
+    },
+    aoAbrirDetalhes: ({ grupo, bloco }) => {
+      selecao = { grupo, bloco }
+      detalhesAbertos = true
+      redesenhar()
     },
     aoMover: (grupo, { x, y }) => { atual = moverGrupo(atual, { grupo, x, y }); redesenhar({ manterVista: true }) },
     aoTestar: (grupo) => { preview.abrir(atual, grupo); sincronizarTestar() }
@@ -139,18 +168,20 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
 
   // O painel só aparece quando há algo que a caixa do cartão não resolve:
   // o grupo (para ligar o próximo) ou um bloco cujo conteúdo é lista.
+  // O painel deixou de aparecer sozinho ao clicar num bloco: o cartão resolve
+  // o texto e as opções. Ele volta quando o grupo é selecionado (para ligar o
+  // próximo) ou quando alguém pede os detalhes pelo ⋯.
   function precisaDePainel() {
     if (!selecao.grupo) return false
     if (!selecao.bloco) return true
-    const grupo = (atual.grupos || []).find((g) => g && g.id === selecao.grupo)
-    const bloco = (grupo?.blocos || []).find((b) => b && b.id === selecao.bloco)
-    return bloco ? campoPrincipal(bloco.tipo) === null : false
+    return detalhesAbertos
   }
 
   function desenharPainel() {
     if (!precisaDePainel()) { areaPainel.replaceChildren(); return }
     painel.mostrar({ fluxo: atual, selecao, aoFechar: () => {
-      selecao = { grupo: selecao.grupo, bloco: null }
+      selecao = { grupo: null, bloco: null }
+      detalhesAbertos = false
       areaPainel.replaceChildren()
       canvas.selecionar({ grupo: null, bloco: null })
     } })

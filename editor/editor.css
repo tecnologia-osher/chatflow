@@ -107,6 +107,27 @@ html, body { margin: 0; height: 100%; }
   color: var(--ed-texto); }
 .ed__cabecalho-titulo { cursor: text; }
 
+/* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
+   é o destino daquela opção: cheio quando leva a algum grupo. */
+.ed__bloco-topo { display: flex; align-items: center; gap: 0.4rem; }
+.ed__bloco-topo .ed__bloco-rotulo { flex: 1; }
+.ed__bloco-mais { flex: none; width: 1.3rem; height: 1.3rem; display: grid; place-items: center;
+  border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; opacity: 0; }
+.ed__bloco:hover .ed__bloco-mais, .ed__bloco--ativo .ed__bloco-mais { opacity: 1; }
+.ed__bloco-mais:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+
+.ed__opcoes-cartao { display: grid; gap: 0.35rem; margin-top: 0.35rem; }
+.ed__opcao-cartao { display: flex; align-items: center; gap: 0.4rem; }
+.ed__opcao-campo { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.86rem; }
+.ed__opcao-campo:focus { outline: none; border-color: var(--ed-entrada); }
+.ed__opcao-campo::placeholder { color: var(--ed-suave); }
+.ed__opcao-ponto { flex: none; width: 0.85rem; height: 0.85rem; border-radius: 50%;
+  border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
+.ed__opcao-ponto--ligado { background: var(--ed-entrada); }
+
 /* --- lateral --- */
 /* O painel flutua à direita e só existe enquanto há algo que a caixa do
    cartão não resolve. Coluna fixa dizendo "selecione alguma coisa" é espaço

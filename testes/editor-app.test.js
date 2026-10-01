@@ -263,16 +263,6 @@ test("bloco com campo principal se edita no cartao, sem abrir painel", () => {
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 0, "texto não precisa de painel")
 })
 
-test("bloco de botoes abre o painel, porque opcoes nao cabem na caixa", () => {
-  const f = fluxoBase()
-  f.grupos[0].blocos.push({ id: "bb", tipo: "entrada_botoes", salvar_em: "v",
-    conteudo: { opcoes: [{ id: "o1", label: "Sim" }] } })
-  const { hospedeiro } = montar(f)
-  porClasse(hospedeiro, "ed__bloco")[1].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
-  assert.ok(porClasse(hospedeiro, "ed__opcao").length > 0)
-})
-
 test("editar o titulo no cartao muda o fluxo", () => {
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("dblclick")
@@ -293,4 +283,53 @@ test("fechar o painel some com ele", () => {
   porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
   porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
+})
+
+// --- opções no cartão ------------------------------------------------------
+
+const comBotoes = () => {
+  const f = fluxoBase()
+  f.grupos[0].blocos.push({ id: "bb", tipo: "entrada_botoes", salvar_em: "idade",
+    conteudo: { opcoes: [{ id: "o1", label: "25-34" }, { id: "o2", label: "35-44" }] } })
+  return f
+}
+
+test("clicar no bloco de botoes nao abre painel: edita no cartao", () => {
+  const { hospedeiro } = montar(comBotoes())
+  porClasse(hospedeiro, "ed__bloco")[1].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
+  assert.equal(porClasse(hospedeiro, "ed__opcao-campo").length, 2)
+})
+
+test("digitar numa opcao muda o fluxo", () => {
+  const { hospedeiro, editor } = montar(comBotoes())
+  const campo = porClasse(hospedeiro, "ed__opcao-campo")[0]
+  campo.value = "18-24"
+  campo.disparar("input")
+  assert.equal(editor.fluxo().grupos[0].blocos[1].conteudo.opcoes[0].label, "18-24")
+})
+
+test("Enter cria a opcao abaixo e o cursor vai para ela", () => {
+  const { hospedeiro, editor } = montar(comBotoes())
+  porClasse(hospedeiro, "ed__opcao-campo")[0].disparar("keydown", { key: "Enter" })
+  const opcoes = editor.fluxo().grupos[0].blocos[1].conteudo.opcoes
+  assert.equal(opcoes.length, 3)
+  assert.equal(opcoes[1].label, "", "a nova nasce vazia, pronta para digitar")
+  assert.equal(document.focado, porClasse(hospedeiro, "ed__opcao-campo")[1],
+    "quem aperta Enter espera continuar digitando")
+})
+
+test("Backspace numa opcao vazia a remove", () => {
+  const f = comBotoes()
+  f.grupos[0].blocos[1].conteudo.opcoes[0].label = ""
+  const { hospedeiro, editor } = montar(f)
+  porClasse(hospedeiro, "ed__opcao-campo")[0].disparar("keydown", { key: "Backspace" })
+  assert.deepEqual(editor.fluxo().grupos[0].blocos[1].conteudo.opcoes.map((o) => o.id), ["o2"])
+})
+
+test("o botao de detalhes abre o painel para pontos e destino", () => {
+  const { hospedeiro } = montar(comBotoes())
+  porClasse(hospedeiro, "ed__bloco-mais")[1].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
+  assert.ok(porClasse(hospedeiro, "ed__opcao").length > 0, "pontos e destino continuam acessíveis")
 })

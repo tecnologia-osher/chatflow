@@ -81,6 +81,13 @@ export function cartoes(fluxo) {
         desconhecido: !definicao,
         resumo: resumoDe(bloco, definicao),
         campoPrincipal: campoPrincipal(bloco.tipo),
+        // As opções sobem para o cartão: é lá que se escreve o que cada botão
+        // vai dizer, empilhadas uma abaixo da outra.
+        opcoes: Array.isArray(bloco.conteudo?.opcoes)
+          ? bloco.conteudo.opcoes.filter(Boolean).map((o) => ({
+            id: o.id, label: o.label ?? "", pontos: o.pontos, proximo: o.proximo || null
+          }))
+          : null,
         valorPrincipal: (bloco.conteudo || {})[campoPrincipal(bloco.tipo)] ?? "",
         salvar_em: bloco.salvar_em || null
       }

@@ -25,7 +25,9 @@ function svg(tag, classe) {
 
 export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
-  aoEditarCampo = () => {}, aoRenomearGrupo = () => {}
+  aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
+  aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
+  aoAbrirDetalhes = () => {}
 }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
@@ -171,9 +173,25 @@ export function criarCanvas({
         if (ativoB) classes.push("ed__bloco--ativo")
         if (bloco.desconhecido) classes.push("ed__bloco--desconhecido")
         const noBloco = el("div", classes.join(" "))
-        noBloco.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
+        const topo = el("div", "ed__bloco-topo")
+        topo.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
 
-        if (ativoB && bloco.campoPrincipal) {
+        // O que não cabe no cartão — pontuação, destino, texto do botão de
+        // enviar — continua a um clique daqui, sem aparecer sozinho.
+        const mais = el("button", "ed__bloco-mais", "⋯")
+        mais.setAttribute("type", "button")
+        mais.setAttribute("title", "Mais opções deste bloco")
+        mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+        mais.addEventListener("click", (ev) => {
+          ev.stopPropagation?.()
+          aoAbrirDetalhes({ grupo: cartao.id, bloco: bloco.id })
+        })
+        topo.append(mais)
+        noBloco.append(topo)
+
+        if (bloco.opcoes) {
+          noBloco.append(listaDeOpcoes(cartao, bloco))
+        } else if (ativoB && bloco.campoPrincipal) {
           // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
           // que a pessoa precisa, e não tira os olhos do fluxo.
           const campo = el("textarea", "ed__bloco-campo")
@@ -200,6 +218,46 @@ export function criarCanvas({
     }
   }
 
+  // As opções do bloco de botões moram no cartão: é onde se escreve o que
+  // cada botão vai dizer. Enter abre a próxima, Backspace numa vazia a tira —
+  // escrever uma lista não deve exigir ir e voltar de um painel.
+  function listaDeOpcoes(cartao, bloco) {
+    const caixa = el("div", "ed__opcoes-cartao")
+    for (const opcao of bloco.opcoes) {
+      const linhaOpcao = el("div", "ed__opcao-cartao")
+
+      const campo = el("input", "ed__opcao-campo")
+      campo.setAttribute("type", "text")
+      campo.setAttribute("placeholder", "Escreva o botão")
+      campo.value = opcao.label
+      campo.dadosOpcao = opcao.id
+      campo.dadosBloco = bloco.id
+      campo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      campo.addEventListener("click", (ev) => ev.stopPropagation?.())
+      campo.addEventListener("input", () => aoEditarOpcao({
+        grupo: cartao.id, bloco: bloco.id, opcao: opcao.id, valor: campo.value
+      }))
+      campo.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" && !ev.shiftKey) {
+          ev.preventDefault?.()
+          aoAcrescentarOpcao({ grupo: cartao.id, bloco: bloco.id, apos: opcao.id })
+        }
+        if (ev.key === "Backspace" && campo.value === "") {
+          ev.preventDefault?.()
+          aoRemoverOpcao({ grupo: cartao.id, bloco: bloco.id, opcao: opcao.id })
+        }
+      })
+      linhaOpcao.append(campo)
+
+      const ponto = el("span", `ed__opcao-ponto${opcao.proximo ? " ed__opcao-ponto--ligado" : ""}`)
+      ponto.setAttribute("title", opcao.proximo ? `Vai para ${opcao.proximo}` : "Sem destino")
+      linhaOpcao.append(ponto)
+
+      caixa.append(linhaOpcao)
+    }
+    return caixa
+  }
+
   function desenhar(fluxo) {
     fluxoAtual = fluxo
     const lista = cartoes(fluxo)
@@ -220,6 +278,15 @@ export function criarCanvas({
         altura: palco.clientHeight || elemento.clientHeight || 0
       })
       aplicarVista()
+    },
+    // Põe o cursor numa opção depois de redesenhar: quem aperta Enter espera
+    // continuar digitando, não caçar a caixa nova com o mouse.
+    focarOpcao(blocoId, opcaoId) {
+      const alvo = camadaCartoes.porClasse
+        ? camadaCartoes.porClasse("ed__opcao-campo")
+        : [...camadaCartoes.querySelectorAll(".ed__opcao-campo")]
+      const campo = alvo.find((c) => c.dadosBloco === blocoId && c.dadosOpcao === opcaoId)
+      if (campo) campo.focus()
     },
     vista: () => ({ ...vista }),
     selecionar(nova) {

@@ -184,3 +184,93 @@ test("editar o titulo nao comeca um arrasto", () => {
   document.disparar("mouseup", {})
   assert.equal(canvas.vista().x, 0)
 })
+
+// --- opções dentro do cartão -----------------------------------------------
+
+const comBotoes = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Idade", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b_id", tipo: "entrada_botoes", salvar_em: "idade", conteudo: { opcoes: [
+        { id: "o1", label: "25-34" },
+        { id: "o2", label: "35-44", proximo: "g2" }] } }] },
+    { id: "g2", titulo: "Fim", posicao: { x: 400, y: 0 }, blocos: [] }
+  ]
+}
+
+function montarBotoes() {
+  const hospedeiro = new Elemento("div")
+  const eventos = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro,
+    aoEditarOpcao: (o) => eventos.push({ tipo: "editar", ...o }),
+    aoAcrescentarOpcao: (o) => eventos.push({ tipo: "acrescentar", ...o }),
+    aoRemoverOpcao: (o) => eventos.push({ tipo: "remover", ...o })
+  })
+  canvas.desenhar(comBotoes)
+  return { hospedeiro, canvas, eventos }
+}
+
+test("as opcoes aparecem empilhadas dentro do bloco, sem precisar selecionar", () => {
+  const { hospedeiro } = montarBotoes()
+  const linhas = hospedeiro.porClasse("ed__opcao-cartao")
+  assert.equal(linhas.length, 2)
+  assert.deepEqual(hospedeiro.porClasse("ed__opcao-campo").map((c) => c.value), ["25-34", "35-44"])
+})
+
+test("cada opcao tem o ponto de ligacao, marcado quando tem destino", () => {
+  const { hospedeiro } = montarBotoes()
+  const pontos = hospedeiro.porClasse("ed__opcao-ponto")
+  assert.equal(pontos.length, 2)
+  assert.equal(pontos[0].className.includes("ed__opcao-ponto--ligado"), false)
+  assert.equal(pontos[1].className.includes("ed__opcao-ponto--ligado"), true)
+})
+
+test("digitar numa opcao avisa qual mudou", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  const campo = hospedeiro.porClasse("ed__opcao-campo")[0]
+  campo.value = "18-24"
+  campo.disparar("input")
+  assert.deepEqual(eventos.at(-1), { tipo: "editar", grupo: "g1", bloco: "b_id", opcao: "o1", valor: "18-24" })
+})
+
+test("Enter pede uma opcao nova logo abaixo", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-campo")[0].disparar("keydown", { key: "Enter" })
+  assert.deepEqual(eventos.at(-1), { tipo: "acrescentar", grupo: "g1", bloco: "b_id", apos: "o1" })
+})
+
+test("Enter com Shift nao cria opcao", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-campo")[0].disparar("keydown", { key: "Enter", shiftKey: true })
+  assert.equal(eventos.length, 0)
+})
+
+test("apagar uma opcao vazia com Backspace remove a linha", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  const campo = hospedeiro.porClasse("ed__opcao-campo")[0]
+  campo.value = ""
+  campo.disparar("keydown", { key: "Backspace" })
+  assert.deepEqual(eventos.at(-1), { tipo: "remover", grupo: "g1", bloco: "b_id", opcao: "o1" })
+})
+
+test("Backspace numa opcao escrita nao remove nada", () => {
+  const { hospedeiro, eventos } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-campo")[0].disparar("keydown", { key: "Backspace" })
+  assert.equal(eventos.length, 0)
+})
+
+test("escrever numa opcao nao arrasta o cartao nem seleciona", () => {
+  const { hospedeiro, canvas } = montarBotoes()
+  hospedeiro.porClasse("ed__opcao-campo")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 90, clientY: 0 })
+  document.disparar("mouseup", {})
+  assert.equal(canvas.vista().x, 0)
+})
+
+test("focarOpcao poe o cursor na caixa pedida", () => {
+  const { hospedeiro, canvas } = montarBotoes()
+  canvas.focarOpcao("b_id", "o2")
+  assert.equal(document.focado, hospedeiro.porClasse("ed__opcao-campo")[1])
+})

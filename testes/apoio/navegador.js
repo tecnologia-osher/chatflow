@@ -99,7 +99,11 @@ class Elemento {
     return e
   }
   click() { for (const fn of this.ouvintes.click || []) fn({ preventDefault() {} }) }
-  focus() {}
+  focus() {
+    // Quem está com o cursor. Sem isto, "a caixa nova recebe o foco" não teria
+    // como falhar num teste.
+    if (globalThis.document) globalThis.document.focado = this
+  }
 
   // Percorre a árvore inteira coletando quem tem a classe pedida.
   porClasse(classe, achados = []) {

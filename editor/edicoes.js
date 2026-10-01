@@ -163,13 +163,29 @@ export function definirOpcao(fluxo, { grupo, bloco, opcao, campo, valor }) {
   })
 }
 
-export function acrescentarOpcao(fluxo, { grupo, bloco }) {
+export function acrescentarOpcao(fluxo, { grupo, bloco, apos = null, label = "" }) {
   return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
     const usados = new Set(opcoes.map((o) => o.id))
     let n = 1
     while (usados.has(`o${n}`)) n++
-    return [...opcoes, { id: `o${n}`, label: `Opção ${n}` }]
+    const nova = { id: `o${n}`, label }
+    const onde = apos ? opcoes.findIndex((o) => o.id === apos) : -1
+    if (onde === -1) return [...opcoes, nova]
+    const copia = [...opcoes]
+    copia.splice(onde + 1, 0, nova)
+    return copia
   })
+}
+
+// Qual id a próxima opção vai receber. O editor precisa saber antes de
+// acrescentar, para já pôr o cursor nela.
+export function proximoIdDeOpcao(fluxo, { grupo, bloco }) {
+  const g = (fluxo.grupos || []).find((x) => x && x.id === grupo)
+  const b = (g?.blocos || []).find((x) => x && x.id === bloco)
+  const usados = new Set(((b?.conteudo?.opcoes) || []).filter(Boolean).map((o) => o.id))
+  let n = 1
+  while (usados.has(`o${n}`)) n++
+  return `o${n}`
 }
 
 export function removerOpcao(fluxo, { grupo, bloco, opcao }) {

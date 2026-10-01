@@ -6,7 +6,7 @@ import assert from "node:assert/strict"
 import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
-  definirOpcao, acrescentarOpcao, removerOpcao
+  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -192,4 +192,21 @@ test("a ultima opcao nao pode ser removida", () => {
   let f = removerOpcao(comBotoes(), { grupo: "g1", bloco: "b", opcao: "o1" })
   f = removerOpcao(f, { grupo: "g1", bloco: "b", opcao: "o2" })
   assert.equal(opcoes(f).length, 1, "botões sem nenhuma opção deixam a pessoa sem saída")
+})
+
+test("acrescentar opcao logo abaixo de uma existente", () => {
+  const f = acrescentarOpcao(comBotoes(), { grupo: "g1", bloco: "b", apos: "o1" })
+  assert.deepEqual(opcoes(f).map((o) => o.id), ["o1", "o3", "o2"])
+})
+
+test("a opcao nova nasce com rotulo vazio, pronta para digitar", () => {
+  const f = acrescentarOpcao(comBotoes(), { grupo: "g1", bloco: "b", apos: "o1" })
+  assert.equal(opcoes(f)[1].label, "")
+})
+
+test("proximoIdDeOpcao diz o id antes de acrescentar", () => {
+  const f = comBotoes()
+  const previsto = proximoIdDeOpcao(f, { grupo: "g1", bloco: "b" })
+  const depois = acrescentarOpcao(f, { grupo: "g1", bloco: "b" })
+  assert.equal(opcoes(depois).at(-1).id, previsto)
 })
