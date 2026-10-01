@@ -126,6 +126,14 @@ html, body { margin: 0; height: 100%; }
   color: var(--ed-texto); }
 .ed__cabecalho-titulo { cursor: text; }
 
+/* A saída do grupo: de onde se puxa para o próximo cartão. Fica no canto de
+   baixo para não disputar espaço com as bolinhas das opções. */
+.ed__grupo-ponto { position: absolute; right: -0.55rem; bottom: 0.75rem;
+  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
+  border: 2px solid var(--ed-acento); background: var(--ed-superficie); }
+.ed__grupo-ponto:hover { box-shadow: 0 0 0 4px rgba(12,35,64,0.15); }
+.ed__grupo-ponto--ligado { background: var(--ed-acento); }
+
 /* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
    é o destino daquela opção: cheio quando leva a algum grupo. */
 .ed__bloco-topo { display: flex; align-items: center; gap: 0.4rem; }

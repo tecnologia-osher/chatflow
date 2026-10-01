@@ -396,3 +396,44 @@ test("a seta do inicio sai do cartao de Start, nao do nada", () => {
   // o Start está em x=40,y=40 e tem 190x48: a seta precisa partir da borda dele
   assert.match(caminho, /^M 230 64/)
 })
+
+// --- a saída do grupo ------------------------------------------------------
+
+function montarSaida(f = fluxo) {
+  const hospedeiro = new Elemento("div")
+  const ligacoes = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoLigarGrupo: (o) => ligacoes.push(o) })
+  canvas.desenhar(f)
+  return { hospedeiro, canvas, ligacoes }
+}
+
+test("todo grupo tem a bolinha de saida, inclusive o que ainda nao liga em nada", () => {
+  const { hospedeiro } = montarSaida()
+  const pontos = hospedeiro.porClasse("ed__grupo-ponto")
+  assert.equal(pontos.length, hospedeiro.porClasse("ed__cartao").length)
+})
+
+test("a bolinha fica cheia quando o grupo ja tem proximo", () => {
+  const { hospedeiro } = montarSaida()
+  const pontos = hospedeiro.porClasse("ed__grupo-ponto")
+  assert.equal(pontos[0].className.includes("ed__grupo-ponto--ligado"), true, "g1 vai para g2")
+  assert.equal(pontos.at(-1).className.includes("ed__grupo-ponto--ligado"), false, "o último não liga em nada")
+})
+
+test("arrastar a bolinha de saida liga o grupo", () => {
+  const { hospedeiro, ligacoes } = montarSaida()
+  // g2 ocupa x 700–960, y 40–...
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 750, clientY: 60 })
+  document.disparar("mouseup", { clientX: 750, clientY: 60 })
+  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", destino: "g2" })
+})
+
+test("arrastar a saida nao arrasta o cartao", () => {
+  const { hospedeiro, canvas } = montarSaida()
+  const antes = canvas.vista()
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 90, clientY: 40 })
+  document.disparar("mouseup", { clientX: 90, clientY: 40 })
+  assert.deepEqual(canvas.vista(), antes)
+})
