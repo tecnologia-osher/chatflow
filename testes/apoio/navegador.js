@@ -131,6 +131,12 @@ class Elemento {
     }
   }
 
+  // Selecionar o conteúdo todo, como o select() de um <input> de verdade.
+  select() {
+    this.selectionStart = 0
+    this.selectionEnd = String(this.value ?? "").length
+  }
+
   focus() {
     // Quem está com o cursor. Sem isto, "a caixa nova recebe o foco" não teria
     // como falhar num teste.

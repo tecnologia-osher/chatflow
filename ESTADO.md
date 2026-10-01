@@ -398,3 +398,24 @@ cartão sem botões nomeia uma decisão que não existe.
 As medidas do cartão foram refeitas no navegador (linha de opção 40, linha do
 `+ botão` conta igual, rodapé em todo cartão) e os dois fluxos versionados
 foram espalhados de novo, porque todo cartão ficou 27px mais alto.
+
+### O nome se edita com um clique, e o painel só vem quando chamado
+
+410 testes. Clicar no nome do grupo abre a caixa de renomear **ali mesmo**, com
+o cursor dentro e o nome inteiro selecionado — era duplo clique, e depois de
+abrir ainda pedia um clique para escrever. Arrastar o cartão pelo nome continua
+movendo o cartão: o clique só vale se o ponteiro não andou mais de 3px, senão
+quem arrasta acaba renomeando sem querer.
+
+E selecionar um grupo **não abre mais o painel da direita**. Ele oferecia duas
+coisas, título e próximo, que o cartão já resolve (nome no lugar, destino na
+bolinha). Ficou o `⋯` no cabeçalho para quem precisa escolher o destino numa
+lista — ligar num grupo fora da tela arrastando seria às cegas.
+
+**Um defeito que só o navegador pegou:** `focus()` em elemento que ainda não
+está no documento não faz nada. O campo era focado logo depois do `append` no
+cabeçalho, mas o cartão inteiro só entrava na página depois — a caixa abria sem
+cursor, o que foi digitado não ia a lugar nenhum e clicar fora não a fechava,
+porque nunca houve `blur`. O dublê de DOM não distingue elemento solto de
+elemento na página, então aceitava o foco e o teste passava. Agora o foco é
+dado no fim do `desenhar`, e quem prova esse pedaço é o script no Chrome.

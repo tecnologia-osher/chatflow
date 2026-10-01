@@ -142,7 +142,7 @@ test("baixar entrega o json do fluxo atual", () => {
 
 test("o aviso de validacao aparece quando o fluxo quebra", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
   const seletor = porClasse(hospedeiro, "ed__proximo")[0]
   seletor.value = ""
   seletor.disparar("change")
@@ -303,22 +303,30 @@ test("bloco com campo principal se edita no cartao, sem abrir painel", () => {
 
 test("editar o titulo no cartao muda o fluxo", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("dblclick")
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
   const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
   campo.value = "Boas-vindas"
   campo.disparar("input")
   assert.equal(editor.fluxo().grupos[0].titulo, "Boas-vindas")
 })
 
-test("selecionar o grupo abre o painel para ligar o proximo", () => {
+test("selecionar o grupo nao abre painel nenhum", () => {
   const { hospedeiro } = montar()
   porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__proximo").length, 1)
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0,
+    "formulário que aparece sem ser chamado atrapalha quem ia mexer no cartão")
+})
+
+test("o painel do grupo abre pelo ... do cabecalho, com o proximo numa lista", () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__proximo").length, 1,
+    "sem lista de destino, ligar num grupo fora da tela exigiria arrastar às cegas")
 })
 
 test("fechar o painel some com ele", () => {
   const { hospedeiro } = montar()
-  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
   porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
 })

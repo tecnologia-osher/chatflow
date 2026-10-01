@@ -223,15 +223,12 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     problemas.textContent = relatorio.valido ? "" : relatorio.erros.join(" · ")
   }
 
-  // O painel só aparece quando há algo que a caixa do cartão não resolve:
-  // o grupo (para ligar o próximo) ou um bloco cujo conteúdo é lista.
-  // O painel deixou de aparecer sozinho ao clicar num bloco: o cartão resolve
-  // o texto e as opções. Ele volta quando o grupo é selecionado (para ligar o
-  // próximo) ou quando alguém pede os detalhes pelo ⋯.
+  // O painel nunca aparece sozinho: só quando alguém pede pelo ⋯ — do bloco
+  // ou do grupo. Selecionar deixou de abri-lo, porque o cartão já resolve o
+  // que ele oferecia: o nome se edita no lugar e o destino se arrasta pela
+  // bolinha. Formulário que aparece sem ser chamado atrapalha.
   function precisaDePainel() {
-    if (!selecao.grupo) return false
-    if (!selecao.bloco) return true
-    return detalhesAbertos
+    return !!(selecao.grupo && detalhesAbertos)
   }
 
   function desenharPainel() {

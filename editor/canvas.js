@@ -42,7 +42,10 @@ export function criarCanvas({
   let vista = criarVista()
   let fluxoAtual = null
   let selecao = { grupo: null, bloco: null }
+  const FOLGA_DO_CLIQUE = 3
   let editandoTitulo = null
+  // Se o último mousedown virou arrasto. O clique no nome consulta isto.
+  let arrastou = false
   let caixasAtuais = new Map()
   let caixasEventoAtuais = new Map()
   let fioTemporario = null
@@ -68,9 +71,15 @@ export function criarCanvas({
     ev.preventDefault?.()
     ev.stopPropagation?.()
     const inicio = { x: ev.clientX, y: ev.clientY }
+    arrastou = false
 
     function mover(e) {
-      aoDeslocar(e.clientX - inicio.x, e.clientY - inicio.y)
+      const dx = e.clientX - inicio.x
+      const dy = e.clientY - inicio.y
+      // Tremida de mão não é arrasto: sem a folga, clicar no nome para
+      // renomear sairia movendo o cartão um pixel e o clique se perderia.
+      if (Math.abs(dx) > FOLGA_DO_CLIQUE || Math.abs(dy) > FOLGA_DO_CLIQUE) arrastou = true
+      aoDeslocar(dx, dy)
     }
     function soltar() {
       document.removeEventListener("mousemove", mover)
@@ -221,8 +230,12 @@ export function criarCanvas({
         cabecalho.append(campo)
       } else {
         const titulo = el("span", "ed__cabecalho-titulo", cartao.titulo)
-        titulo.addEventListener("dblclick", (ev) => {
+        titulo.setAttribute("title", "Clique para renomear")
+        // Um clique só, no próprio nome. O mousedown não é parado: arrastar
+        // pelo nome continua movendo o cartão, e aí o clique não conta.
+        titulo.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
+          if (arrastou) return
           editandoTitulo = cartao.id
           desenhar(fluxoAtual)
         })
@@ -240,6 +253,19 @@ export function criarCanvas({
         aoTestar(cartao.id)
       })
       cabecalho.append(play)
+
+      // O painel do grupo (título e próximo numa lista) deixou de abrir ao
+      // selecionar: quem seleciona quer mexer no cartão, não num formulário.
+      // Fica aqui, para quem precisa escolher o destino sem arrastar até ele.
+      const mais = el("button", "ed__cabecalho-mais", "⋯")
+      mais.setAttribute("type", "button")
+      mais.setAttribute("title", "Detalhes do grupo")
+      mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      mais.addEventListener("click", (ev) => {
+        ev.stopPropagation?.()
+        aoAbrirDetalhes({ grupo: cartao.id, bloco: null })
+      })
+      cabecalho.append(mais)
       cabecalho.addEventListener("click", () => {
         selecao = { grupo: cartao.id, bloco: null }
         desenhar(fluxoAtual)
@@ -419,6 +445,23 @@ export function criarCanvas({
     desenharEventos(listaEventos, caixasEventoAtuais)
     desenharCartoes(lista, mapa)
     aplicarVista()
+    // Depois de tudo pendurado na página, nunca antes: `focus()` em elemento
+    // que ainda não está no documento não faz nada, e quem clicou no nome
+    // ficaria com a caixa aberta sem cursor — o dublê de DOM não distingue
+    // isso, então quem prova este pedaço é o navegador.
+    if (editandoTitulo) {
+      const campo = acharNaCamada("ed__titulo-campo")[0]
+      campo?.focus?.()
+      // Nome inteiro selecionado: quem clica para renomear quer trocar o nome,
+      // não acrescentar letra no fim de "Grupo #1".
+      campo?.select?.()
+    }
+  }
+
+  function acharNaCamada(classe) {
+    return camadaCartoes.porClasse
+      ? camadaCartoes.porClasse(classe)
+      : [...camadaCartoes.querySelectorAll(`.${classe}`)]
   }
 
   return {
@@ -439,10 +482,8 @@ export function criarCanvas({
     // Põe o cursor numa opção depois de redesenhar: quem aperta Enter espera
     // continuar digitando, não caçar a caixa nova com o mouse.
     focarOpcao(blocoId, opcaoId) {
-      const alvo = camadaCartoes.porClasse
-        ? camadaCartoes.porClasse("ed__opcao-campo")
-        : [...camadaCartoes.querySelectorAll(".ed__opcao-campo")]
-      const campo = alvo.find((c) => c.dadosBloco === blocoId && c.dadosOpcao === opcaoId)
+      const campo = acharNaCamada("ed__opcao-campo")
+        .find((c) => c.dadosBloco === blocoId && c.dadosOpcao === opcaoId)
       if (campo) campo.focus()
     },
     // Onde um ponto da janela cai no fluxo. Quem arrasta um tipo da paleta

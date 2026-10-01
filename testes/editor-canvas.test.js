@@ -167,9 +167,9 @@ test("bloco sem campo principal nao vira caixa", () => {
     "opções não cabem numa caixa de texto — isso é trabalho do painel")
 })
 
-test("o titulo do grupo tambem se edita no cartao", () => {
+test("um clique no nome do grupo abre a caixa de renomear ali mesmo", () => {
   const { hospedeiro, edicoes } = montarEditavel()
-  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("dblclick")
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
   const campo = hospedeiro.porClasse("ed__titulo-campo")[0]
   assert.equal(campo.value, "Abertura")
   campo.value = "Boas-vindas"
@@ -179,7 +179,7 @@ test("o titulo do grupo tambem se edita no cartao", () => {
 
 test("editar o titulo nao comeca um arrasto", () => {
   const { hospedeiro, canvas } = montarEditavel()
-  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("dblclick")
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
   hospedeiro.porClasse("ed__titulo-campo")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", { clientX: 80, clientY: 0 })
   document.disparar("mouseup", {})
@@ -600,4 +600,67 @@ test("alvoDe avisa quando o ponto nem esta no palco", () => {
   assert.equal(canvas.alvoDe({ clientX: 100, clientY: 300 }).dentro, false,
     "100px está na paleta, antes do palco começar")
   assert.equal(canvas.alvoDe({ clientX: 500, clientY: 300 }).dentro, true)
+})
+
+test("clicar no nome nao seleciona o grupo: renomear nao e selecionar", () => {
+  const hospedeiro = new Elemento("div")
+  const selecoes = []
+  criarCanvas({ elemento: hospedeiro, aoSelecionar: (s) => selecoes.push(s) }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  assert.deepEqual(selecoes, [])
+})
+
+test("a caixa de renomear nasce com o cursor dentro e o nome selecionado", () => {
+  const { hospedeiro } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  const campo = hospedeiro.porClasse("ed__titulo-campo")[0]
+  assert.equal(document.focado, campo)
+  assert.equal(campo.selectionStart, 0)
+  assert.equal(campo.selectionEnd, "Abertura".length,
+    "nome inteiro selecionado: digitar troca o nome, não acrescenta no fim")
+})
+
+test("arrastar o cartao pelo nome move o cartao e nao abre a caixa", () => {
+  const { hospedeiro, canvas } = montarEditavel()
+  const titulo = hospedeiro.porClasse("ed__cabecalho-titulo")[0]
+  titulo.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  document.disparar("mousemove", { clientX: 90, clientY: 40 })
+  document.disparar("mouseup", { clientX: 90, clientY: 40 })
+  titulo.disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 0,
+    "quem arrastou não pediu para renomear")
+})
+
+test("tremida de mao sobre o nome ainda conta como clique", () => {
+  const { hospedeiro } = montarEditavel()
+  const titulo = hospedeiro.porClasse("ed__cabecalho-titulo")[0]
+  titulo.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  document.disparar("mousemove", { clientX: 11, clientY: 11 })
+  document.disparar("mouseup", { clientX: 11, clientY: 11 })
+  titulo.disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1)
+})
+
+test("o cabecalho tem um pedido de detalhes do grupo", () => {
+  const hospedeiro = new Elemento("div")
+  const pedidos = []
+  criarCanvas({ elemento: hospedeiro, aoAbrirDetalhes: (o) => pedidos.push(o) }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click")
+  assert.deepEqual(pedidos, [{ grupo: "g1", bloco: null }])
+})
+
+test("renomear continua funcionando depois de arrastar um cartao", () => {
+  const { hospedeiro } = montarEditavel()
+  // Arrasta o cartão pelo cabeçalho...
+  hospedeiro.porClasse("ed__cabecalho")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 120, clientY: 60 })
+  document.disparar("mouseup", { clientX: 120, clientY: 60 })
+  // ...e depois clica no nome, com a sequência inteira que o mouse manda. Se
+  // o arrasto anterior não for esquecido no mousedown, este clique é tratado
+  // como arrasto e a caixa nunca abre.
+  const titulo = hospedeiro.porClasse("ed__cabecalho-titulo")[0]
+  titulo.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  document.disparar("mouseup", { clientX: 10, clientY: 10 })
+  titulo.disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1)
 })
