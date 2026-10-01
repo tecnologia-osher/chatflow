@@ -744,3 +744,126 @@ test("a ponta da seta gira com o lado por onde ela chega no cartao", () => {
   assert.ok(n[3] < n[1] && n[5] < n[1], `ponta deitada: ${d}`)
   assert.notEqual(n[2], n[4], "a base tem largura na horizontal")
 })
+
+// --- ímã no bloco ----------------------------------------------------------
+
+// g2 do fluxo base não tem bloco nenhum, e é justamente nos blocos do destino
+// que o ímã mira.
+const comMiolo = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Abertura", posicao: { x: 300, y: 40 }, proximo: "g2", blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Olá" } }] },
+    { id: "g2", titulo: "Contato", posicao: { x: 700, y: 40 }, blocos: [
+      { id: "b_fala", tipo: "texto", conteudo: { texto: "Prazer" } },
+      { id: "b_fone", tipo: "entrada_telefone", salvar_em: "fone", conteudo: { rotulo: "Qual seu WhatsApp?" } }] }
+  ]
+}
+
+test("soltar sobre um bloco liga naquele bloco, nao no comeco do grupo", () => {
+  const { hospedeiro, ligacoes } = montarSaida(comMiolo)
+  const caixa = caixas(cartoesDoFluxo(comMiolo)).get("g2")
+  const faixa = caixa.blocos[1]
+  const dentro = { clientX: caixa.x + 20, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", dentro)
+  document.disparar("mouseup", dentro)
+  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", destino: `g2#${faixa.id}` })
+})
+
+test("soltar no cabecalho do cartao liga no grupo inteiro", () => {
+  const { hospedeiro, ligacoes } = montarSaida()
+  const caixa = caixas(cartoesDoFluxo(fluxo)).get("g2")
+  const noNome = { clientX: caixa.x + 20, clientY: caixa.y + 6 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", noNome)
+  document.disparar("mouseup", noNome)
+  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", destino: "g2" })
+})
+
+test("o bloco mirado acende, e so ele", () => {
+  const { hospedeiro } = montarSaida(comMiolo)
+  const caixa = caixas(cartoesDoFluxo(comMiolo)).get("g2")
+  const faixa = caixa.blocos[1]
+  const dentro = { clientX: caixa.x + 20, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", dentro)
+  const acesos = hospedeiro.porClasse("ed__bloco").filter((b) => b.className.includes("ed__bloco--alvo"))
+  assert.equal(acesos.length, 1)
+  assert.equal(acesos[0].dadosBloco, faixa.id)
+  document.disparar("mouseup", dentro)
+  assert.equal(hospedeiro.porClasse("ed__bloco").filter((b) => b.className.includes("ed__bloco--alvo")).length, 0)
+})
+
+test("chegando por fora, o ima pega o grupo e nenhum bloco acende", () => {
+  const { hospedeiro } = montarSaida(comMiolo)
+  const caixa = caixas(cartoesDoFluxo(comMiolo)).get("g2")
+  const faixa = caixa.blocos[1]
+  // Por fora, mas na mesma altura de um bloco: é aqui que um ímã desatento
+  // acha que a pessoa mirou o bloco quando ela só chegou perto do cartão.
+  const porFora = { clientX: caixa.x - 18, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", porFora)
+  assert.equal(hospedeiro.porClasse("ed__bloco").filter((b) => b.className.includes("ed__bloco--alvo")).length, 0,
+    "por fora ninguém mira bloco: o alvo é o cartão")
+  assert.equal(hospedeiro.porClasse("ed__cartao").filter((c) => c.className.includes("ed__cartao--alvo")).length, 1)
+  document.disparar("mouseup", porFora)
+})
+
+test("a seta de um destino com bloco chega na faixa daquele bloco", () => {
+  const comMiolo = {
+    versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, proximo: "g2#b_dois", blocos: [] },
+      { id: "g2", titulo: "b", posicao: { x: 500, y: 0 }, blocos: [
+        { id: "b_um", tipo: "texto", conteudo: { texto: "Um" } },
+        { id: "b_dois", tipo: "texto", conteudo: { texto: "Dois" } }] }
+    ]
+  }
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comMiolo)
+  const caixa = caixas(cartoesDoFluxo(comMiolo)).get("g2")
+  const faixa = caixa.blocos[1]
+  const seta = hospedeiro.porClasse("ed__seta").find((s) => !s.className.includes("evento"))
+  const fim = seta.atributos.d.match(/([\d.-]+) ([\d.-]+)$/)
+  const meioDaFaixa = caixa.y + faixa.y + faixa.altura / 2
+  assert.ok(Math.abs(Number(fim[2]) - meioDaFaixa) < 2,
+    `a seta chegou em y=${fim[2]}, e a faixa do bloco está em ${meioDaFaixa}`)
+})
+
+test("grudado num bloco, o fio para na faixa dele e nao na borda do cartao", () => {
+  const { hospedeiro } = montarSaida(comMiolo)
+  const caixa = caixas(cartoesDoFluxo(comMiolo)).get("g2")
+  const faixa = caixa.blocos[1]
+  const dentro = { clientX: caixa.x + 20, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", dentro)
+  const fim = hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d.match(/L (-?[\d.]+) (-?[\d.]+)/)
+  const meioDaFaixa = caixa.y + faixa.y + faixa.altura / 2
+  assert.ok(Math.abs(Number(fim[2]) - meioDaFaixa) < 2,
+    `o fio parou em y=${fim[2]}, e a faixa está em ${meioDaFaixa}`)
+  document.disparar("mouseup", dentro)
+})
+
+test("dois grupos com bloco de mesmo id: acende o do cartao mirado", () => {
+  const repetido = {
+    versao: 2, eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "a", posicao: { x: 300, y: 40 }, proximo: "g2", blocos: [
+        { id: "b1", tipo: "texto", conteudo: { texto: "Olá" } }] },
+      { id: "g2", titulo: "b", posicao: { x: 700, y: 40 }, blocos: [
+        { id: "b1", tipo: "texto", conteudo: { texto: "Outro" } }] }
+    ]
+  }
+  const { hospedeiro } = montarSaida(repetido)
+  const caixa = caixas(cartoesDoFluxo(repetido)).get("g2")
+  const faixa = caixa.blocos[0]
+  const dentro = { clientX: caixa.x + 20, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", dentro)
+  const acesos = hospedeiro.porClasse("ed__bloco").filter((b) => b.className.includes("ed__bloco--alvo"))
+  assert.equal(acesos.length, 1, "id de bloco se repete entre grupos: o cartão é que decide")
+  assert.equal(acesos[0].dadosGrupo, "g2")
+  document.disparar("mouseup", dentro)
+})

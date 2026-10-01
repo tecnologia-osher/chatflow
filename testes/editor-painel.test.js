@@ -24,11 +24,11 @@ const fluxo = {
   ]
 }
 
-function montar(selecao) {
+function montar(selecao, outroFluxo) {
   const hospedeiro = new Elemento("div")
   const edicoes = []
   const painel = criarPainel({ elemento: hospedeiro, aoEditar: (f) => edicoes.push(f) })
-  painel.mostrar({ fluxo, selecao })
+  painel.mostrar({ fluxo: outroFluxo || fluxo, selecao })
   return { hospedeiro, painel, edicoes }
 }
 const campos = (h) => h.porClasse("ed__campo")
@@ -121,4 +121,38 @@ test("trocar o proximo emite o fluxo novo", () => {
 test("sem selecao, o painel diz o que fazer", () => {
   const { hospedeiro } = montar({ grupo: null, bloco: null })
   assert.match(hospedeiro.textContent, /selecione|clique/i)
+})
+
+test("a lista de destinos oferece os blocos do meio, nao so os grupos", () => {
+  const fluxo = {
+    versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "Abertura", blocos: [] },
+      { id: "g2", titulo: "Contato", blocos: [
+        { id: "b_fala", tipo: "texto", conteudo: { texto: "Prazer" } },
+        { id: "b_fone", tipo: "entrada_telefone", salvar_em: "f", conteudo: { rotulo: "Qual seu WhatsApp?" } }] }
+    ]
+  }
+  const { hospedeiro } = montar({ grupo: "g1", bloco: null }, fluxo)
+  const opcoes = hospedeiro.porClasse("ed__proximo")[0].filhos.map((o) => ({ v: o.value, t: o.textContent }))
+  assert.ok(opcoes.some((o) => o.v === "g2"), "o grupo inteiro")
+  const doBloco = opcoes.find((o) => o.v === "g2#b_fone")
+  assert.ok(doBloco, "entrar no meio do grupo também é destino")
+  assert.match(doBloco.t, /Contato.*WhatsApp/, "o nome tem de dizer onde entra")
+  assert.equal(opcoes.some((o) => o.v === "g2#b_fala"), false,
+    "o primeiro bloco é o próprio grupo: duas opções para a mesma coisa confundem")
+})
+
+test("destino com bloco aparece escolhido na lista, nao vira outro grupo", () => {
+  const fluxo = {
+    versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "Abertura", proximo: "g2#b_fone", blocos: [] },
+      { id: "g2", titulo: "Contato", blocos: [
+        { id: "b_fala", tipo: "texto", conteudo: { texto: "Prazer" } },
+        { id: "b_fone", tipo: "entrada_telefone", salvar_em: "f", conteudo: { rotulo: "Qual seu WhatsApp?" } }] }
+    ]
+  }
+  const { hospedeiro } = montar({ grupo: "g1", bloco: null }, fluxo)
+  assert.equal(hospedeiro.porClasse("ed__proximo")[0].value, "g2#b_fone")
 })

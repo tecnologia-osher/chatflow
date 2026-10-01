@@ -59,6 +59,12 @@ bloco fala, pergunta ou decide. O caminho entre grupos é explícito.
 }
 ```
 
+Todo destino (`proximo`, o `proximo` de uma opção, o `destino` de um `ir_para`)
+é o id de um grupo — e a conversa entra nele pelo primeiro bloco. Com
+`"g_contato#b_telefone"` ela entra **naquele bloco**, pulando os de cima: é o
+que permite reaproveitar o miolo de um grupo sem copiar os blocos num grupo
+novo. O bloco citado precisa existir, e o validador acusa quando não existe.
+
 Antes de cada fala o chat mostra três pontinhos, por um tempo proporcional
 ao tamanho do texto. O compasso é configurável em
 `criarChat({ ritmo: { piso, porCaractere, teto } })`; zerar os três desliga.

@@ -5,6 +5,7 @@
 
 import { registrarTodos } from "../motor/blocos/index.js"
 import { todos, obter } from "../motor/blocos/_registro.js"
+import { partesDoDestino } from "../motor/destino.js"
 
 if (todos().length === 0) registrarTodos()
 
@@ -120,6 +121,19 @@ export function setas(fluxo) {
   const existe = new Set(grupos.map((g) => g.id))
   const porPar = new Map()
 
+  // Um destino pode nomear um bloco ("g#b"). A seta é órfã quando o grupo não
+  // existe ou quando o bloco citado não existe mais naquele grupo: as duas
+  // coisas levam o lead para o lugar errado, então as duas aparecem em
+  // vermelho em vez de sumirem do desenho.
+  const blocosPorGrupo = new Map(grupos.map((g) =>
+    [g.id, new Set((g.blocos || []).filter(Boolean).map((b) => b.id))]))
+
+  function destinoQuebrado(destino) {
+    const { grupo, bloco } = partesDoDestino(destino)
+    if (!existe.has(grupo)) return true
+    return !!bloco && !blocosPorGrupo.get(grupo)?.has(bloco)
+  }
+
   function juntar(de, para, origem, evento) {
     const chave = `${evento || ""}|${de || ""}|${para}`
     const atual = porPar.get(chave)
@@ -129,7 +143,10 @@ export function setas(fluxo) {
     }
     // Seta órfã continua sendo desenhada de propósito: sumir com ela
     // esconderia justamente o erro que a pessoa precisa ver.
-    porPar.set(chave, { de: de ?? null, para, origens: [origem], orfa: !existe.has(para), evento: evento || null })
+    porPar.set(chave, {
+      de: de ?? null, para, origens: [origem],
+      orfa: destinoQuebrado(para), evento: evento || null
+    })
   }
 
   for (const evento of (fluxo?.eventos || []).filter(Boolean)) {
@@ -183,14 +200,43 @@ export function alturaDoCartao(cartao) {
 export function caixas(listaDeCartoes) {
   const mapa = new Map()
   for (const cartao of listaDeCartoes) {
+    // A faixa de cada bloco dentro do cartão: é nela que a seta de um destino
+    // com bloco precisa chegar, e é ela que o ímã procura.
+    const linhas = []
+    let topo = CARTAO_CABECALHO
+    for (const bloco of cartao.blocos) {
+      const altura = alturaDoBloco(bloco)
+      linhas.push({ id: bloco.id, y: topo, altura })
+      topo += altura
+    }
     mapa.set(cartao.id, {
       x: cartao.posicao.x,
       y: cartao.posicao.y,
       largura: CARTAO_LARGURA,
-      altura: alturaDoCartao(cartao)
+      altura: alturaDoCartao(cartao),
+      blocos: linhas
     })
   }
   return mapa
+}
+
+// A faixa de um bloco, em coordenadas do fluxo. Sem o bloco (ou com um que não
+// existe mais) devolve o cartão inteiro: a seta chega na borda, como sempre.
+export function caixaDoBloco(caixa, blocoId) {
+  if (!caixa) return null
+  const linha = (caixa.blocos || []).find((b) => b.id === blocoId)
+  if (!linha) return caixa
+  return { x: caixa.x, y: caixa.y + linha.y, largura: caixa.largura, altura: linha.altura }
+}
+
+// Qual bloco está sob um ponto, dentro de um cartão. Cabeçalho e rodapé
+// devolvem null: ali o alvo é o grupo inteiro, que é o que a pessoa espera ao
+// apontar para o nome do cartão.
+export function blocoEmCaixa(caixa, ponto) {
+  if (!caixa) return null
+  const relativo = ponto.y - caixa.y
+  const linha = (caixa.blocos || []).find((b) => relativo >= b.y && relativo < b.y + b.altura)
+  return linha ? linha.id : null
 }
 
 export const MEDIDAS = {

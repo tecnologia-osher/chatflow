@@ -3,7 +3,7 @@
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { cartoes, setas, caixas, MEDIDAS } from "../editor/modelo.js"
+import { cartoes, setas, caixas, caixaDoBloco, blocoEmCaixa, MEDIDAS } from "../editor/modelo.js"
 
 const fluxo = {
   versao: 2,
@@ -261,3 +261,73 @@ for (const arquivo of arquivosDeFluxo) {
     assert.deepEqual(colisoes, [])
   })
 }
+
+// --- faixa de cada bloco ---------------------------------------------------
+
+const cartaoDeTres = {
+  id: "g", titulo: "x", posicao: { x: 100, y: 50 },
+  blocos: [
+    { id: "b1", tipo: "texto", resumo: "Oi" },
+    { id: "b2", tipo: "texto", resumo: "Qual seu WhatsApp?" },
+    { id: "b3", tipo: "texto", resumo: "Obrigado" }
+  ]
+}
+
+test("a caixa do cartao traz a faixa de cada bloco, em ordem e sem buraco", () => {
+  const caixa = caixas([cartaoDeTres]).get("g")
+  assert.deepEqual(caixa.blocos.map((b) => b.id), ["b1", "b2", "b3"])
+  assert.equal(caixa.blocos[0].y, MEDIDAS.CARTAO_CABECALHO, "a primeira faixa começa sob o cabeçalho")
+  for (let i = 1; i < caixa.blocos.length; i++) {
+    assert.equal(caixa.blocos[i].y, caixa.blocos[i - 1].y + caixa.blocos[i - 1].altura,
+      "faixa com buraco faz a seta chegar no lugar errado")
+  }
+})
+
+test("caixaDoBloco devolve a faixa daquele bloco, no fluxo", () => {
+  const caixa = caixas([cartaoDeTres]).get("g")
+  const faixa = caixaDoBloco(caixa, "b2")
+  assert.equal(faixa.x, caixa.x)
+  assert.equal(faixa.y, caixa.y + caixa.blocos[1].y)
+  assert.equal(faixa.altura, caixa.blocos[1].altura)
+  assert.ok(faixa.altura < caixa.altura, "a faixa é menor que o cartão")
+})
+
+test("caixaDoBloco sem bloco, ou com bloco que nao existe, devolve o cartao", () => {
+  const caixa = caixas([cartaoDeTres]).get("g")
+  assert.deepEqual(caixaDoBloco(caixa, null), caixa)
+  assert.deepEqual(caixaDoBloco(caixa, "b_sumiu"), caixa)
+  assert.equal(caixaDoBloco(null, "b1"), null)
+})
+
+test("blocoEmCaixa acha o bloco sob o ponto", () => {
+  const caixa = caixas([cartaoDeTres]).get("g")
+  const meioDe = (i) => ({ x: caixa.x + 10, y: caixa.y + caixa.blocos[i].y + caixa.blocos[i].altura / 2 })
+  assert.equal(blocoEmCaixa(caixa, meioDe(0)), "b1")
+  assert.equal(blocoEmCaixa(caixa, meioDe(1)), "b2")
+  assert.equal(blocoEmCaixa(caixa, meioDe(2)), "b3")
+})
+
+test("cabecalho e rodape nao sao bloco: ali o alvo e o grupo", () => {
+  const caixa = caixas([cartaoDeTres]).get("g")
+  assert.equal(blocoEmCaixa(caixa, { x: caixa.x + 10, y: caixa.y + 5 }), null, "cabeçalho")
+  assert.equal(blocoEmCaixa(caixa, { x: caixa.x + 10, y: caixa.y + caixa.altura - 5 }), null, "rodapé")
+})
+
+test("seta para bloco que existe nao e orfa; para bloco que nao existe, e", () => {
+  const base = {
+    versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, proximo: "g2#b_um", blocos: [] },
+      { id: "g2", titulo: "b", posicao: { x: 400, y: 0 }, blocos: [
+        { id: "b_um", tipo: "texto", conteudo: { texto: "Um" } }] }
+    ]
+  }
+  const boa = setas(base).find((s) => s.de === "g1")
+  assert.equal(boa.orfa, false)
+  assert.equal(boa.para, "g2#b_um", "a seta guarda o destino inteiro")
+
+  const quebrada = JSON.parse(JSON.stringify(base))
+  quebrada.grupos[0].proximo = "g2#b_sumiu"
+  assert.equal(setas(quebrada).find((s) => s.de === "g1").orfa, true,
+    "bloco que não existe mais leva o lead para o lugar errado: tem de aparecer")
+})

@@ -3,7 +3,10 @@
 // Não mede nada do DOM. O tamanho do cartão vem de `caixas()` e a matemática
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
-import { cartoes, setas, caixas, eventosDoCanvas, caixasDeEventos } from "./modelo.js"
+import {
+  cartoes, setas, caixas, caixaDoBloco, blocoEmCaixa, eventosDoCanvas, caixasDeEventos
+} from "./modelo.js"
+import { partesDoDestino, montarDestino } from "../motor/destino.js"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
 } from "./vista.js"
@@ -120,9 +123,10 @@ export function criarCanvas({
       const alvo = alvoDaLigacao(ponto)
       marcarAlvo(alvo)
       if (alvo) {
-        // Grudou: o fio deixa o cursor e vai para a borda do cartão, no mesmo
-        // ponto por onde a seta de verdade vai entrar depois.
-        const caixa = caixasAtuais.get(alvo)
+        // Grudou: o fio deixa o cursor e vai para a borda do alvo, no mesmo
+        // ponto por onde a seta de verdade vai entrar depois — a faixa do
+        // bloco, quando o ímã pegou um bloco.
+        const caixa = caixaDoBloco(caixasAtuais.get(alvo.grupo), alvo.bloco)
         const { para, ladoPara } = ancoras(
           { x: partida.x, y: partida.y, largura: 1, altura: 1 }, caixa)
         fioTemporario = { de: partida, para, ladoPara }
@@ -137,8 +141,8 @@ export function criarCanvas({
       fioTemporario = null
       desenharFio()
       marcarAlvo(null)
-      const destino = alvoDaLigacao(paraMundo(vista, noPalco(e)))
-      if (destino) avisar(origem, destino)
+      const alvo = alvoDaLigacao(paraMundo(vista, noPalco(e)))
+      if (alvo) avisar(origem, montarDestino(alvo.grupo, alvo.bloco))
     }
     document.addEventListener("mousemove", mover)
     document.addEventListener("mouseup", soltar)
@@ -174,15 +178,29 @@ export function criarCanvas({
   // tela, não de fluxo — a mão não fica mais firme porque o zoom afastou.
   const IMA_NA_TELA = 28
 
+  // Em cima do cartão, o ímã mira o bloco sob o cursor — é o que deixa uma
+  // ligação entrar no meio do grupo, para reaproveitar o miolo dele. No
+  // cabeçalho, no rodapé, ou chegando por fora pela folga do ímã, o alvo é o
+  // grupo inteiro: apontar para o nome do cartão é pedir o fluxo todo.
   function alvoDaLigacao(ponto) {
+    const exato = caixaEm(caixasAtuais, ponto)
+    if (exato) {
+      return { grupo: exato, bloco: blocoEmCaixa(caixasAtuais.get(exato), ponto) }
+    }
     const margem = IMA_NA_TELA / (vista.escala || 1)
-    return caixaEm(caixasAtuais, ponto) || caixaEm(caixasAtuais, ponto, margem)
+    const perto = caixaEm(caixasAtuais, ponto, margem)
+    return perto ? { grupo: perto, bloco: null } : null
   }
 
-  function marcarAlvo(id) {
+  function marcarAlvo(alvo) {
     for (const [grupo, no] of nosDeCartoes) {
       const base = no.className.replace(" ed__cartao--alvo", "")
-      no.className = grupo === id ? `${base} ed__cartao--alvo` : base
+      no.className = grupo === alvo?.grupo ? `${base} ed__cartao--alvo` : base
+    }
+    for (const bloco of acharNaCamada("ed__bloco")) {
+      const base = bloco.className.replace(" ed__bloco--alvo", "")
+      const acertou = alvo?.bloco && bloco.dadosBloco === alvo.bloco && bloco.dadosGrupo === alvo.grupo
+      bloco.className = acertou ? `${base} ed__bloco--alvo` : base
     }
   }
 
@@ -194,7 +212,8 @@ export function criarCanvas({
       // Ligação para grupo que não existe: desenha um toco saindo da origem,
       // apontando para o vazio. Some com ela e o erro fica invisível — foi
       // justamente para vê-lo que o modelo marca a seta como órfã.
-      const destino = mapa.get(seta.para) || (origem && {
+      const { grupo: idDestino, bloco: blocoDestino } = partesDoDestino(seta.para)
+      const destino = caixaDoBloco(mapa.get(idDestino), blocoDestino) || (origem && {
         x: origem.x + origem.largura + 90, y: origem.y + origem.altura / 2,
         largura: 1, altura: 1
       })
@@ -337,6 +356,10 @@ export function criarCanvas({
         if (ativoB) classes.push("ed__bloco--ativo")
         if (bloco.desconhecido) classes.push("ed__bloco--desconhecido")
         const noBloco = el("div", classes.join(" "))
+        // De quem é este bloco: o realce do ímã procura por aqui, sem ter de
+        // decorar a ordem em que os cartões foram desenhados.
+        noBloco.dadosGrupo = cartao.id
+        noBloco.dadosBloco = bloco.id
         const topo = el("div", "ed__bloco-topo")
         topo.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
 

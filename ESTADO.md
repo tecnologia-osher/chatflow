@@ -419,3 +419,28 @@ cursor, o que foi digitado não ia a lugar nenhum e clicar fora não a fechava,
 porque nunca houve `blur`. O dublê de DOM não distingue elemento solto de
 elemento na página, então aceitava o foco e o teste passava. Agora o foco é
 dado no fim do `desenhar`, e quem prova esse pedaço é o script no Chrome.
+
+### Seta com ponta, ímã, e ligação que entra no meio do grupo
+
+458 testes. Três coisas, pedidas juntas:
+
+1. **Toda seta tem ponta**, girada conforme o lado por onde entra e da cor da
+   linha. Sem ponta, num fluxo com volta os dois lados parecem iguais.
+2. **Ímã.** A 28px do cartão (medida de tela: a mão não fica mais firme porque
+   o zoom afastou), o fio deixa o cursor e gruda na borda exata por onde a seta
+   vai entrar, e o cartão acende. Longe de tudo, soltar não liga nada.
+3. **Ligação para um bloco.** Em cima do cartão o ímã mira o bloco sob o
+   cursor, que acende; no nome do cartão, no rodapé, ou chegando por fora, o
+   alvo é o grupo inteiro. Soltar num bloco grava `"g_contato#b_telefone"`.
+
+O terceiro item mexeu no **formato**, não só no editor: `motor/destino.js`
+define as duas metades de um destino, `percurso.js` entra no grupo pelo bloco
+pedido (bloco apagado entra pelo começo — perder o bloco não pode perder o
+lead), o validador acusa bloco que não existe no grupo citado, a seta chega na
+faixa daquele bloco e fica vermelha se o bloco sumiu, e a lista de destinos do
+painel passou a oferecer "Contato → Qual seu WhatsApp?" para quem não quer
+arrastar até um cartão fora da tela.
+
+Provado de ponta a ponta no Chrome: liguei a saída da Abertura no bloco do
+telefone, respondi o nome no preview e a conversa pulou direto para "Qual seu
+telefone com WhatsApp?", sem passar pelo "Show, prazer em te conhecer".

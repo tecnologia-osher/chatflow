@@ -3,6 +3,7 @@
 // que o catálogo guarda `campos` desde a primeira semana do motor.
 
 import { obter } from "./catalogo.js"
+import { montarDestino } from "../motor/destino.js"
 import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   definirOpcao, acrescentarOpcao, removerOpcao
@@ -35,6 +36,19 @@ function entrada(tipo, valor, aoMudar) {
   return campo
 }
 
+// Um nome curto para o bloco na lista de destinos: o que ele diz, se disser
+// algo, senão o rótulo do tipo.
+function nomeDoBloco(bloco) {
+  const texto = bloco?.conteudo?.texto || bloco?.conteudo?.rotulo || ""
+  const curto = String(texto).trim().slice(0, 40)
+  if (curto) return curto
+  try {
+    return obter(bloco.tipo).rotulo
+  } catch {
+    return bloco.id
+  }
+}
+
 function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar) {
   const sel = el("select", classe)
   const vazio = el("option", null, "— não liga —")
@@ -45,6 +59,13 @@ function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar) {
     const o = el("option", null, g.titulo || g.id)
     o.value = g.id
     sel.append(o)
+    // Entrar no meio do grupo também é um destino, e a lista é o caminho para
+    // quem não quer arrastar até um cartão longe da tela.
+    for (const bloco of (g.blocos || []).filter(Boolean).slice(1)) {
+      const dentro = el("option", null, `${g.titulo || g.id} → ${nomeDoBloco(bloco)}`)
+      dentro.value = montarDestino(g.id, bloco.id)
+      sel.append(dentro)
+    }
   }
   sel.value = valor || ""
   sel.addEventListener("change", () => aoMudar(sel.value))

@@ -1,4 +1,5 @@
 import { obter } from "./blocos/_registro.js"
+import { partesDoDestino } from "./destino.js"
 
 function destinosDoBloco(bloco) {
   const saidas = []
@@ -51,18 +52,32 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   })
   const eventos = eventosDeclarados.filter(Boolean)
 
+  // Um destino pode nomear um bloco dentro do grupo ("g#b"). Quem confere
+  // precisa olhar as duas metades: grupo que não existe e bloco que não existe
+  // quebram o fluxo de maneiras diferentes, e calar uma esconde a outra.
+  function problemaNoDestino(destino) {
+    const { grupo: idGrupo, bloco } = partesDoDestino(destino)
+    const grupo = porId.get(idGrupo)
+    if (!grupo) return `o grupo "${idGrupo}", que não existe`
+    if (bloco && !(grupo.blocos || []).some((b) => b && b.id === bloco)) {
+      return `o bloco "${bloco}", que não existe no grupo "${idGrupo}"`
+    }
+    return null
+  }
+
   const inicio = eventos.find((e) => e.tipo === "inicio")
   if (!inicio) {
     erros.push("O fluxo precisa de um evento de início.")
-  } else if (!porId.has(inicio.proximo)) {
-    erros.push(`O início aponta para o grupo "${inicio.proximo}", que não existe.`)
+  } else {
+    const problema = problemaNoDestino(inicio.proximo)
+    if (problema) erros.push(`O início aponta para ${problema}.`)
   }
 
   for (const evento of eventos) {
     if (evento === inicio) continue
-    if (evento.proximo && !porId.has(evento.proximo)) {
-      erros.push(`O evento "${evento.tipo}" aponta para o grupo "${evento.proximo}", que não existe.`)
-    }
+    if (!evento.proximo) continue
+    const problema = problemaNoDestino(evento.proximo)
+    if (problema) erros.push(`O evento "${evento.tipo}" aponta para ${problema}.`)
   }
 
   for (const grupo of gruposValidos) {
@@ -98,9 +113,8 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     })
 
     for (const saida of saidasDoGrupo(grupo)) {
-      if (!porId.has(saida)) {
-        erros.push(`Grupo "${grupo.id}" aponta para "${saida}", que não existe.`)
-      }
+      const problema = problemaNoDestino(saida)
+      if (problema) erros.push(`Grupo "${grupo.id}" aponta para ${problema}.`)
     }
   }
 
@@ -109,7 +123,7 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
   // ao menos uma raiz de fato resolve para um grupo real — senão o
   // problema já está coberto pelo erro de início/evento quebrado.
   const alcancados = new Set()
-  const fila = eventos.map((e) => e.proximo).filter((id) => porId.has(id))
+  const fila = eventos.map((e) => partesDoDestino(e.proximo).grupo).filter((id) => porId.has(id))
   const haviaRaizValida = fila.length > 0
   while (fila.length) {
     const id = fila.shift()
@@ -118,7 +132,8 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     const grupo = porId.get(id)
     if (!grupo) continue
     for (const saida of saidasDoGrupo(grupo)) {
-      if (porId.has(saida)) fila.push(saida)
+      const alvo = partesDoDestino(saida).grupo
+      if (porId.has(alvo)) fila.push(alvo)
     }
   }
   if (haviaRaizValida) {
@@ -142,7 +157,7 @@ export function validarFluxo(fluxo, { destinos = {} } = {}) {
     mudou = false
     for (const grupo of gruposValidos) {
       if (chegaAoFim.has(grupo.id)) continue
-      if (saidasDoGrupo(grupo).some((s) => chegaAoFim.has(s))) {
+      if (saidasDoGrupo(grupo).some((s) => chegaAoFim.has(partesDoDestino(s).grupo))) {
         chegaAoFim.add(grupo.id)
         mudou = true
       }

@@ -1,5 +1,6 @@
 import { pontuacaoAtiva, classificar } from "./pontuacao.js"
 import { obter } from "./blocos/_registro.js"
+import { partesDoDestino } from "./destino.js"
 
 function acharGrupo(fluxo, id) {
   return (fluxo.grupos || []).find((g) => g.id === id) || null
@@ -9,12 +10,21 @@ function eventoInicio(fluxo) {
   return (fluxo.eventos || []).find((e) => e.tipo === "inicio") || null
 }
 
-function entrarNoGrupo(estado, idGrupo) {
+// Entrar num grupo. O destino pode pedir um bloco ("g#b"): o fluxo começa
+// naquele bloco, não no primeiro. Bloco que não existe mais não interrompe a
+// conversa — entra pelo começo, e o validador é que acusa o destino quebrado.
+function entrarNoGrupo(estado, fluxo, destino) {
+  const { grupo: idGrupo, bloco } = partesDoDestino(destino)
+  const grupo = acharGrupo(fluxo, idGrupo)
+  // Sem bloco no destino, a busca não acha nada e o fluxo começa no primeiro
+  // — o mesmo caminho de um bloco que foi apagado.
+  const achado = (grupo?.blocos || []).findIndex((b) => b && b.id === bloco)
+  const indiceBloco = achado > 0 ? achado : 0
   const historico =
     estado.historico[estado.historico.length - 1] === idGrupo
       ? estado.historico
       : [...estado.historico, idGrupo]
-  return { ...estado, grupoAtual: idGrupo, indiceBloco: 0, historico }
+  return { ...estado, grupoAtual: idGrupo, indiceBloco, historico }
 }
 
 export function criarEstado(fluxo) {
@@ -29,9 +39,9 @@ export function criarEstado(fluxo) {
     tentativas: 0
   }
   if (!inicio || !inicio.proximo) return { ...base, terminou: true }
-  const alvo = acharGrupo(fluxo, inicio.proximo)
+  const alvo = acharGrupo(fluxo, partesDoDestino(inicio.proximo).grupo)
   if (!alvo) return { ...base, terminou: true }
-  return entrarNoGrupo(base, inicio.proximo)
+  return entrarNoGrupo(base, fluxo, inicio.proximo)
 }
 
 export function blocoAtual(fluxo, estado) {
@@ -45,9 +55,9 @@ export function avancar(fluxo, estado, { destino } = {}) {
   if (estado.terminou) return estado
 
   if (destino) {
-    const alvo = acharGrupo(fluxo, destino)
+    const alvo = acharGrupo(fluxo, partesDoDestino(destino).grupo)
     if (!alvo) return { ...estado, terminou: true }
-    return entrarNoGrupo(estado, destino)
+    return entrarNoGrupo(estado, fluxo, destino)
   }
 
   const grupo = acharGrupo(fluxo, estado.grupoAtual)
@@ -59,9 +69,9 @@ export function avancar(fluxo, estado, { destino } = {}) {
   }
 
   if (!grupo.proximo) return { ...estado, terminou: true }
-  const seguinte = acharGrupo(fluxo, grupo.proximo)
+  const seguinte = acharGrupo(fluxo, partesDoDestino(grupo.proximo).grupo)
   if (!seguinte) return { ...estado, terminou: true }
-  return entrarNoGrupo(estado, grupo.proximo)
+  return entrarNoGrupo(estado, fluxo, grupo.proximo)
 }
 
 export function aplicarResposta(fluxo, estado, valor) {

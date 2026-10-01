@@ -188,6 +188,9 @@ html, body { margin: 0; height: 100%; }
 .ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-entrada); }
 .ed__ponta--condicao { fill: var(--ed-logica); }
 .ed__ponta--orfa { fill: var(--ed-erro); }
+/* O bloco que o ímã pegou: a ligação vai entrar no grupo por aqui, pulando o
+   que estiver acima. */
+.ed__bloco--alvo { background: var(--ed-conector-halo); box-shadow: inset 2px 0 0 var(--ed-entrada); }
 /* O cartão que o ímã pegou: quem arrasta precisa ver onde vai soltar. */
 .ed__cartao--alvo { border-color: var(--ed-entrada);
   box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
