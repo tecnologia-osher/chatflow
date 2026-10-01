@@ -733,12 +733,12 @@ test("longe de todo cartao o fio segue o cursor e nao liga nada", () => {
   assert.deepEqual(ligacoes, [])
 })
 
-test("o fio solto e uma curva, igual a seta pronta, nao uma reta", () => {
+test("o fio solto tem os mesmos cantos da seta pronta, nao e uma reta", () => {
   const { hospedeiro } = montarSaida()
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", { clientX: 1200, clientY: 300 })
   const d = hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d
-  assert.match(d, / C /, "reta no arrasto e curva depois: o desenho muda de forma ao soltar")
+  assert.match(d, / Q /, "reta no arrasto e canto depois: o desenho muda de forma ao soltar")
   document.disparar("mouseup", { clientX: 1200, clientY: 300 })
 })
 

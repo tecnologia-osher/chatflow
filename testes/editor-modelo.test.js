@@ -387,3 +387,52 @@ test("cada seta tem chave propria, estavel entre dois desenhos", () => {
   assert.notEqual(daOpcao.chave, a.find((s) => s.de === "g2" && s.origens[0] === "grupo").chave,
     "conectores diferentes do mesmo cartão precisam de chaves diferentes")
 })
+
+// --- as setas não devem passar por cima dos cartões -------------------------
+
+// A reclamação que trouxe o roteamento ortogonal: a linha de "Idade" para
+// "Objetivo" cortava em diagonal por dentro dos outros cartões. Com a virada
+// no vão entre as colunas, ela corre no corredor. Vale para os fluxos
+// versionados — é neles que o cliente abre o editor.
+const { ancoras } = await import("../editor/vista.js")
+
+function trechosDaSeta(mapa, seta) {
+  const { partesDoDestino } = globalThis.__destino
+  const origem = mapa.get(seta.de)
+  const destino = mapa.get(partesDoDestino(seta.para).grupo)
+  if (!origem || !destino) return null
+  return ancoras(origem, destino).pontos
+}
+
+globalThis.__destino = await import("../motor/destino.js")
+
+for (const arquivo of arquivosDeFluxo) {
+  const nome = arquivo.pathname.split("/").slice(-2).join("/")
+  test(`nenhuma seta de ${nome} atravessa um cartao que nao e a sua ponta`, () => {
+    const fluxo = JSON.parse(readFileSync(arquivo))
+    const mapa = caixas(cartoes(fluxo))
+    const invasoes = []
+    for (const seta of setas(fluxo)) {
+      const pontos = trechosDaSeta(mapa, seta)
+      if (!pontos) continue
+      const pontas = new Set([seta.de, globalThis.__destino.partesDoDestino(seta.para).grupo])
+      for (let i = 1; i < pontos.length; i++) {
+        // Amostra o trecho de 6 em 6 unidades: cartão tem 260 de largura, não
+        // há como um trecho atravessá-lo sem cair numa dessas amostras.
+        const p = pontos[i - 1], q = pontos[i]
+        const passos = Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 6)
+        for (let k = 0; k <= passos; k++) {
+          const x = p.x + ((q.x - p.x) * k) / passos
+          const y = p.y + ((q.y - p.y) * k) / passos
+          for (const [id, c] of mapa) {
+            if (pontas.has(id)) continue
+            if (x > c.x && x < c.x + c.largura && y > c.y && y < c.y + c.altura) {
+              invasoes.push(`${seta.de} → ${seta.para} passa por ${id}`)
+            }
+          }
+        }
+      }
+    }
+    assert.deepEqual([...new Set(invasoes)], [])
+  })
+}

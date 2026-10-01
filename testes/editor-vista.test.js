@@ -5,7 +5,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, enquadrar, caixaEm,
-  pontaDaSeta, ESCALA_MIN, ESCALA_MAX
+  pontaDaSeta, caminhoComCantos, ESCALA_MIN, ESCALA_MAX
 } from "../editor/vista.js"
 
 const perto = (a, b, tol = 0.001) =>
@@ -79,18 +79,77 @@ test("destino a esquerda: sai pela esquerda, entra pela direita", () => {
   assert.equal(a.para.lado, "direita")
 })
 
-test("destino abaixo e quase alinhado: sai por baixo, entra por cima", () => {
+test("destino abaixo e na mesma coluna: sai pela lateral, entra por cima", () => {
   const a = ancoras(caixa(0, 0), caixa(20, 400))
-  assert.equal(a.de.lado, "baixo")
+  // A saída é sempre lateral porque é lá que fica a bolinha. Sair por baixo
+  // mandava a linha para dentro do cartão que estiver logo abaixo.
+  assert.equal(a.de.lado, "direita")
   assert.equal(a.para.lado, "cima")
+})
+
+test("sai pela esquerda quando o destino esta para tras", () => {
+  const a = ancoras(caixa(500, 0), caixa(0, 0))
+  assert.equal(a.de.lado, "esquerda")
+  assert.equal(a.para.lado, "direita")
+})
+
+test("indo para o cartao de baixo, desce pelo lado antes de atravessar", () => {
+  const origem = caixa(0, 0)
+  const destino = caixa(20, 400)
+  const a = ancoras(origem, destino)
+  // Nenhum trecho pode voltar para dentro da faixa horizontal da origem
+  // depois de sair dela: era isso que cruzava o cartão.
+  const dentroDaOrigem = (p) =>
+    p.x > origem.x && p.x < origem.x + origem.largura &&
+    p.y > origem.y && p.y < origem.y + origem.altura
+  assert.equal(a.pontos.slice(1).some(dentroDaOrigem), false,
+    `algum trecho voltou para dentro do cartão: ${JSON.stringify(a.pontos)}`)
 })
 
 test("o caminho e um path SVG que comeca na ancora de saida", () => {
   const a = ancoras(caixa(0, 0), caixa(500, 200))
   assert.match(a.caminho, /^M /)
-  assert.match(a.caminho, /C /)
+  assert.match(a.caminho, / Q /, "os cantos são arredondados, não bicos nem diagonal")
   assert.ok(a.caminho.startsWith(`M ${a.de.x} ${a.de.y}`))
   assert.ok(a.caminho.endsWith(`${a.para.x} ${a.para.y}`))
+})
+
+test("o caminho e ortogonal: cada trecho e horizontal ou vertical", () => {
+  const a = ancoras(caixa(0, 0), caixa(500, 200))
+  for (let i = 1; i < a.pontos.length; i++) {
+    const p = a.pontos[i - 1]
+    const q = a.pontos[i]
+    const reto = Math.abs(p.x - q.x) < 0.01 || Math.abs(p.y - q.y) < 0.01
+    assert.ok(reto, `trecho em diagonal de ${JSON.stringify(p)} a ${JSON.stringify(q)}`)
+  }
+})
+
+test("a linha sai perpendicular da borda antes de virar", () => {
+  const a = ancoras(caixa(0, 0), caixa(500, 200))
+  assert.equal(a.ladoDe, "direita")
+  assert.equal(a.pontos[1].y, a.de.y, "o primeiro trecho acompanha o lado de saída")
+  assert.ok(a.pontos[1].x > a.de.x, "e sai para fora do cartão")
+  assert.equal(a.pontos.at(-2).y, a.para.y, "o último trecho entra reto na outra borda")
+})
+
+test("a perna vertical corre no meio do vao entre as duas caixas", () => {
+  const esquerda = caixa(0, 0)
+  const direita = caixa(500, 400)
+  const a = ancoras(esquerda, direita)
+  const vertical = a.pontos.find((p, i) => i > 0 && Math.abs(p.x - a.pontos[i - 1].x) < 0.01)
+  const vaoComeca = esquerda.x + esquerda.largura
+  const vaoTermina = direita.x
+  assert.ok(vertical.x > vaoComeca && vertical.x < vaoTermina,
+    `a virada caiu em x=${vertical.x}, fora do vão ${vaoComeca}–${vaoTermina}: é assim que a linha passa por cima de um cartão`)
+})
+
+test("cantos nao estouram trechos curtos", () => {
+  // Caixas quase encostadas: o raio precisa encolher, senão o arco passa do
+  // fim do trecho e a linha dá um nó.
+  const a = ancoras(caixa(0, 0), caixa(160, 20))
+  assert.equal(/NaN|Infinity/.test(a.caminho), false, a.caminho)
+  const numeros = a.caminho.match(/-?[\d.]+/g).map(Number)
+  assert.ok(numeros.every(Number.isFinite))
 })
 
 test("grupo que aponta para si mesmo nao vira caminho degenerado", () => {
@@ -204,4 +263,45 @@ test("com margem, chegar perto do cartao ja conta como acertar", () => {
   assert.equal(caixaEm(mapa, quaseEmCima), null, "sem ímã, só o encaixe exato")
   assert.equal(caixaEm(mapa, quaseEmCima, 20), "g1", "com ímã, 10px fora conta")
   assert.equal(caixaEm(mapa, { x: 40, y: 110 }, 20), null, "longe continua longe")
+})
+
+test("com pouco vao, a virada fica no vao e nao dentro dos cartoes", () => {
+  // Vão de 20px entre os dois: menor que o toco. Virar na ponta do toco
+  // colocaria a perna vertical dentro de um dos cartões.
+  const esquerda = caixa(0, 0)
+  const direita = caixa(280, 300)
+  const a = ancoras(esquerda, direita)
+  const vertical = a.pontos.find((p, i) => i > 0 && Math.abs(p.x - a.pontos[i - 1].x) < 0.01)
+  assert.ok(vertical.x > esquerda.x + esquerda.largura && vertical.x < direita.x,
+    `a virada caiu em x=${vertical.x}, e o vão é ${esquerda.x + esquerda.largura}–${direita.x}`)
+})
+
+test("indo para o cartao de baixo, a linha afasta antes de descer", () => {
+  // Mesma coluna: sai pela direita, desce no corredor e entra por cima. Se o
+  // toco não existisse, ela viraria rente à borda e pareceria saída torta.
+  const origem = caixa(0, 0)
+  const a = ancoras(origem, caixa(20, 400))
+  const primeiroCanto = a.pontos[1]
+  assert.equal(primeiroCanto.y, a.de.y, "o primeiro trecho é horizontal")
+  assert.ok(primeiroCanto.x - a.de.x >= 15,
+    `virou a ${primeiroCanto.x - a.de.x}px da borda`)
+  assert.ok(primeiroCanto.x > origem.x + origem.largura, "e fora do cartão")
+})
+
+test("caminhoComCantos nunca passa do fim de um trecho curto", () => {
+  // Trechos de 8px com raio 10: o arco tem de encolher.
+  const pontos = [{ x: 0, y: 0 }, { x: 8, y: 0 }, { x: 8, y: 8 }, { x: 16, y: 8 }]
+  const d = caminhoComCantos(pontos, 10)
+  const paradas = [...d.matchAll(/L (-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({ x: Number(m[1]), y: Number(m[2]) }))
+  for (const p of paradas) {
+    assert.ok(p.x >= -0.01 && p.x <= 16.01 && p.y >= -0.01 && p.y <= 8.01,
+      `o caminho saiu da polilinha em ${JSON.stringify(p)}: ${d}`)
+  }
+})
+
+test("linha reta nao tem canto: nada a arredondar", () => {
+  // Cartões lado a lado, na mesma altura: o caminho é uma reta.
+  const a = ancoras(caixa(0, 0), caixa(500, 0))
+  assert.equal(a.pontos.length, 2, `canto onde não há virada: ${JSON.stringify(a.pontos)}`)
+  assert.equal(/Q/.test(a.caminho), false, a.caminho)
 })

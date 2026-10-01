@@ -512,3 +512,27 @@ nada e também não avisava.
 se chamavam "Grupo #N". Num fluxo com seis grupos de nome próprio, o sétimo
 nascia como "Grupo #1" — parecia que o editor não tinha visto os outros. Agora
 o número é a posição no fluxo (seis grupos → #7), pulando números já usados.
+
+### As linhas passaram a correr pelo corredor
+
+503 testes. A reclamação era concreta: a linha de "Idade" para "Objetivo"
+cortava em diagonal por dentro dos outros cartões. Duas causas, e a segunda era
+a grande:
+
+1. **Bézier cortava reto.** As setas agora são **ortogonais com cantos
+   arredondados**, como no Typebot: saem perpendicular à borda, viram no meio
+   do vão entre as duas caixas e entram perpendicular na outra. Era o único
+   ponto do Typebot que eu tinha deixado de fora de propósito — o problema que
+   ele resolve só aparece quando os cartões estão em coluna.
+2. **O lado de saída estava errado.** Quando a distância vertical era maior que
+   a horizontal, a seta saía pelo **topo** do cartão — e mandava a linha para
+   dentro do cartão de cima. Agora a saída é sempre lateral, porque é lá que
+   estão as bolinhas: direita se o destino está à direita, esquerda se está à
+   esquerda. A entrada é a lateral que olha para a origem, com uma exceção:
+   destino na mesma coluna e abaixo entra por cima, e aí a linha desce pelo
+   corredor ao lado antes de atravessar.
+
+O guarda disso é um teste que percorre as setas dos fluxos versionados de 6 em 6
+unidades e falha se qualquer amostra cair dentro de um cartão que não seja a
+ponta daquela seta. Foi ele que achou a segunda causa — eu tinha trocado a
+curva pela ortogonal e o desenho continuava invadindo.
