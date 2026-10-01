@@ -73,7 +73,7 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   baixar.setAttribute("type", "button")
   baixar.addEventListener("click", () => aoBaixar(JSON.stringify(atual, null, 2), "fluxo.json"))
 
-  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), testar, criar, baixar)
+  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), criar, testar, baixar)
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
