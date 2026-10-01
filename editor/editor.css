@@ -56,6 +56,7 @@ html, body { margin: 0; height: 100%; }
   background: var(--ed-superficie); font: inherit; cursor: pointer; }
 .ed__baixar { background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 .ed__testar { font-weight: 600; }
+.ed__oculto { display: none; }
 .ed__testar:hover { border-color: var(--ed-acento); }
 .ed__problemas:not(:empty) { padding: 0.6rem 1rem; background: var(--ed-problema-fundo); color: var(--ed-erro);
   border-top: 1px solid var(--ed-linha); font-size: 0.82rem; }

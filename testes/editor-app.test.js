@@ -177,3 +177,67 @@ test("editar com o preview fechado nao o abre sozinho", async () => {
   await assentar()
   assert.equal(porClasse(hospedeiro, "ed__preview").length, 0)
 })
+
+test("o fluxo inteiro cabe na tela ao abrir, mesmo mais alto que ela", () => {
+  // Altura do fluxo real da Osher: vai de y=40 a y=1020 numa área de ~700px.
+  const alto = fluxoBase()
+  alto.grupos[1].posicao = { x: 0, y: 1020 }
+  const { editor } = montar(alto)
+  const v = editor.vista()
+  const base = (1020 + 56) * v.escala + v.y
+  assert.ok(base <= 700, `o cartão de baixo ficou em ${Math.round(base)}px, fora dos 700px visíveis`)
+  assert.ok(v.escala < 1, "um fluxo mais alto que a tela precisa ser reduzido para caber")
+})
+
+test("fluxo alto demais para o chao da escala nao e espremido ate ficar ilegivel", () => {
+  const enorme = fluxoBase()
+  enorme.grupos[1].posicao = { x: 0, y: 8000 }
+  const { editor } = montar(enorme)
+  // Abaixo de 0,25 os cartões viram manchas. Aí é melhor a pessoa arrastar.
+  assert.equal(editor.vista().escala, 0.25)
+})
+
+test("o botao Ajustar a tela reenquadra depois de arrastar para longe", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 5000, clientY: 5000 })
+  document.disparar("mouseup", {})
+  assert.ok(editor.vista().x > 4000, "arrastou para longe")
+  porClasse(hospedeiro, "ed__ajustar")[0].disparar("click")
+  assert.ok(editor.vista().x < 1000, "Ajustar precisa trazer o fluxo de volta")
+})
+
+test("o botao Testar some enquanto a aba de teste esta aberta", async () => {
+  const { hospedeiro } = montar()
+  const visivel = () => !porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto")
+  assert.equal(visivel(), true, "começa visível")
+
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
+  await assentar()
+  assert.equal(visivel(), false, "com a aba aberta o botão não faz sentido")
+})
+
+test("fechar a aba traz o botao Testar de volta", async () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
+  await assentar()
+  porClasse(hospedeiro, "ed__preview-fechar")[0].disparar("click")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto"), false)
+})
+
+test("abrir pelo play de um cartao tambem esconde o botao", async () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__play")[1].disparar("click")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto"), true)
+})
+
+test("redesenhar com a aba aberta nao faz o botao reaparecer", async () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
+  await assentar()
+  porClasse(hospedeiro, "ed__criar-grupo")[0].disparar("click")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto"), true)
+})

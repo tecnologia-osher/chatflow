@@ -4,7 +4,8 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, ESCALA_MIN, ESCALA_MAX
+  criarVista, arrastar, aplicarZoom, paraMundo, paraTela, ancoras, enquadrar,
+  ESCALA_MIN, ESCALA_MAX
 } from "../editor/vista.js"
 
 const perto = (a, b, tol = 0.001) =>
@@ -97,4 +98,45 @@ test("grupo que aponta para si mesmo nao vira caminho degenerado", () => {
   const a = ancoras(c, c)
   assert.ok(a.caminho.length > 10)
   assert.notEqual(a.de.lado, a.para.lado, "entrada e saída no mesmo lado desenham uma linha invisível")
+})
+
+// --- enquadrar -------------------------------------------------------------
+
+test("enquadrar poe todo o conteudo dentro da area visivel", () => {
+  const caixas = [caixa(0, 0), caixa(320, 1020), caixa(900, 400)]
+  const v = enquadrar(caixas, { largura: 1000, altura: 800 })
+  for (const c of caixas) {
+    const a = paraTela(v, { x: c.x, y: c.y })
+    const b = paraTela(v, { x: c.x + c.largura, y: c.y + c.altura })
+    assert.ok(a.x >= -0.5 && a.y >= -0.5, `canto superior fora: ${JSON.stringify(a)}`)
+    assert.ok(b.x <= 1000.5 && b.y <= 800.5, `canto inferior fora: ${JSON.stringify(b)}`)
+  }
+})
+
+test("enquadrar centra o conteudo", () => {
+  const caixas = [caixa(0, 0)]
+  const v = enquadrar(caixas, { largura: 1000, altura: 800 })
+  const centro = paraTela(v, { x: 130, y: 60 })   // centro da caixa 260x120
+  perto(centro.x, 500, 1)
+  perto(centro.y, 400, 1)
+})
+
+test("fluxo pequeno nao e ampliado alem do tamanho natural", () => {
+  const v = enquadrar([caixa(0, 0)], { largura: 2000, altura: 2000 })
+  assert.equal(v.escala, 1, "ampliar um fluxo de um cartão só deixaria tudo gigante")
+})
+
+test("fluxo grande e reduzido ate caber, respeitando o chao da escala", () => {
+  const v = enquadrar([caixa(0, 0), caixa(20000, 20000)], { largura: 800, altura: 600 })
+  assert.ok(v.escala < 1)
+  assert.ok(v.escala >= ESCALA_MIN)
+})
+
+test("sem caixa nenhuma devolve a vista inicial", () => {
+  assert.deepEqual(enquadrar([], { largura: 800, altura: 600 }), criarVista())
+})
+
+test("area sem tamanho ainda devolve vista utilizavel", () => {
+  const v = enquadrar([caixa(0, 0)], { largura: 0, altura: 0 })
+  assert.ok(Number.isFinite(v.x) && Number.isFinite(v.y) && v.escala > 0)
 })

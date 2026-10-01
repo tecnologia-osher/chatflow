@@ -18,6 +18,10 @@ class Elemento {
     this.ouvintes = {}
     this.scrollTop = 0
     this.scrollHeight = 0
+    // Um elemento de verdade tem tamanho. Sem isto o enquadramento dividiria
+    // por zero e o teste passaria com uma vista que o navegador não produz.
+    this.clientWidth = 900
+    this.clientHeight = 700
     // Um <input> de verdade nasce com value "", não undefined. Sem isto o
     // falso mente: `campo.value += "a"` daria "undefineda" aqui e "a" no
     // navegador.

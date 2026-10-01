@@ -46,9 +46,9 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     elemento: palcoCanvas,
     aoSelecionar: (nova) => { selecao = nova; recado = ""; desenharPainel(); desenharPaleta() },
     aoMover: (grupo, { x, y }) => { atual = moverGrupo(atual, { grupo, x, y }); redesenhar({ manterVista: true }) },
-    aoTestar: (grupo) => preview.abrir(atual, grupo)
+    aoTestar: (grupo) => { preview.abrir(atual, grupo); sincronizarTestar() }
   })
-  const preview = criarPreview({ elemento: areaPreview })
+  const preview = criarPreview({ elemento: areaPreview, aoFechar: () => sincronizarTestar() })
   const painel = criarPainel({
     elemento: areaPainel,
     aoEditar: (novo) => { atual = novo; redesenhar() }
@@ -65,15 +65,25 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     redesenhar()
   })
 
+  const ajustar = el("button", "ed__ajustar", "Ajustar à tela")
+  ajustar.setAttribute("type", "button")
+  ajustar.addEventListener("click", () => canvas.enquadrar())
+
   const testar = el("button", "ed__testar", "▶ Testar")
   testar.setAttribute("type", "button")
-  testar.addEventListener("click", () => preview.abrir(atual, null))
+  testar.addEventListener("click", () => { preview.abrir(atual, null); sincronizarTestar() })
+
+  // Com a aba de teste aberta, o botão não tem o que fazer: some, e volta
+  // quando ela fecha. Um botão que não faz nada é pior que botão nenhum.
+  function sincronizarTestar() {
+    testar.className = preview.aberto() ? "ed__testar ed__oculto" : "ed__testar"
+  }
 
   const baixar = el("button", "ed__baixar", "Baixar fluxo.json")
   baixar.setAttribute("type", "button")
   baixar.addEventListener("click", () => aoBaixar(JSON.stringify(atual, null, 2), "fluxo.json"))
 
-  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), criar, testar, baixar)
+  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), criar, testar, ajustar, baixar)
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
@@ -134,9 +144,13 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   }
 
   redesenhar()
+  // O fluxo da Osher é mais alto que a tela. Abrir mostrando só o topo faz
+  // parecer que o editor cortou o trabalho.
+  canvas.enquadrar()
 
   return {
     fluxo: () => atual,
-    selecao: () => ({ ...selecao })
+    selecao: () => ({ ...selecao }),
+    vista: () => canvas.vista()
   }
 }

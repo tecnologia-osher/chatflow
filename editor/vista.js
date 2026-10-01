@@ -84,3 +84,36 @@ export function ancoras(a, b) {
 
   return { de, para, caminho }
 }
+
+// Enquadra todo o conteúdo na área visível. Sem isto, um fluxo mais alto que
+// a tela abre mostrando só o começo, e quem olha conclui que o editor cortou
+// o trabalho — foi exatamente o que aconteceu com o fluxo da Osher, que vai
+// de y=40 a y=1020 numa área de 843px.
+const MARGEM = 48
+
+export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
+  const lista = (caixas || []).filter(Boolean)
+  if (lista.length === 0) return criarVista()
+
+  const minX = Math.min(...lista.map((c) => c.x))
+  const minY = Math.min(...lista.map((c) => c.y))
+  const maxX = Math.max(...lista.map((c) => c.x + c.largura))
+  const maxY = Math.max(...lista.map((c) => c.y + c.altura))
+
+  const util = {
+    largura: Math.max(1, (largura || 0) - margem * 2),
+    altura: Math.max(1, (altura || 0) - margem * 2)
+  }
+  const conteudo = { largura: Math.max(1, maxX - minX), altura: Math.max(1, maxY - minY) }
+
+  // Nunca amplia além do tamanho natural: um fluxo de um cartão só ficaria
+  // gigante e desorientado no meio da tela.
+  const escala = Math.max(ESCALA_MIN, Math.min(1,
+    util.largura / conteudo.largura, util.altura / conteudo.altura))
+
+  return {
+    escala,
+    x: (largura || 0) / 2 - (minX + conteudo.largura / 2) * escala,
+    y: (altura || 0) / 2 - (minY + conteudo.altura / 2) * escala
+  }
+}

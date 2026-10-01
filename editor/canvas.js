@@ -4,7 +4,7 @@
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
 import { cartoes, setas, caixas } from "./modelo.js"
-import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras } from "./vista.js"
+import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar } from "./vista.js"
 
 const SVG = "http://www.w3.org/2000/svg"
 
@@ -174,6 +174,16 @@ export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () =>
 
   return {
     desenhar,
+    // Põe todo o fluxo na tela. Chamado na abertura e pelo botão da barra —
+    // nunca em cada redesenho, senão brigaria com quem está arrastando.
+    enquadrar() {
+      if (!fluxoAtual) return
+      vista = enquadrar([...caixas(cartoes(fluxoAtual)).values()], {
+        largura: palco.clientWidth || elemento.clientWidth || 0,
+        altura: palco.clientHeight || elemento.clientHeight || 0
+      })
+      aplicarVista()
+    },
     vista: () => ({ ...vista }),
     selecionar(nova) {
       selecao = { grupo: nova.grupo ?? null, bloco: nova.bloco ?? null }

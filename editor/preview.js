@@ -34,7 +34,7 @@ export function fluxoComecandoEm(fluxo, grupoId) {
   }
 }
 
-export function criarPreview({ elemento }) {
+export function criarPreview({ elemento, aoFechar = () => {} }) {
   let aberto = false
   let fluxoAtual = null
   let comecarEm = null
@@ -44,6 +44,7 @@ export function criarPreview({ elemento }) {
     aberto = false
     chat = null
     elemento.replaceChildren()
+    aoFechar()
   }
 
   function montar() {
