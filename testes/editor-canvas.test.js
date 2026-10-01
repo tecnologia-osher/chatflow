@@ -121,3 +121,66 @@ test("selecionar destaca o cartao na tela", () => {
   const alvo = cartoes(hospedeiro).find((c) => c.className.includes("ed__cartao--ativo"))
   assert.match(alvo.textContent, /Fim/)
 })
+
+// --- edição dentro do cartão -----------------------------------------------
+
+function montarEditavel() {
+  const hospedeiro = new Elemento("div")
+  const edicoes = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro,
+    aoEditarCampo: (o) => edicoes.push(o),
+    aoRenomearGrupo: (o) => edicoes.push(o)
+  })
+  canvas.desenhar(fluxo)
+  return { hospedeiro, canvas, edicoes }
+}
+
+test("clicar no bloco abre a edicao ali mesmo", () => {
+  const { hospedeiro } = montarEditavel()
+  assert.equal(hospedeiro.porClasse("ed__bloco-campo").length, 0, "fechado até alguém clicar")
+  hospedeiro.porClasse("ed__bloco")[0].disparar("click")
+  const campo = hospedeiro.porClasse("ed__bloco-campo")[0]
+  assert.ok(campo, "o bloco precisa virar caixa de texto no lugar")
+  assert.equal(campo.value, "Olá")
+})
+
+test("digitar no bloco avisa qual campo mudou", () => {
+  const { hospedeiro, edicoes } = montarEditavel()
+  hospedeiro.porClasse("ed__bloco")[0].disparar("click")
+  const campo = hospedeiro.porClasse("ed__bloco-campo")[0]
+  campo.value = "Bom dia"
+  campo.disparar("input")
+  assert.deepEqual(edicoes.at(-1), { grupo: "g1", bloco: "b1", campo: "texto", valor: "Bom dia" })
+})
+
+test("bloco sem campo principal nao vira caixa", () => {
+  const { hospedeiro } = montarEditavel()
+  const comBotoes = { ...fluxo, grupos: [{ id: "g1", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "bb", tipo: "entrada_botoes", salvar_em: "v", conteudo: { opcoes: [{ id: "o1", label: "Sim" }] } }] }] }
+  const h2 = new Elemento("div")
+  const c2 = criarCanvas({ elemento: h2 })
+  c2.desenhar(comBotoes)
+  h2.porClasse("ed__bloco")[0].disparar("click")
+  assert.equal(h2.porClasse("ed__bloco-campo").length, 0,
+    "opções não cabem numa caixa de texto — isso é trabalho do painel")
+})
+
+test("o titulo do grupo tambem se edita no cartao", () => {
+  const { hospedeiro, edicoes } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("dblclick")
+  const campo = hospedeiro.porClasse("ed__titulo-campo")[0]
+  assert.equal(campo.value, "Abertura")
+  campo.value = "Boas-vindas"
+  campo.disparar("input")
+  assert.deepEqual(edicoes.at(-1), { grupo: "g1", valor: "Boas-vindas" })
+})
+
+test("editar o titulo nao comeca um arrasto", () => {
+  const { hospedeiro, canvas } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("dblclick")
+  hospedeiro.porClasse("ed__titulo-campo")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 80, clientY: 0 })
+  document.disparar("mouseup", {})
+  assert.equal(canvas.vista().x, 0)
+})

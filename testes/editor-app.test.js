@@ -57,14 +57,16 @@ test("o bloco acrescentado ja vem selecionado, pronto para editar", () => {
   assert.equal(editor.selecao().bloco, editor.fluxo().grupos[1].blocos[0].id)
 })
 
-test("editar no painel muda o canvas", () => {
+test("editar na caixa do cartao nao recria a caixa a cada tecla", () => {
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
-  const campo = porClasse(hospedeiro, "ed__campo")[0]
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
   campo.value = "Bom dia"
   campo.disparar("input")
-  assert.match(porClasse(hospedeiro, "ed__cartao")[0].textContent, /Bom dia/)
   assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Bom dia")
+  // Redesenhar o cartão a cada tecla recriaria o campo e jogaria o cursor
+  // para o fim da frase — é o defeito clássico de editor que redesenha tudo.
+  assert.equal(porClasse(hospedeiro, "ed__bloco-campo")[0], campo, "a caixa precisa ser a mesma")
 })
 
 test("arrastar o grupo grava a posicao no fluxo", () => {
@@ -161,7 +163,7 @@ test("editar com o preview aberto refaz a conversa", async () => {
   porClasse(hospedeiro, "ed__testar")[0].disparar("click")
   await assentar()
   porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
-  const campo = porClasse(hospedeiro, "ed__campo")[0]
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
   campo.value = "Bom dia"
   campo.disparar("input")
   await assentar()
@@ -171,7 +173,7 @@ test("editar com o preview aberto refaz a conversa", async () => {
 test("editar com o preview fechado nao o abre sozinho", async () => {
   const { hospedeiro } = montar()
   porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
-  const campo = porClasse(hospedeiro, "ed__campo")[0]
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
   campo.value = "Bom dia"
   campo.disparar("input")
   await assentar()
@@ -240,4 +242,55 @@ test("redesenhar com a aba aberta nao faz o botao reaparecer", async () => {
   porClasse(hospedeiro, "ed__criar-grupo")[0].disparar("click")
   await assentar()
   assert.equal(porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto"), true)
+})
+
+// --- painel sob demanda ----------------------------------------------------
+
+test("sem selecao nao existe painel ocupando a direita", () => {
+  const { hospedeiro } = montar()
+  assert.equal(porClasse(hospedeiro, "ed__vazio").length, 0,
+    "'Selecione um bloco' não pode ocupar espaço permanente")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
+})
+
+test("bloco com campo principal se edita no cartao, sem abrir painel", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  campo.value = "Bom dia"
+  campo.disparar("input")
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Bom dia")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0, "texto não precisa de painel")
+})
+
+test("bloco de botoes abre o painel, porque opcoes nao cabem na caixa", () => {
+  const f = fluxoBase()
+  f.grupos[0].blocos.push({ id: "bb", tipo: "entrada_botoes", salvar_em: "v",
+    conteudo: { opcoes: [{ id: "o1", label: "Sim" }] } })
+  const { hospedeiro } = montar(f)
+  porClasse(hospedeiro, "ed__bloco")[1].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
+  assert.ok(porClasse(hospedeiro, "ed__opcao").length > 0)
+})
+
+test("editar o titulo no cartao muda o fluxo", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("dblclick")
+  const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  campo.value = "Boas-vindas"
+  campo.disparar("input")
+  assert.equal(editor.fluxo().grupos[0].titulo, "Boas-vindas")
+})
+
+test("selecionar o grupo abre o painel para ligar o proximo", () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__proximo").length, 1)
+})
+
+test("fechar o painel some com ele", () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
 })

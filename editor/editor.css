@@ -19,7 +19,7 @@
   --ed-problema-fundo: #fdeceb;
 
   display: grid;
-  grid-template-columns: 17rem 1fr 24rem;
+  grid-template-columns: 17rem 1fr;
   height: 100vh;
   background: var(--ed-fundo);
   color: var(--ed-texto);
@@ -97,11 +97,28 @@ html, body { margin: 0; height: 100%; }
 .ed__bloco--desconhecido { border-left-color: var(--ed-erro); }
 .ed__bloco-rotulo { font-size: 0.72rem; color: var(--ed-suave); }
 .ed__bloco-resumo { font-size: 0.84rem; }
+/* A caixa de edição ocupa o lugar do resumo, sem mudar a altura do cartão
+   mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
+.ed__bloco-campo { width: 100%; min-height: 3.2rem; resize: vertical; box-sizing: border-box;
+  border: 1px solid var(--ed-acento); border-radius: 6px; padding: 0.3rem 0.4rem;
+  font: inherit; font-size: 0.84rem; background: var(--ed-superficie); color: var(--ed-texto); }
+.ed__titulo-campo { flex: 1; min-width: 0; border: 1px solid var(--ed-acento); border-radius: 6px;
+  padding: 0.15rem 0.35rem; font: inherit; font-weight: 600; background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.ed__cabecalho-titulo { cursor: text; }
 
 /* --- lateral --- */
-.ed__lateral { background: var(--ed-superficie); border-left: 1px solid var(--ed-linha);
-  min-height: 0; overflow-y: auto; }
-.ed__area-painel { padding: 1rem; }
+/* O painel flutua à direita e só existe enquanto há algo que a caixa do
+   cartão não resolve. Coluna fixa dizendo "selecione alguma coisa" é espaço
+   gasto para não informar nada. */
+.ed__area-painel:empty { display: none; }
+.ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);
+  overflow-y: auto; z-index: 15; padding: 1rem 1rem 1.2rem; background: var(--ed-superficie);
+  border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
+.ed__painel-fechar { position: absolute; top: 0.5rem; right: 0.5rem; width: 1.7rem; height: 1.7rem;
+  border: none; border-radius: 50%; background: transparent; color: var(--ed-suave);
+  font: inherit; cursor: pointer; }
+.ed__painel-fechar:hover { background: var(--ed-fundo); }
 
 /* O preview fica sobreposto, não numa coluna: enquanto não é pedido, o canvas
    usa a tela inteira. */
@@ -133,5 +150,4 @@ html, body { margin: 0; height: 100%; }
 
 @media (max-width: 1100px) {
   .ed { grid-template-columns: 13rem 1fr; }
-  .ed__lateral { display: none; }
 }

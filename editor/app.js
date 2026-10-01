@@ -6,7 +6,8 @@
 import { criarCanvas } from "./canvas.js"
 import { criarPainel } from "./painel.js"
 import { todos } from "./catalogo.js"
-import { acrescentarBloco, criarGrupo, moverGrupo } from "./edicoes.js"
+import { campoPrincipal } from "./modelo.js"
+import { acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 
@@ -32,19 +33,25 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   const barra = el("header", "ed__barra")
   const palcoCanvas = el("div", "ed__area-canvas")
   const problemas = el("div", "ed__problemas")
-  const lateral = el("aside", "ed__lateral")
+  // Nem painel nem preview ocupam coluna: os dois flutuam e só existem
+  // enquanto são necessários. O canvas fica com o resto da tela.
   const areaPainel = el("div", "ed__area-painel")
-  lateral.append(areaPainel)
-  // O preview vive fora da coluna: aparece sobreposto quando pedido, para o
-  // canvas ficar com a tela inteira enquanto se monta o fluxo.
   const areaPreview = el("div", "ed__area-preview")
   centro.append(barra, palcoCanvas, problemas)
-  raiz.append(paleta, centro, lateral, areaPreview)
+  raiz.append(paleta, centro, areaPainel, areaPreview)
   elemento.replaceChildren(raiz)
 
   const canvas = criarCanvas({
     elemento: palcoCanvas,
     aoSelecionar: (nova) => { selecao = nova; recado = ""; desenharPainel(); desenharPaleta() },
+    aoEditarCampo: ({ grupo, bloco, campo, valor }) => {
+      atual = definirCampo(atual, { grupo, bloco, campo, valor })
+      semRedesenharCartoes()
+    },
+    aoRenomearGrupo: ({ grupo, valor }) => {
+      atual = definirTitulo(atual, { grupo, valor })
+      semRedesenharCartoes()
+    },
     aoMover: (grupo, { x, y }) => { atual = moverGrupo(atual, { grupo, x, y }); redesenhar({ manterVista: true }) },
     aoTestar: (grupo) => { preview.abrir(atual, grupo); sincronizarTestar() }
   })
@@ -130,8 +137,30 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     problemas.textContent = relatorio.valido ? "" : relatorio.erros.join(" · ")
   }
 
+  // O painel só aparece quando há algo que a caixa do cartão não resolve:
+  // o grupo (para ligar o próximo) ou um bloco cujo conteúdo é lista.
+  function precisaDePainel() {
+    if (!selecao.grupo) return false
+    if (!selecao.bloco) return true
+    const grupo = (atual.grupos || []).find((g) => g && g.id === selecao.grupo)
+    const bloco = (grupo?.blocos || []).find((b) => b && b.id === selecao.bloco)
+    return bloco ? campoPrincipal(bloco.tipo) === null : false
+  }
+
   function desenharPainel() {
-    painel.mostrar({ fluxo: atual, selecao })
+    if (!precisaDePainel()) { areaPainel.replaceChildren(); return }
+    painel.mostrar({ fluxo: atual, selecao, aoFechar: () => {
+      selecao = { grupo: selecao.grupo, bloco: null }
+      areaPainel.replaceChildren()
+      canvas.selecionar({ grupo: null, bloco: null })
+    } })
+  }
+
+  // Edição dentro do cartão: refaz tudo menos os cartões, para a caixa de
+  // texto não ser recriada a cada tecla e o cursor não saltar para o fim.
+  function semRedesenharCartoes() {
+    desenharProblemas()
+    preview.atualizar(atual)
   }
 
   function redesenhar() {

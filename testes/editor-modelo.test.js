@@ -127,3 +127,26 @@ test("a caixa existe para todo cartao, inclusive o vazio", () => {
   const mapa = caixas(cartoes(fluxo))
   for (const c of cartoes(fluxo)) assert.ok(mapa.get(c.id), `sem caixa para ${c.id}`)
 })
+
+// --- campo principal -------------------------------------------------------
+
+test("o campo principal e o primeiro texto que o tipo declara", async () => {
+  const { campoPrincipal } = await import("../editor/modelo.js")
+  assert.equal(campoPrincipal("texto"), "texto")
+  assert.equal(campoPrincipal("entrada_texto"), "placeholder")
+  assert.equal(campoPrincipal("ir_para"), "destino")
+  assert.equal(campoPrincipal("redirecionar"), "url")
+})
+
+test("tipo sem campo de texto nao tem principal", async () => {
+  const { campoPrincipal } = await import("../editor/modelo.js")
+  assert.equal(campoPrincipal("condicao"), null, "regras se editam em lista, não numa caixa")
+  assert.equal(campoPrincipal("entrada_botoes"), null, "o que importa nos botões são as opções")
+  assert.equal(campoPrincipal("inventado"), null)
+})
+
+test("o cartao diz qual campo cada bloco edita direto", () => {
+  const c = cartoes(fluxo)
+  assert.equal(c[0].blocos[0].campoPrincipal, "texto")
+  assert.equal(c[1].blocos[0].campoPrincipal, null)   // entrada_botoes
+})

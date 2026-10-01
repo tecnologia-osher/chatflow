@@ -54,6 +54,17 @@ function definicaoDe(tipo) {
   }
 }
 
+// Qual campo a pessoa edita clicando direto no bloco do cartão. É o primeiro
+// campo de texto que o tipo declara — para `texto` é a fala, para as entradas
+// é o texto de exemplo. Tipo cujo conteúdo é lista (botões, condição) não tem
+// principal: ali o que importa são os itens, e isso não cabe numa caixa só.
+export function campoPrincipal(tipo) {
+  const definicao = definicaoDe(tipo)
+  if (!definicao) return null
+  const campo = (definicao.campos || []).find((c) => c.tipo === "texto")
+  return campo ? campo.nome : null
+}
+
 export function cartoes(fluxo) {
   return (fluxo?.grupos || []).filter(Boolean).map((grupo, indice) => ({
     id: grupo.id,
@@ -69,6 +80,8 @@ export function cartoes(fluxo) {
         categoria: definicao ? definicao.categoria : null,
         desconhecido: !definicao,
         resumo: resumoDe(bloco, definicao),
+        campoPrincipal: campoPrincipal(bloco.tipo),
+        valorPrincipal: (bloco.conteudo || {})[campoPrincipal(bloco.tipo)] ?? "",
         salvar_em: bloco.salvar_em || null
       }
     })

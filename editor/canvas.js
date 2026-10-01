@@ -23,7 +23,10 @@ function svg(tag, classe) {
   return e
 }
 
-export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {} }) {
+export function criarCanvas({
+  elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
+  aoEditarCampo = () => {}, aoRenomearGrupo = () => {}
+}) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
   const tela = svg("svg", "ed__setas")
@@ -35,6 +38,7 @@ export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () =>
   let vista = criarVista()
   let fluxoAtual = null
   let selecao = { grupo: null, bloco: null }
+  let editandoTitulo = null
 
   function aplicarVista() {
     mundo.style.setProperty("transform",
@@ -114,7 +118,26 @@ export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () =>
       no.style.setProperty("width", `${caixa.largura}px`)
 
       const cabecalho = el("div", "ed__cabecalho")
-      cabecalho.append(el("span", "ed__cabecalho-titulo", cartao.titulo))
+      if (editandoTitulo === cartao.id) {
+        const campo = el("input", "ed__titulo-campo")
+        campo.setAttribute("type", "text")
+        campo.value = cartao.titulo
+        // O cabeçalho é a alça de arrasto. Sem parar aqui, clicar para pôr o
+        // cursor no meio da palavra sairia arrastando o grupo.
+        campo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+        campo.addEventListener("click", (ev) => ev.stopPropagation?.())
+        campo.addEventListener("input", () => aoRenomearGrupo({ grupo: cartao.id, valor: campo.value }))
+        campo.addEventListener("blur", () => { editandoTitulo = null; desenhar(fluxoAtual) })
+        cabecalho.append(campo)
+      } else {
+        const titulo = el("span", "ed__cabecalho-titulo", cartao.titulo)
+        titulo.addEventListener("dblclick", (ev) => {
+          ev.stopPropagation?.()
+          editandoTitulo = cartao.id
+          desenhar(fluxoAtual)
+        })
+        cabecalho.append(titulo)
+      }
 
       // Testar a partir daqui. Para o clique e o mousedown: sem isso ele
       // selecionaria o grupo e começaria um arrasto junto.
@@ -149,7 +172,21 @@ export function criarCanvas({ elemento, aoSelecionar = () => {}, aoMover = () =>
         if (bloco.desconhecido) classes.push("ed__bloco--desconhecido")
         const noBloco = el("div", classes.join(" "))
         noBloco.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
-        noBloco.append(el("span", "ed__bloco-resumo", bloco.resumo))
+
+        if (ativoB && bloco.campoPrincipal) {
+          // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
+          // que a pessoa precisa, e não tira os olhos do fluxo.
+          const campo = el("textarea", "ed__bloco-campo")
+          campo.value = bloco.valorPrincipal
+          campo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+          campo.addEventListener("click", (ev) => ev.stopPropagation?.())
+          campo.addEventListener("input", () => aoEditarCampo({
+            grupo: cartao.id, bloco: bloco.id, campo: bloco.campoPrincipal, valor: campo.value
+          }))
+          noBloco.append(campo)
+        } else {
+          noBloco.append(el("span", "ed__bloco-resumo", bloco.resumo))
+        }
         noBloco.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
           selecao = { grupo: cartao.id, bloco: bloco.id }

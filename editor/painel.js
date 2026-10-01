@@ -52,8 +52,14 @@ function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar) {
 }
 
 export function criarPainel({ elemento, aoEditar = () => {} }) {
-  function mostrar({ fluxo, selecao }) {
+  function mostrar({ fluxo, selecao, aoFechar }) {
     const corpo = el("div", "ed__painel")
+    if (aoFechar) {
+      const fechar = el("button", "ed__painel-fechar", "✕")
+      fechar.setAttribute("type", "button")
+      fechar.addEventListener("click", aoFechar)
+      corpo.append(fechar)
+    }
     const emitir = (novo) => aoEditar(novo)
 
     if (!selecao || !selecao.grupo) {
