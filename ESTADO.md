@@ -303,7 +303,7 @@ onde se escreve direto:
 - **Teste sob demanda.** `▶ Testar` na barra abre a conversa numa gaveta; um
   `▶` em cada cartão começa o teste daquela etapa, pulando o que vem antes.
   O botão some enquanto a gaveta está aberta.
-- **Enquadramento ao abrir** e botão `Ajustar à tela`. O fluxo da Osher vai de
+- **Enquadramento ao abrir** e botão `Centralizar` (era "Ajustar à tela"). O fluxo da Osher vai de
   y=40 a y=1020 numa área de 843px — abrindo sem enquadrar, o último grupo
   ficava invisível e parecia que o editor tinha cortado o trabalho.
 - **Edição dentro do cartão.** Clicar num bloco de fala abre a caixa ali

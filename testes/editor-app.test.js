@@ -237,14 +237,14 @@ test("fluxo alto demais para o chao da escala nao e espremido ate ficar ilegivel
   assert.equal(editor.vista().escala, 0.25)
 })
 
-test("o botao Ajustar a tela reenquadra depois de arrastar para longe", () => {
+test("o botao Centralizar reenquadra depois de arrastar para longe", () => {
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", { clientX: 5000, clientY: 5000 })
   document.disparar("mouseup", {})
   assert.ok(editor.vista().x > 4000, "arrastou para longe")
   porClasse(hospedeiro, "ed__ajustar")[0].disparar("click")
-  assert.ok(editor.vista().x < 1000, "Ajustar precisa trazer o fluxo de volta")
+  assert.ok(editor.vista().x < 1000, "Centralizar precisa trazer o fluxo de volta")
 })
 
 test("o botao Testar some enquanto a aba de teste esta aberta", async () => {
@@ -545,4 +545,11 @@ test("clicar no tipo continua valendo para quem ja tem grupo selecionado", () =>
   porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
   tipoDaPaleta(hospedeiro, "Texto").disparar("click")
   assert.equal(editor.fluxo().grupos[0].blocos.length, 2)
+})
+
+test("a barra diz Centralizar, e explica o que faz", () => {
+  const { hospedeiro } = montar()
+  const botao = porClasse(hospedeiro, "ed__ajustar")[0]
+  assert.equal(botao.textContent, "Centralizar")
+  assert.match(botao.atributos.title || "", /fluxo inteiro|tela/i)
 })

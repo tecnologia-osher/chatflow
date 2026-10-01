@@ -112,8 +112,9 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   })
 
   // --- barra -----------------------------------------------------------
-  const ajustar = el("button", "ed__ajustar", "Ajustar à tela")
+  const ajustar = el("button", "ed__ajustar", "Centralizar")
   ajustar.setAttribute("type", "button")
+  ajustar.setAttribute("title", "Põe o fluxo inteiro na tela")
   ajustar.addEventListener("click", () => canvas.enquadrar())
 
   const testar = el("button", "ed__testar", "▶ Testar")
