@@ -666,6 +666,12 @@ test("renomear continua funcionando depois de arrastar um cartao", () => {
 })
 
 // --- seta com ponta, e o ímã -----------------------------------------------
+// O fim de um caminho: o último par de coordenadas, seja reta ou curva.
+const fimDoCaminho = (d) => {
+  const n = d.match(/-?[\d.]+/g).map(Number)
+  return { x: n[n.length - 2], y: n[n.length - 1] }
+}
+
 
 test("cada seta desenhada tem uma ponta, e da cor dela", () => {
   const hospedeiro = new Elemento("div")
@@ -691,16 +697,16 @@ test("o fio arrastado tambem tem ponta, apontando para onde vai", () => {
 test("chegar perto do cartao gruda o fio nele e acende o cartao", () => {
   const { hospedeiro, canvas } = montarBotoes()
   const caixa = caixas(cartoesDoFluxo(comBotoes)).get("g2")
-  // 20px acima do canto de g2: fora do cartão, dentro do ímã.
-  const perto = { clientX: caixa.x + 10, clientY: caixa.y - 20 }
+  // 6px acima da borda de g2: fora do cartão, dentro da folga do ímã.
+  const perto = { clientX: caixa.x + 10, clientY: caixa.y - 6 }
   hospedeiro.porClasse("ed__opcao-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", perto)
 
   const alvos = hospedeiro.porClasse("ed__cartao").filter((c) => c.className.includes("ed__cartao--alvo"))
   assert.equal(alvos.length, 1, "o ímã precisa acender o cartão que vai receber")
   const fio = hospedeiro.porClasse("ed__seta--arrastando")[0]
-  const fim = fio.atributos.d.match(/L (-?[\d.]+) (-?[\d.]+)/)
-  assert.notEqual(Number(fim[1]), perto.clientX, "grudado, o fio deixa o cursor e vai à borda")
+  assert.notEqual(fimDoCaminho(fio.atributos.d).x, perto.clientX,
+    "grudado, o fio deixa o cursor e vai à borda")
   document.disparar("mouseup", perto)
   assert.equal(hospedeiro.porClasse("ed__cartao").filter((c) => c.className.includes("ed__cartao--alvo")).length, 0,
     "o aceso precisa apagar ao soltar")
@@ -709,7 +715,7 @@ test("chegar perto do cartao gruda o fio nele e acende o cartao", () => {
 test("soltar perto do cartao liga nele, sem precisar acertar dentro", () => {
   const { hospedeiro, ligacoes } = montarSaida()
   const caixa = caixas(cartoesDoFluxo(fluxo)).get("g2")
-  const perto = { clientX: caixa.x - 18, clientY: caixa.y + 10 }
+  const perto = { clientX: caixa.x - 6, clientY: caixa.y + 10 }
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", perto)
   document.disparar("mouseup", perto)
@@ -722,9 +728,57 @@ test("longe de todo cartao o fio segue o cursor e nao liga nada", () => {
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", longe)
   const fio = hospedeiro.porClasse("ed__seta--arrastando")[0]
-  assert.match(fio.atributos.d, /L 5000 5000$/)
+  assert.deepEqual(fimDoCaminho(fio.atributos.d), { x: 5000, y: 5000 })
   document.disparar("mouseup", longe)
   assert.deepEqual(ligacoes, [])
+})
+
+test("o fio solto e uma curva, igual a seta pronta, nao uma reta", () => {
+  const { hospedeiro } = montarSaida()
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 1200, clientY: 300 })
+  const d = hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d
+  assert.match(d, / C /, "reta no arrasto e curva depois: o desenho muda de forma ao soltar")
+  document.disparar("mouseup", { clientX: 1200, clientY: 300 })
+})
+
+test("o fio sai da borda do cartao de origem, e troca de lado com o cursor", () => {
+  const { hospedeiro } = montarSaida()
+  const origem = caixas(cartoesDoFluxo(fluxo)).get("g1")
+  const comeco = (d) => {
+    const n = d.match(/-?[\d.]+/g).map(Number)
+    return { x: n[0], y: n[1] }
+  }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+
+  document.disparar("mousemove", { clientX: origem.x + 900, clientY: origem.y + 20 })
+  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x,
+    origem.x + origem.largura, "cursor à direita: o fio nasce na borda direita")
+
+  document.disparar("mousemove", { clientX: origem.x - 400, clientY: origem.y + 20 })
+  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x,
+    origem.x, "cursor à esquerda: o fio nasce na borda esquerda")
+  document.disparar("mouseup", { clientX: origem.x - 400, clientY: origem.y + 20 })
+})
+
+test("o fio grudado e exatamente a seta que vai ficar", () => {
+  const { hospedeiro, canvas, ligacoes } = montarSaida()
+  const caixa = caixas(cartoesDoFluxo(fluxo)).get("g2")
+  const dentro = { clientX: caixa.x + 30, clientY: caixa.y + 10 }
+  hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", dentro)
+  const doFio = hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d
+  document.disparar("mouseup", dentro)
+
+  // Desenha o fluxo já com a ligação feita: o caminho tem de ser o mesmo que
+  // o fio mostrava. Se diferir, a linha "pula" no instante em que se solta.
+  const ligado = JSON.parse(JSON.stringify(fluxo))
+  ligado.grupos[0].proximo = ligacoes.at(-1).destino
+  canvas.desenhar(ligado)
+  const daSeta = hospedeiro.porClasse("ed__seta")
+    .filter((s) => !s.className.includes("evento") && !s.className.includes("arrastando"))
+    .map((s) => s.atributos.d)
+  assert.ok(daSeta.includes(doFio), `o fio mostrava ${doFio}, e a seta virou ${daSeta.join(" | ")}`)
 })
 
 test("a ponta da seta gira com o lado por onde ela chega no cartao", () => {
@@ -802,7 +856,7 @@ test("chegando por fora, o ima pega o grupo e nenhum bloco acende", () => {
   const faixa = caixa.blocos[1]
   // Por fora, mas na mesma altura de um bloco: é aqui que um ímã desatento
   // acha que a pessoa mirou o bloco quando ela só chegou perto do cartão.
-  const porFora = { clientX: caixa.x - 18, clientY: caixa.y + faixa.y + faixa.altura / 2 }
+  const porFora = { clientX: caixa.x - 6, clientY: caixa.y + faixa.y + faixa.altura / 2 }
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", porFora)
   assert.equal(hospedeiro.porClasse("ed__bloco").filter((b) => b.className.includes("ed__bloco--alvo")).length, 0,
@@ -839,10 +893,10 @@ test("grudado num bloco, o fio para na faixa dele e nao na borda do cartao", () 
   const dentro = { clientX: caixa.x + 20, clientY: caixa.y + faixa.y + faixa.altura / 2 }
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", dentro)
-  const fim = hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d.match(/L (-?[\d.]+) (-?[\d.]+)/)
+  const fim = fimDoCaminho(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d)
   const meioDaFaixa = caixa.y + faixa.y + faixa.altura / 2
-  assert.ok(Math.abs(Number(fim[2]) - meioDaFaixa) < 2,
-    `o fio parou em y=${fim[2]}, e a faixa está em ${meioDaFaixa}`)
+  assert.ok(Math.abs(fim.y - meioDaFaixa) < 2,
+    `o fio parou em y=${fim.y}, e a faixa está em ${meioDaFaixa}`)
   document.disparar("mouseup", dentro)
 })
 

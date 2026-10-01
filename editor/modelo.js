@@ -105,12 +105,18 @@ function saidasDoGrupo(grupo) {
   for (const bloco of grupo.blocos || []) {
     if (!bloco) continue
     const c = bloco.conteudo || {}
-    if (bloco.tipo === "ir_para" && c.destino) saidas.push({ para: c.destino, origem: "ir_para" })
+    if (bloco.tipo === "ir_para" && c.destino) {
+      saidas.push({ para: c.destino, origem: "ir_para", saida: { bloco: bloco.id } })
+    }
     for (const regra of c.regras || []) {
-      if (regra && regra.entao) saidas.push({ para: regra.entao, origem: "condicao" })
+      if (regra && regra.entao) {
+        saidas.push({ para: regra.entao, origem: "condicao", saida: { bloco: bloco.id } })
+      }
     }
     for (const opcao of c.opcoes || []) {
-      if (opcao && opcao.proximo) saidas.push({ para: opcao.proximo, origem: "opcao" })
+      if (opcao && opcao.proximo) {
+        saidas.push({ para: opcao.proximo, origem: "opcao", saida: { bloco: bloco.id, opcao: opcao.id } })
+      }
     }
   }
   return saidas
@@ -134,8 +140,10 @@ export function setas(fluxo) {
     return !!bloco && !blocosPorGrupo.get(grupo)?.has(bloco)
   }
 
-  function juntar(de, para, origem, evento) {
-    const chave = `${evento || ""}|${de || ""}|${para}`
+  function juntar(de, para, origem, evento, saida = null) {
+    // A chave inclui a saída: duas opções que vão para o mesmo grupo são duas
+    // setas, porque saem de alturas diferentes. Juntá-las escondia uma delas.
+    const chave = `${evento || ""}|${de || ""}|${saida?.bloco || ""}|${saida?.opcao || ""}|${para}`
     const atual = porPar.get(chave)
     if (atual) {
       if (!atual.origens.includes(origem)) atual.origens.push(origem)
@@ -144,7 +152,7 @@ export function setas(fluxo) {
     // Seta órfã continua sendo desenhada de propósito: sumir com ela
     // esconderia justamente o erro que a pessoa precisa ver.
     porPar.set(chave, {
-      de: de ?? null, para, origens: [origem],
+      de: de ?? null, para, origens: [origem], saida,
       orfa: destinoQuebrado(para), evento: evento || null
     })
   }
@@ -153,7 +161,7 @@ export function setas(fluxo) {
     if (evento.proximo) juntar(null, evento.proximo, "evento", evento.tipo)
   }
   for (const grupo of grupos) {
-    for (const { para, origem } of saidasDoGrupo(grupo)) juntar(grupo.id, para, origem)
+    for (const { para, origem, saida } of saidasDoGrupo(grupo)) juntar(grupo.id, para, origem, null, saida)
   }
   return [...porPar.values()]
 }
@@ -206,7 +214,15 @@ export function caixas(listaDeCartoes) {
     let topo = CARTAO_CABECALHO
     for (const bloco of cartao.blocos) {
       const altura = alturaDoBloco(bloco)
-      linhas.push({ id: bloco.id, y: topo, altura })
+      // Cada opção tem a sua linha dentro do bloco: é dela que a seta daquela
+      // resposta sai, como a bolinha que se puxa. Duas setas saindo da mesma
+      // altura seriam duas respostas indistinguíveis no desenho.
+      const opcoes = (bloco.opcoes || []).map((opcao, i) => ({
+        id: opcao.id,
+        y: topo + CARTAO_OPCOES_TOPO + i * CARTAO_OPCAO,
+        altura: CARTAO_OPCAO
+      }))
+      linhas.push({ id: bloco.id, y: topo, altura, opcoes })
       topo += altura
     }
     mapa.set(cartao.id, {
@@ -214,7 +230,8 @@ export function caixas(listaDeCartoes) {
       y: cartao.posicao.y,
       largura: CARTAO_LARGURA,
       altura: alturaDoCartao(cartao),
-      blocos: linhas
+      blocos: linhas,
+      rodape: { y: topo, altura: CARTAO_RODAPE }
     })
   }
   return mapa
@@ -227,6 +244,19 @@ export function caixaDoBloco(caixa, blocoId) {
   const linha = (caixa.blocos || []).find((b) => b.id === blocoId)
   if (!linha) return caixa
   return { x: caixa.x, y: caixa.y + linha.y, largura: caixa.largura, altura: linha.altura }
+}
+
+// De onde uma seta sai, no cartão: a linha da opção, se a saída é de uma
+// opção; a faixa do bloco, se é de um bloco; o rodapé, se é a saída do grupo.
+// É a mesma conta para a seta pronta e para o fio que se arrasta — se cada um
+// fizesse a sua, a linha pularia no instante em que a ligação é feita.
+export function caixaDaSaida(caixa, saida) {
+  if (!caixa) return null
+  const faixa = (caixa.blocos || []).find((b) => b.id === saida?.bloco)
+  const linha = (faixa?.opcoes || []).find((o) => o.id === saida?.opcao)
+  const alvo = linha || faixa || caixa.rodape
+  if (!alvo) return caixa
+  return { x: caixa.x, y: caixa.y + alvo.y, largura: caixa.largura, altura: alvo.altura }
 }
 
 // Qual bloco está sob um ponto, dentro de um cartão. Cabeçalho e rodapé

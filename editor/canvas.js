@@ -4,7 +4,8 @@
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
 import {
-  cartoes, setas, caixas, caixaDoBloco, blocoEmCaixa, eventosDoCanvas, caixasDeEventos
+  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, blocoEmCaixa,
+  eventosDoCanvas, caixasDeEventos
 } from "./modelo.js"
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
 import {
@@ -112,6 +113,18 @@ export function criarCanvas({
   // Arrastar a ligação: um fio acompanha o cursor e, ao soltar, o grupo que
   // estiver embaixo vira o destino. Soltar no vazio não faz nada — apagar uma
   // ligação por acidente seria pior que exigir um clique a mais no painel.
+  // De onde o fio nasce: a borda do cartão (ou do Start), na altura da
+  // bolinha que foi puxada. É assim que a seta pronta sai, e o fio precisa
+  // sair igual — senão ele muda de lugar ao ser soltado.
+  function caixaDaOrigem(origem, partida) {
+    if (origem.grupo) {
+      return caixaDaSaida(caixasAtuais.get(origem.grupo), origem) ||
+        { x: partida.x, y: partida.y, largura: 0, altura: 0 }
+    }
+    return caixasEventoAtuais.get(origem.evento) ||
+      { x: partida.x, y: partida.y, largura: 0, altura: 0 }
+  }
+
   function iniciarLigacao(ev, origem, avisar = (o, destino) => aoLigarOpcao({ ...o, destino })) {
     if (ev.button !== undefined && ev.button !== 0) return
     ev.preventDefault?.()
@@ -122,17 +135,12 @@ export function criarCanvas({
       const ponto = paraMundo(vista, noPalco(e))
       const alvo = alvoDaLigacao(ponto)
       marcarAlvo(alvo)
-      if (alvo) {
-        // Grudou: o fio deixa o cursor e vai para a borda do alvo, no mesmo
-        // ponto por onde a seta de verdade vai entrar depois — a faixa do
-        // bloco, quando o ímã pegou um bloco.
-        const caixa = caixaDoBloco(caixasAtuais.get(alvo.grupo), alvo.bloco)
-        const { para, ladoPara } = ancoras(
-          { x: partida.x, y: partida.y, largura: 1, altura: 1 }, caixa)
-        fioTemporario = { de: partida, para, ladoPara }
-      } else {
-        fioTemporario = { de: partida, para: ponto }
-      }
+      // Grudado, o fio mira a mesma caixa que a seta de verdade vai mirar: o
+      // cartão, ou a faixa do bloco. Solto, mira o cursor.
+      const mira = alvo
+        ? caixaDoBloco(caixasAtuais.get(alvo.grupo), alvo.bloco)
+        : { x: ponto.x, y: ponto.y, largura: 0, altura: 0 }
+      fioTemporario = { caixaDeOrigem: caixaDaOrigem(origem, partida), alvo: mira }
       desenharFio()
     }
     function soltar(e) {
@@ -148,35 +156,35 @@ export function criarCanvas({
     document.addEventListener("mouseup", soltar)
   }
 
+  // O fio que acompanha o cursor é desenhado com a mesma matemática da seta
+  // de verdade: sai perpendicular à borda do cartão de origem, pelo lado que
+  // olha para o cursor, e curva até ele. Era uma reta, e por isso o desenho
+  // mudava de forma no instante em que a ligação era feita.
   function desenharFio() {
     for (const classe of ["ed__seta--arrastando", "ed__ponta--arrastando"]) {
       const antigo = tela.porClasse ? tela.porClasse(classe)[0] : tela.querySelector(`.${classe}`)
       if (antigo) antigo.remove()
     }
     if (!fioTemporario) return
-    const { de, para, ladoPara } = fioTemporario
+    const { caixaDeOrigem, alvo } = fioTemporario
+    const { caminho, para, ladoPara } = ancoras(caixaDeOrigem, alvo)
+
     const linha = svg("path", "ed__seta ed__seta--arrastando")
-    linha.setAttribute("d", `M ${de.x} ${de.y} L ${para.x} ${para.y}`)
+    linha.setAttribute("d", caminho)
     linha.setAttribute("fill", "none")
     tela.append(linha)
 
     const ponta = svg("path", "ed__ponta ed__ponta--arrastando")
-    ponta.setAttribute("d", pontaDaSeta(para, ladoPara || ladoDeChegada(de, para)))
+    ponta.setAttribute("d", pontaDaSeta(para, ladoPara))
     tela.append(ponta)
   }
 
-  // Por qual lado a seta chega, quando ninguém disse: pelo lado contrário ao
-  // movimento. Serve para a ponta do fio solto não apontar para qualquer lado.
-  function ladoDeChegada(de, para) {
-    const dx = para.x - de.x
-    const dy = para.y - de.y
-    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "esquerda" : "direita"
-    return dy >= 0 ? "cima" : "baixo"
-  }
-
-  // O ímã: chegar perto do cartão já conta como acertar nele. A medida é de
-  // tela, não de fluxo — a mão não fica mais firme porque o zoom afastou.
-  const IMA_NA_TELA = 28
+  // O ímã só pega quando o ponteiro entra no cartão — como no Typebot, que
+  // acende o alvo no mouseenter do bloco, não a uma distância. A folga é de
+  // alguns pixels de tela, para a borda não exigir pontaria de um pixel; mais
+  // que isso o fio salta antes de a pessoa chegar, e parece que ele decidiu
+  // por ela.
+  const IMA_NA_TELA = 10
 
   // Em cima do cartão, o ímã mira o bloco sob o cursor — é o que deixa uma
   // ligação entrar no meio do grupo, para reaproveitar o miolo dele. No
@@ -219,9 +227,10 @@ export function criarCanvas({
       })
       if (!destino) continue
 
-      // A seta do evento parte do cartão dele. Antes nascia de uma caixa
-      // imaginária, e por isso parecia vir do nada.
-      const caixaDeSaida = origem || caixasEventoAtuais.get(seta.evento) || {
+      // A seta parte da altura do conector de onde ela sai: a linha daquela
+      // opção, ou o rodapé do grupo. É a mesma conta do fio que se arrasta.
+      const caixaDeSaida = caixaDaSaida(origem, seta.saida) ||
+        caixasEventoAtuais.get(seta.evento) || {
         x: destino.x - 260, y: destino.y - 120, largura: 200, altura: 60
       }
       const { caminho, para: fim, ladoPara } = ancoras(caixaDeSaida, destino)

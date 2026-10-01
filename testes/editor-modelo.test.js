@@ -3,7 +3,9 @@
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { cartoes, setas, caixas, caixaDoBloco, blocoEmCaixa, MEDIDAS } from "../editor/modelo.js"
+import {
+  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, blocoEmCaixa, MEDIDAS
+} from "../editor/modelo.js"
 
 const fluxo = {
   versao: 2,
@@ -82,15 +84,20 @@ test("seta do proximo do grupo", () => {
   assert.deepEqual(g1g2.origens, ["grupo"])
 })
 
-test("seta de opcao de botao e de condicao", () => {
+test("seta de opcao de botao e de condicao, cada uma do seu conector", () => {
   const s = setas(fluxo)
-  // A ordem das origens não é contrato — duas saídas para o mesmo grupo
-  // viram uma seta só, dizendo de onde cada uma veio.
-  assert.deepEqual(
-    s.find((x) => x.de === "g2" && x.para === "g3").origens.slice().sort(),
-    ["grupo", "opcao"]
-  )
-  assert.deepEqual(s.find((x) => x.de === "g2" && x.para === "g_ajuda").origens, ["condicao"])
+  // Duas saídas para o mesmo grupo são duas setas: elas partem de alturas
+  // diferentes do cartão (a linha da opção e o rodapé), e juntá-las numa só
+  // escondia uma das duas.
+  const paraG3 = s.filter((x) => x.de === "g2" && x.para === "g3")
+  assert.deepEqual(paraG3.map((x) => x.origens[0]).sort(), ["grupo", "opcao"])
+  const daOpcao = paraG3.find((x) => x.origens[0] === "opcao")
+  assert.deepEqual(daOpcao.saida, { bloco: "b_op", opcao: "o1" }, "a seta diz de qual bolinha saiu")
+  assert.equal(paraG3.find((x) => x.origens[0] === "grupo").saida, null, "a saída do grupo não tem bloco")
+
+  const daCondicao = s.find((x) => x.de === "g2" && x.para === "g_ajuda")
+  assert.deepEqual(daCondicao.origens, ["condicao"])
+  assert.deepEqual(daCondicao.saida, { bloco: "b_cond" })
 })
 
 test("os eventos entram como setas, com de nulo", () => {
@@ -108,9 +115,12 @@ test("destino inexistente vira seta marcada, nao some", () => {
   assert.equal(s.orfa, true, "seta para o nada precisa aparecer, é assim que se vê o erro")
 })
 
-test("nao duplica seta quando dois caminhos levam ao mesmo grupo", () => {
-  const s = setas(fluxo).filter((x) => x.de === "g2" && x.para === "g3")
-  assert.equal(s.length, 1)
+test("o mesmo conector nao vira duas setas, mesmo com duas regras iguais", () => {
+  const duasRegras = JSON.parse(JSON.stringify(fluxo))
+  duasRegras.grupos[1].blocos[1].conteudo.regras.push(
+    { se: { variavel: "bem", vazio: false }, entao: "g_ajuda" })
+  const s = setas(duasRegras).filter((x) => x.de === "g2" && x.para === "g_ajuda")
+  assert.equal(s.length, 1, "o bloco de condição tem uma bolinha só: duas setas dali seriam a mesma")
 })
 
 // --- caixas ----------------------------------------------------------------
@@ -330,4 +340,40 @@ test("seta para bloco que existe nao e orfa; para bloco que nao existe, e", () =
   quebrada.grupos[0].proximo = "g2#b_sumiu"
   assert.equal(setas(quebrada).find((s) => s.de === "g1").orfa, true,
     "bloco que não existe mais leva o lead para o lugar errado: tem de aparecer")
+})
+
+test("caixaDaSaida acha a linha da opcao, a faixa do bloco e o rodape", () => {
+  const cartao = {
+    id: "g", titulo: "x", posicao: { x: 10, y: 20 },
+    blocos: [
+      { id: "b1", tipo: "texto", resumo: "Oi" },
+      { id: "b2", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }] }
+    ]
+  }
+  const caixa = caixas([cartao]).get("g")
+
+  const daOpcao2 = caixaDaSaida(caixa, { bloco: "b2", opcao: "o2" })
+  const daOpcao1 = caixaDaSaida(caixa, { bloco: "b2", opcao: "o1" })
+  assert.equal(daOpcao2.y - daOpcao1.y, MEDIDAS.CARTAO_OPCAO,
+    "cada opção uma linha abaixo da outra: é o que separa as setas")
+  assert.ok(daOpcao1.y > caixa.y + MEDIDAS.CARTAO_CABECALHO, "a linha fica abaixo do cabeçalho")
+
+  const doBloco = caixaDaSaida(caixa, { bloco: "b1" })
+  assert.equal(doBloco.y, caixa.y + caixa.blocos[0].y)
+
+  const doRodape = caixaDaSaida(caixa, null)
+  assert.equal(doRodape.y, caixa.y + caixa.rodape.y, "sem bloco, a saída é o rodapé")
+  assert.ok(doRodape.y > doOpcaoMaisBaixa(caixa), "o rodapé fica embaixo de tudo")
+
+  function doOpcaoMaisBaixa(c) {
+    const faixa = c.blocos.find((b) => b.opcoes?.length)
+    return c.y + faixa.opcoes.at(-1).y
+  }
+})
+
+test("caixaDaSaida de opcao que nao existe cai no bloco, e sem cartao da null", () => {
+  const caixa = caixas([{ id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }] }] }]).get("g")
+  assert.equal(caixaDaSaida(caixa, { bloco: "b", opcao: "o_sumiu" }).y, caixa.y + caixa.blocos[0].y)
+  assert.equal(caixaDaSaida(null, null), null)
 })

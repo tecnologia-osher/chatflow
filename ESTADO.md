@@ -444,3 +444,29 @@ arrastar até um cartão fora da tela.
 Provado de ponta a ponta no Chrome: liguei a saída da Abertura no bloco do
 telefone, respondi o nome no preview e a conversa pulou direto para "Qual seu
 telefone com WhatsApp?", sem passar pelo "Show, prazer em te conhecer".
+
+### O que o Typebot faz, lido no código dele
+
+463 testes. Fui ao repositório (`baptisteArno/typebot.io`,
+`apps/builder/src/features/graph/`) em vez de adivinhar. Quatro achados, três
+copiados:
+
+1. **O ímã é por hover, não por distância.** `BlockNode.tsx` acende o alvo no
+   `onMouseEnter` do bloco e, no `onMouseLeave`, limpa só o `blockId` — ficar
+   no grupo mantém o grupo como destino. Aqui a folga caiu de 28px para 10px:
+   o suficiente para não exigir pontaria de um pixel, pouco para não parecer
+   que o fio decidiu antes da pessoa.
+2. **O fio arrastado usa a mesma matemática da aresta pronta**
+   (`computeEdgePathToMouth` chama os mesmos segmentos). Aqui ele era uma reta
+   e virava curva ao soltar: agora é a mesma curva, e um teste exige que o
+   caminho do fio seja idêntico ao da seta que fica.
+3. **A aresta sai da altura do conector** (`sourceTop` em
+   `computeSourceCoordinates`), e o lado (esquerda/direita) troca conforme o
+   cursor passa do meio do cartão. Aqui todas as setas saíam do meio da borda:
+   agora cada uma sai da sua linha — a opção, ou o rodapé do grupo. Efeito
+   colateral desejado: duas saídas para o mesmo grupo deixaram de ser
+   desenhadas como uma seta só, porque são dois caminhos de alturas diferentes.
+4. **Não copiado:** no Typebot as arestas são ortogonais com cantos
+   arredondados (`segments.ts` + `svg-round-corners`), não curvas de Bézier.
+   É escolha de linguagem visual, não de comportamento, e mudá-la mexeria em
+   todo o desenho — fica para quando for decisão de design, não de física.
