@@ -176,7 +176,7 @@
       "titulo": "Valor do crédito",
       "posicao": {
         "x": 700,
-        "y": 368
+        "y": 394
       },
       "blocos": [
         {
@@ -218,7 +218,7 @@
       "titulo": "Fim",
       "posicao": {
         "x": 700,
-        "y": 721
+        "y": 772
       },
       "blocos": [
         {

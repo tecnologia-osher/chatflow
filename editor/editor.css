@@ -166,14 +166,13 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
   color: var(--ed-texto); font: inherit; font-size: 0.86rem; }
 .ed__opcao-campo:focus { outline: none; border-color: var(--ed-entrada); }
-/* O padrão lê como os outros botões, mas é tracejado e cinza: não é uma
-   resposta que alguém escreve, é o caminho de quem não tem caminho próprio. */
-.ed__opcao-padrao { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.5rem 0.7rem;
-  border: 1px dashed var(--ed-linha); border-radius: 9px; background: var(--ed-fundo);
-  color: var(--ed-suave); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em;
-  cursor: pointer; user-select: none; }
-.ed__opcao-padrao:hover { border-color: var(--ed-entrada); color: var(--ed-texto); }
-.ed__opcao-cartao--padrao .ed__grupo-ponto { right: -2.25rem; }
+/* Acrescenta um botão na lista. Tracejado e discreto: não é um botão que o
+   lead vai ver, é o lugar de criar um. */
+.ed__opcao-nova { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.4rem 0.7rem;
+  border: 1px dashed var(--ed-linha); border-radius: 9px; background: transparent;
+  color: var(--ed-suave); font: inherit; font-size: 0.78rem; text-align: left;
+  cursor: pointer; }
+.ed__opcao-nova:hover { border-color: var(--ed-entrada); color: var(--ed-texto); }
 .ed__opcao-campo::placeholder { color: var(--ed-suave); }
 /* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
    daquela resposta até outro grupo. Dentro, pareceria decoração. */

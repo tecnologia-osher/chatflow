@@ -197,10 +197,11 @@ export function criarCanvas({
     camadaCartoes.replaceChildren()
     for (const cartao of lista) {
       const caixa = mapa.get(cartao.id)
-      // Só o último bloco com opções recebe o padrão: a saída do grupo é uma
-      // só, e repeti-la em dois blocos daria a impressão de dois caminhos.
-      const comOpcoes = cartao.blocos.filter((b) => b.opcoes)
-      const idDoUltimoComOpcoes = comOpcoes.length ? comOpcoes.at(-1).id : null
+      // Com botões no cartão, a saída é o caminho de quem escolheu uma opção
+      // sem destino próprio: "padrão". Sem botões não há escolha nenhuma, é
+      // só o que vem depois — chamar isso de padrão nomeia uma decisão que
+      // não existe.
+      const temBotoes = cartao.blocos.some((b) => b.opcoes)
       const ativo = selecao.grupo === cartao.id && !selecao.bloco
       const no = el("div", `ed__cartao${ativo ? " ed__cartao--ativo" : ""}`)
       no.style.setProperty("transform", `translate(${caixa.x}px, ${caixa.y}px)`)
@@ -277,7 +278,7 @@ export function criarCanvas({
         noBloco.append(topo)
 
         if (bloco.opcoes) {
-          noBloco.append(listaDeOpcoes(cartao, bloco, bloco.id === idDoUltimoComOpcoes))
+          noBloco.append(listaDeOpcoes(cartao, bloco))
         } else if (ativoB && bloco.campoPrincipal) {
           // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
           // que a pessoa precisa, e não tira os olhos do fluxo.
@@ -308,15 +309,13 @@ export function criarCanvas({
       // próprio segue por aqui. Nomear o que já existe evita criar um segundo
       // controle para o mesmo valor — dois lugares para dizer a mesma coisa
       // viram dois lugares para discordar.
-      // Sem botões no cartão, o padrão mora no rodapé. Com botões, ele já
-      // fechou a lista — e duas saídas para o mesmo grupo confundiriam.
-      if (!idDoUltimoComOpcoes) {
-        const rodape = el("div", "ed__rodape")
-        rodape.setAttribute("title", "Padrão: para onde o grupo segue depois")
-        rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
-        rodape.append(pontoDeSaida(cartao))
-        no.append(rodape)
-      }
+      const rodape = el("div", "ed__rodape")
+      rodape.setAttribute("title", temBotoes
+        ? "Padrão: quem escolher uma opção sem destino próprio segue por aqui"
+        : "Para onde o grupo segue quando termina")
+      rodape.append(el("span", "ed__rodape-rotulo", temBotoes ? "padrão" : "seguinte"))
+      rodape.append(pontoDeSaida(cartao))
+      no.append(rodape)
 
       camadaCartoes.append(no)
     }
@@ -325,7 +324,7 @@ export function criarCanvas({
   // As opções do bloco de botões moram no cartão: é onde se escreve o que
   // cada botão vai dizer. Enter abre a próxima, Backspace numa vazia a tira —
   // escrever uma lista não deve exigir ir e voltar de um painel.
-  function listaDeOpcoes(cartao, bloco, comPadrao) {
+  function listaDeOpcoes(cartao, bloco) {
     const caixa = el("div", "ed__opcoes-cartao")
     for (const opcao of bloco.opcoes) {
       const linhaOpcao = el("div", "ed__opcao-cartao")
@@ -375,33 +374,26 @@ export function criarCanvas({
       caixa.append(linhaOpcao)
     }
 
-    // Fecha a lista com o padrão, no formato de botão para ler igual aos
-    // outros — mas sem caixa de digitar, porque não é uma resposta: é para
-    // onde vai quem escolheu uma opção sem destino próprio.
-    if (comPadrao) {
-      const linhaPadrao = el("div", "ed__opcao-cartao ed__opcao-cartao--padrao")
-      linhaPadrao.setAttribute("title",
-        "Padrão: quem escolher uma opção sem destino próprio segue por aqui")
-      // Clicar aqui não edita o padrão: ele não tem texto para mudar. Abre um
-      // botão novo acima, e o padrão desce — é o que a mão espera ao clicar
-      // no último campo de uma lista.
-      const rotulo = el("span", "ed__opcao-padrao", "padrão")
-      rotulo.setAttribute("title", "Clique para criar um botão novo acima")
-      // preventDefault segura o cursor onde está. Sem isso o clique daqui
-      // tira o foco da caixa vazia, ela se desfaz, o cartão é redesenhado e
-      // este mesmo clique morre no caminho — a pessoa clica e nada acontece.
-      rotulo.addEventListener("mousedown", (ev) => {
-        ev.preventDefault?.()
-        ev.stopPropagation?.()
-      })
-      rotulo.addEventListener("click", (ev) => {
-        ev.stopPropagation?.()
-        aoAcrescentarOpcao({ grupo: cartao.id, bloco: bloco.id, apos: bloco.opcoes.at(-1)?.id })
-      })
-      linhaPadrao.append(rotulo)
-      linhaPadrao.append(pontoDeSaida(cartao))
-      caixa.append(linhaPadrao)
-    }
+    // Fecha a lista com um "+ botão": um trabalho só, acrescentar. A saída do
+    // grupo mora no rodapé do cartão — juntar as duas coisas numa linha fazia
+    // o clique criar botão e a bolinha mandar o fluxo, e ninguém adivinha isso.
+    const linhaNova = el("div", "ed__opcao-cartao ed__opcao-cartao--nova")
+    const mais = el("button", "ed__opcao-nova", "+ botão")
+    mais.setAttribute("type", "button")
+    mais.setAttribute("title", "Acrescenta um botão nesta lista")
+    // preventDefault segura o cursor onde está. Sem isso o clique daqui tira
+    // o foco da caixa vazia, ela se desfaz, o cartão é redesenhado e este
+    // mesmo clique morre no caminho — a pessoa clica e nada acontece.
+    mais.addEventListener("mousedown", (ev) => {
+      ev.preventDefault?.()
+      ev.stopPropagation?.()
+    })
+    mais.addEventListener("click", (ev) => {
+      ev.stopPropagation?.()
+      aoAcrescentarOpcao({ grupo: cartao.id, bloco: bloco.id, apos: bloco.opcoes.at(-1)?.id })
+    })
+    linhaNova.append(mais)
+    caixa.append(linhaNova)
     return caixa
   }
 

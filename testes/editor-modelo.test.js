@@ -135,8 +135,8 @@ test("a caixa conta cada opcao empilhada, e o padrao que fecha a lista", () => {
     { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }, { id: "o3" }, { id: "o4" }] }] }
   const [a, b] = [caixas([comDuas]).get("g").altura, caixas([comQuatro]).get("g").altura]
   assert.equal(b - a, 2 * MEDIDAS.CARTAO_OPCAO, "duas opções a mais, duas linhas a mais")
-  assert.ok(a > MEDIDAS.CARTAO_CABECALHO + 2 * MEDIDAS.CARTAO_OPCAO,
-    "o padrão também ocupa uma linha")
+  assert.ok(a > MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_RODAPE + 2 * MEDIDAS.CARTAO_OPCAO,
+    "a linha do + botão também ocupa altura")
 })
 
 test("resumo que nao cabe numa linha deixa o bloco mais alto", () => {
@@ -148,14 +148,15 @@ test("resumo que nao cabe numa linha deixa o bloco mais alto", () => {
     MEDIDAS.CARTAO_LINHA, "uma linha de texto a mais, uma linha de altura a mais")
 })
 
-test("cartao com botoes nao cobra o rodape, que ele nao tem", () => {
+test("todo cartao cobra o rodape, porque todo cartao tem uma saida", () => {
   const base = { id: "g", titulo: "x", posicao: { x: 0, y: 0 } }
   const comBotoes = { ...base, blocos: [{ id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }] }] }
   const semBotoes = { ...base, blocos: [{ id: "b", tipo: "texto", resumo: "Oi" }] }
   assert.equal(caixas([semBotoes]).get("g").altura,
     MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_BLOCO + MEDIDAS.CARTAO_LINHA + MEDIDAS.CARTAO_RODAPE)
   assert.equal(caixas([comBotoes]).get("g").altura,
-    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_OPCOES_TOPO + 2 * MEDIDAS.CARTAO_OPCAO)
+    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_OPCOES_TOPO + 2 * MEDIDAS.CARTAO_OPCAO +
+    MEDIDAS.CARTAO_RODAPE)
 })
 
 test("resumo sem espaco onde quebrar conta as linhas igual, nao vira uma so", () => {

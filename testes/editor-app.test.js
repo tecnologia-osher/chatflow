@@ -376,9 +376,9 @@ test("o botao de detalhes abre o painel para pontos e destino", () => {
 
 const opcoesDe = (editor) => editor.fluxo().grupos[0].blocos[1].conteudo.opcoes.map((o) => o.label)
 
-test("clicar no padrao cria a opcao no fluxo, e sair sem escrever a desfaz", () => {
+test("o + botao cria a opcao no fluxo, e sair sem escrever a desfaz", () => {
   const { hospedeiro, editor } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
   assert.equal(opcoesDe(editor).length, 3,
     "a opção nova precisa existir no fluxo, não só na tela")
 
@@ -386,13 +386,13 @@ test("clicar no padrao cria a opcao no fluxo, e sair sem escrever a desfaz", () 
   assert.equal(vazia.value, "")
   vazia.disparar("blur")
   assert.deepEqual(opcoesDe(editor), ["25-34", "35-44"], "a lista volta ao que era")
-  assert.equal(porClasse(hospedeiro, "ed__opcao-cartao--padrao").length, 1,
-    "o padrão continua fechando a lista")
+  assert.equal(porClasse(hospedeiro, "ed__opcao-cartao--nova").length, 1,
+    "o + botão continua fechando a lista")
 })
 
 test("o que foi escrito antes de sair fica", () => {
   const { hospedeiro, editor } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
   const nova = porClasse(hospedeiro, "ed__opcao-campo").at(-1)
   nova.value = "45-54"
   nova.disparar("input")
@@ -402,7 +402,7 @@ test("o que foi escrito antes de sair fica", () => {
 
 test("a opcao nova nasce com o cursor dentro", () => {
   const { hospedeiro } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
   assert.equal(document.focado, porClasse(hospedeiro, "ed__opcao-campo").at(-1))
 })
 
@@ -421,7 +421,7 @@ test("a unica opcao do bloco nao desaparece ao esvaziar", () => {
 
 test("sair da opcao vazia por um cabecalho tambem a desfaz", () => {
   const { hospedeiro, editor } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
   assert.equal(opcoesDe(editor).length, 3)
   // Clicar num cabeçalho não gera blur: o navegador cancela, porque o
   // mousedown do arrasto chama preventDefault. Quem limpa é o redesenho.
@@ -429,18 +429,18 @@ test("sair da opcao vazia por um cabecalho tambem a desfaz", () => {
   assert.deepEqual(opcoesDe(editor), ["25-34", "35-44"])
 })
 
-test("clicar duas vezes no padrao nao deixa duas linhas vazias", () => {
+test("clicar duas vezes no + botao nao deixa duas linhas vazias", () => {
   const { hospedeiro, editor } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("click")
   assert.equal(opcoesDe(editor).length, 3, "a vazia anterior sai antes de a nova entrar")
   assert.equal(porClasse(hospedeiro, "ed__opcao-campo").at(-1).value, "")
 })
 
-test("o clique no padrao nao deixa o cursor escapar antes de agir", () => {
+test("o clique no + botao nao deixa o cursor escapar antes de agir", () => {
   const { hospedeiro } = montar(comBotoes())
   let segurou = false
-  porClasse(hospedeiro, "ed__opcao-padrao")[0].disparar("mousedown", {
+  porClasse(hospedeiro, "ed__opcao-nova")[0].disparar("mousedown", {
     button: 0, clientX: 0, clientY: 0, preventDefault() { segurou = true }
   })
   assert.equal(segurou, true)

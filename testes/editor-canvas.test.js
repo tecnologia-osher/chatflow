@@ -217,7 +217,7 @@ function montarBotoes() {
 test("as opcoes aparecem empilhadas dentro do bloco, sem precisar selecionar", () => {
   const { hospedeiro } = montarBotoes()
   const linhas = hospedeiro.porClasse("ed__opcao-cartao")
-    .filter((l) => !l.className.includes("--padrao"))
+    .filter((l) => !l.className.includes("--nova"))
   assert.equal(linhas.length, 2)
   assert.deepEqual(hospedeiro.porClasse("ed__opcao-campo").map((c) => c.value), ["25-34", "35-44"])
 })
@@ -444,79 +444,71 @@ test("arrastar a saida nao arrasta o cartao", () => {
   assert.deepEqual(canvas.vista(), antes)
 })
 
-test("a saida do grupo se chama padrao, e diz o que significa", () => {
+test("a saida do grupo tem nome, nao e uma bolinha solta", () => {
   const { hospedeiro } = montarSaida()
   const rotulo = hospedeiro.porClasse("ed__rodape-rotulo")[0]
   assert.ok(rotulo, "a saída sem nome não diz a quem serve")
-  assert.match(rotulo.textContent, /padrão/i)
+  assert.match(rotulo.textContent, /seguinte|padrão/i)
 })
 
-test("o cartao com botoes explica que opcao sem destino cai no padrao", () => {
+test("o rodape do cartao com botoes explica que opcao sem destino cai nele", () => {
   const hospedeiro = new Elemento("div")
   criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
-  const padrao = hospedeiro.porClasse("ed__opcao-cartao--padrao")[0]
-  assert.match(padrao.atributos.title || "", /padrão|sem destino/i)
+  const rodape = hospedeiro.porClasse("ed__cartao")[0].porClasse("ed__rodape")[0]
+  assert.match(rodape.atributos.title || "", /sem destino/i)
 })
 
 // --- o padrão como botão ---------------------------------------------------
 
-test("o padrao aparece como um botao no fim da lista, e nao se digita nele", () => {
+test("a lista fecha com um + botao, que nao e caixa de digitar nem bolinha", () => {
   const hospedeiro = new Elemento("div")
   criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
-  const linhas = hospedeiro.porClasse("ed__opcao-cartao")
-  const ultima = linhas.at(-1)
-  assert.ok(ultima.className.includes("ed__opcao-cartao--padrao"), "o padrão fecha a lista")
-  assert.match(ultima.textContent, /padrão/i)
+  const ultima = hospedeiro.porClasse("ed__opcao-cartao").at(-1)
+  assert.ok(ultima.className.includes("ed__opcao-cartao--nova"), "o + botão fecha a lista")
+  assert.match(ultima.textContent, /botão/i)
   assert.equal(ultima.porClasse("ed__opcao-campo").length, 0, "não é caixa de digitar")
+  assert.equal(ultima.porClasse("ed__grupo-ponto").length, 0,
+    "a saída do grupo não mora aqui: um controle, um trabalho")
 })
 
-test("o botao padrao carrega a bolinha de saida do grupo", () => {
-  const hospedeiro = new Elemento("div")
-  const ligacoes = []
-  const canvas = criarCanvas({ elemento: hospedeiro, aoLigarGrupo: (o) => ligacoes.push(o) })
-  canvas.desenhar(comBotoes)
-  const padrao = hospedeiro.porClasse("ed__opcao-cartao--padrao")[0]
-  const ponto = padrao.porClasse("ed__grupo-ponto")[0]
-  assert.ok(ponto, "sem bolinha, o padrão não liga em lugar nenhum")
-  ponto.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
-  document.disparar("mousemove", { clientX: 450, clientY: 30 })
-  document.disparar("mouseup", { clientX: 450, clientY: 30 })
-  assert.deepEqual(ligacoes.at(-1), { grupo: "g1", destino: "g2" })
-})
-
-test("a saida do grupo existe uma vez so: no padrao ou no rodape, nunca nos dois", () => {
-  const hospedeiro = new Elemento("div")
-  criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
-  const [comOpcoes, semOpcoes] = hospedeiro.porClasse("ed__cartao")
-
-  assert.equal(comOpcoes.porClasse("ed__grupo-ponto").length, 1, "cartão com botões")
-  assert.equal(comOpcoes.porClasse("ed__rodape").length, 0, "o padrão já está na lista")
-
-  assert.equal(semOpcoes.porClasse("ed__grupo-ponto").length, 1, "cartão sem botões")
-  assert.equal(semOpcoes.porClasse("ed__rodape").length, 1, "sem lista, o padrão vira rodapé")
-})
-
-test("clicar no padrao abre um botao novo acima dele", () => {
+test("o + botao acrescenta uma opcao no fim da lista", () => {
   const { hospedeiro, eventos } = montarBotoes()
-  const padrao = hospedeiro.porClasse("ed__opcao-padrao")[0]
-  padrao.disparar("click")
+  hospedeiro.porClasse("ed__opcao-nova")[0].disparar("click")
   assert.deepEqual(eventos.at(-1),
-    { tipo: "acrescentar", grupo: "g1", bloco: "b_id", apos: "o2" },
-    "a opção nova entra depois da última, então o padrão desce")
+    { tipo: "acrescentar", grupo: "g1", bloco: "b_id", apos: "o2" })
 })
 
-test("clicar no padrao nao seleciona nem arrasta o cartao", () => {
+test("o + botao nao seleciona nem arrasta o cartao", () => {
   const { hospedeiro, canvas, eventos } = montarBotoes()
   const antes = canvas.vista()
-  const padrao = hospedeiro.porClasse("ed__opcao-padrao")[0]
-  padrao.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  const mais = hospedeiro.porClasse("ed__opcao-nova")[0]
+  mais.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
   document.disparar("mousemove", { clientX: 90, clientY: 60 })
   document.disparar("mouseup", { clientX: 90, clientY: 60 })
   assert.deepEqual(canvas.vista(), antes)
   assert.equal(eventos.some((e) => e.tipo === "selecionar"), false)
 })
 
-test("cartao com dois blocos de botoes tem um padrao so, no ultimo", () => {
+test("todo cartao tem uma saida so, no rodape, com ou sem botoes", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
+  for (const cartao of hospedeiro.porClasse("ed__cartao")) {
+    assert.equal(cartao.porClasse("ed__rodape").length, 1)
+    assert.equal(cartao.porClasse("ed__grupo-ponto").length, 1)
+    assert.equal(cartao.porClasse("ed__rodape")[0].porClasse("ed__grupo-ponto").length, 1,
+      "a bolinha de saída fica no rodapé")
+  }
+})
+
+test("a saida se chama padrao onde ha escolha, e seguinte onde nao ha", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
+  const [comOpcoes, semOpcoes] = hospedeiro.porClasse("ed__cartao")
+  assert.match(comOpcoes.porClasse("ed__rodape-rotulo")[0].textContent, /padrão/i)
+  assert.match(semOpcoes.porClasse("ed__rodape-rotulo")[0].textContent, /seguinte/i)
+})
+
+test("cada bloco de botoes tem o seu + botao, e a saida do cartao segue uma", () => {
   const dois = { ...comBotoes, grupos: [{ ...comBotoes.grupos[0], blocos: [
     comBotoes.grupos[0].blocos[0],
     { id: "b2", tipo: "entrada_botoes", salvar_em: "outra",
@@ -524,10 +516,11 @@ test("cartao com dois blocos de botoes tem um padrao so, no ultimo", () => {
   const hospedeiro = new Elemento("div")
   const eventos = []
   criarCanvas({ elemento: hospedeiro, aoAcrescentarOpcao: (o) => eventos.push(o) }).desenhar(dois)
-  const padroes = hospedeiro.porClasse("ed__opcao-cartao--padrao")
-  assert.equal(padroes.length, 1, "duas saídas no mesmo cartão viram dois caminhos imaginários")
-  hospedeiro.porClasse("ed__opcao-padrao")[0].disparar("click")
-  assert.equal(eventos.at(-1).bloco, "b2", "o padrão pertence ao último bloco de botões")
+  assert.equal(hospedeiro.porClasse("ed__opcao-nova").length, 2, "um + botão por bloco de botões")
+  assert.equal(hospedeiro.porClasse("ed__cartao")[0].porClasse("ed__grupo-ponto").length, 1,
+    "duas saídas no mesmo cartão viram dois caminhos imaginários")
+  hospedeiro.porClasse("ed__opcao-nova")[1].disparar("click")
+  assert.equal(eventos.at(-1).bloco, "b2", "cada + botão acrescenta no bloco dele")
 })
 
 test("sair de uma opcao vazia desfaz a linha: a lista volta ao padrao", () => {

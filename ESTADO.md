@@ -380,3 +380,21 @@ Achado no caminho: o fluxo de exemplo (`exemplos/captacao-simples.json`, que é
 o que abre sem `?cliente=`) tinha o mesmo problema de sobreposição do da Osher.
 O teste de cartões que se cobrem agora varre **todo fluxo versionado**, exemplo
 e clientes, em vez de só o da Osher.
+
+### Um controle, um trabalho: `+ botão` e a saída no rodapé
+
+403 testes. O "padrão" em forma de botão dentro da lista fazia dois trabalhos:
+era a saída do grupo **e** o "criar botão" (clicar nele acrescentava uma opção).
+Foram separados. Agora cada bloco de botões fecha com uma linha `+ botão`, que
+só acrescenta; e a saída do grupo volta a ser a bolinha no rodapé do cartão,
+uma por cartão, com legenda que muda com o contexto: **"padrão"** quando há
+botões (quem escolheu uma opção sem destino próprio segue por ali) e
+**"seguinte"** quando não há escolha nenhuma a fazer.
+
+Duas razões, além do controle duplo: um retângulo na lista de botões lê como
+botão que o lead vai ver no chat, e não é; e chamar de "padrão" a saída de um
+cartão sem botões nomeia uma decisão que não existe.
+
+As medidas do cartão foram refeitas no navegador (linha de opção 40, linha do
+`+ botão` conta igual, rodapé em todo cartão) e os dois fluxos versionados
+foram espalhados de novo, porque todo cartão ficou 27px mais alto.

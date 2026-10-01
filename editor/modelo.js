@@ -158,12 +158,12 @@ const CARTAO_CABECALHO = 44
 const CARTAO_BLOCO = 38
 const CARTAO_LINHA = 16
 const CARTAO_CARACTERES_POR_LINHA = 36
-// Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais o
-// padrão, que fecha a lista e ocupa uma linha como as outras.
-const CARTAO_OPCOES_TOPO = 31
-const CARTAO_OPCAO = 41
-// O rodapé é a faixa onde mora a saída do grupo. Só existe quando o cartão
-// não tem botões; com botões, a saída vive na linha do padrão.
+// Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais a
+// linha do "+ botão", que fecha a lista e ocupa altura como as outras.
+const CARTAO_OPCOES_TOPO = 33
+const CARTAO_OPCAO = 40
+// O rodapé é a faixa onde mora a saída do grupo, em todo cartão: é a única
+// saída que existe, com botões ou sem.
 const CARTAO_RODAPE = 27
 
 function alturaDoBloco(bloco) {
@@ -176,9 +176,8 @@ function alturaDoBloco(bloco) {
 }
 
 export function alturaDoCartao(cartao) {
-  const temBotoes = cartao.blocos.some((b) => b.opcoes)
   const blocos = cartao.blocos.reduce((total, b) => total + alturaDoBloco(b), 0)
-  return CARTAO_CABECALHO + blocos + (temBotoes ? 0 : CARTAO_RODAPE)
+  return CARTAO_CABECALHO + blocos + CARTAO_RODAPE
 }
 
 export function caixas(listaDeCartoes) {
