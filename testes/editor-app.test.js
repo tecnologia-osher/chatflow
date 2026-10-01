@@ -69,6 +69,16 @@ test("editar na caixa do cartao nao recria a caixa a cada tecla", () => {
   assert.equal(porClasse(hospedeiro, "ed__bloco-campo")[0], campo, "a caixa precisa ser a mesma")
 })
 
+test("clicar dentro da caixa de texto nao a recria por baixo do cursor", () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  // Se o clique subir até o bloco, ele redesenha e a caixa que está sob o
+  // cursor deixa de existir no meio da digitação.
+  campo.disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__bloco-campo")[0], campo, "a caixa precisa ser a mesma")
+})
+
 test("arrastar o grupo grava a posicao no fluxo", () => {
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__cabecalho")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })

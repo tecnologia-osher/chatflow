@@ -9,6 +9,9 @@
 //
 // Continua valendo a regra de zero dependências: nada aqui vem de fora.
 
+// Eventos de foco não sobem a árvore no navegador de verdade.
+const NAO_SOBEM = new Set(["focus", "blur"])
+
 class Elemento {
   constructor(tag, svg = false) {
     this.tagName = String(tag).toUpperCase()
@@ -99,8 +102,23 @@ class Elemento {
     this.ouvintes[evento] = (this.ouvintes[evento] || []).filter((x) => x !== fn)
   }
   disparar(evento, detalhe = {}) {
-    const e = { type: evento, preventDefault() {}, stopPropagation() {}, target: this, ...detalhe }
-    for (const fn of [...(this.ouvintes[evento] || [])]) fn(e)
+    // O evento sobe pela árvore, como no navegador: sem isso, um
+    // stopPropagation que falta nunca quebraria teste nenhum — e é
+    // exatamente ele que impede um clique na opção de abrir o painel.
+    let parado = false
+    const e = {
+      type: evento, preventDefault() {}, stopPropagation() { parado = true },
+      target: this, ...detalhe
+    }
+    let no = this
+    while (no) {
+      for (const fn of [...(no.ouvintes?.[evento] || [])]) {
+        e.currentTarget = no
+        fn(e)
+      }
+      if (parado || NAO_SOBEM.has(evento)) break
+      no = no.pai
+    }
     return e
   }
   click() { for (const fn of this.ouvintes.click || []) fn({ preventDefault() {} }) }

@@ -197,6 +197,10 @@ export function criarCanvas({
     camadaCartoes.replaceChildren()
     for (const cartao of lista) {
       const caixa = mapa.get(cartao.id)
+      // Só o último bloco com opções recebe o padrão: a saída do grupo é uma
+      // só, e repeti-la em dois blocos daria a impressão de dois caminhos.
+      const comOpcoes = cartao.blocos.filter((b) => b.opcoes)
+      const idDoUltimoComOpcoes = comOpcoes.length ? comOpcoes.at(-1).id : null
       const ativo = selecao.grupo === cartao.id && !selecao.bloco
       const no = el("div", `ed__cartao${ativo ? " ed__cartao--ativo" : ""}`)
       no.style.setProperty("transform", `translate(${caixa.x}px, ${caixa.y}px)`)
@@ -273,7 +277,7 @@ export function criarCanvas({
         noBloco.append(topo)
 
         if (bloco.opcoes) {
-          noBloco.append(listaDeOpcoes(cartao, bloco))
+          noBloco.append(listaDeOpcoes(cartao, bloco, bloco.id === idDoUltimoComOpcoes))
         } else if (ativoB && bloco.campoPrincipal) {
           // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
           // que a pessoa precisa, e não tira os olhos do fluxo.
@@ -304,21 +308,15 @@ export function criarCanvas({
       // próprio segue por aqui. Nomear o que já existe evita criar um segundo
       // controle para o mesmo valor — dois lugares para dizer a mesma coisa
       // viram dois lugares para discordar.
-      const temBotoes = cartao.blocos.some((b) => b.opcoes)
-      const rodape = el("div", "ed__rodape")
-      rodape.setAttribute("title", temBotoes
-        ? "Padrão: quem escolher uma opção sem destino próprio segue por aqui"
-        : "Padrão: para onde o grupo segue depois")
-      rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
-      const saida = el("span", `ed__grupo-ponto${cartao.proximo ? " ed__grupo-ponto--ligado" : ""}`)
-      saida.setAttribute("title", cartao.proximo
-        ? `Segue para ${cartao.proximo} — arraste para mudar`
-        : "Arraste até o grupo seguinte")
-      saida.addEventListener("mousedown", (ev) => {
-        iniciarLigacao(ev, { grupo: cartao.id }, (origem, destino) => aoLigarGrupo({ ...origem, destino }))
-      })
-      rodape.append(saida)
-      no.append(rodape)
+      // Sem botões no cartão, o padrão mora no rodapé. Com botões, ele já
+      // fechou a lista — e duas saídas para o mesmo grupo confundiriam.
+      if (!idDoUltimoComOpcoes) {
+        const rodape = el("div", "ed__rodape")
+        rodape.setAttribute("title", "Padrão: para onde o grupo segue depois")
+        rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
+        rodape.append(pontoDeSaida(cartao))
+        no.append(rodape)
+      }
 
       camadaCartoes.append(no)
     }
@@ -327,7 +325,7 @@ export function criarCanvas({
   // As opções do bloco de botões moram no cartão: é onde se escreve o que
   // cada botão vai dizer. Enter abre a próxima, Backspace numa vazia a tira —
   // escrever uma lista não deve exigir ir e voltar de um painel.
-  function listaDeOpcoes(cartao, bloco) {
+  function listaDeOpcoes(cartao, bloco, comPadrao) {
     const caixa = el("div", "ed__opcoes-cartao")
     for (const opcao of bloco.opcoes) {
       const linhaOpcao = el("div", "ed__opcao-cartao")
@@ -368,7 +366,40 @@ export function criarCanvas({
 
       caixa.append(linhaOpcao)
     }
+
+    // Fecha a lista com o padrão, no formato de botão para ler igual aos
+    // outros — mas sem caixa de digitar, porque não é uma resposta: é para
+    // onde vai quem escolheu uma opção sem destino próprio.
+    if (comPadrao) {
+      const linhaPadrao = el("div", "ed__opcao-cartao ed__opcao-cartao--padrao")
+      linhaPadrao.setAttribute("title",
+        "Padrão: quem escolher uma opção sem destino próprio segue por aqui")
+      // Clicar aqui não edita o padrão: ele não tem texto para mudar. Abre um
+      // botão novo acima, e o padrão desce — é o que a mão espera ao clicar
+      // no último campo de uma lista.
+      const rotulo = el("span", "ed__opcao-padrao", "padrão")
+      rotulo.setAttribute("title", "Clique para criar um botão novo acima")
+      rotulo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+      rotulo.addEventListener("click", (ev) => {
+        ev.stopPropagation?.()
+        aoAcrescentarOpcao({ grupo: cartao.id, bloco: bloco.id, apos: bloco.opcoes.at(-1)?.id })
+      })
+      linhaPadrao.append(rotulo)
+      linhaPadrao.append(pontoDeSaida(cartao))
+      caixa.append(linhaPadrao)
+    }
     return caixa
+  }
+
+  function pontoDeSaida(cartao) {
+    const saida = el("span", `ed__grupo-ponto${cartao.proximo ? " ed__grupo-ponto--ligado" : ""}`)
+    saida.setAttribute("title", cartao.proximo
+      ? `Segue para ${cartao.proximo} — arraste para mudar`
+      : "Arraste até o grupo seguinte")
+    saida.addEventListener("mousedown", (ev) => {
+      iniciarLigacao(ev, { grupo: cartao.id }, (origem, destino) => aoLigarGrupo({ ...origem, destino }))
+    })
+    return saida
   }
 
   function desenhar(fluxo) {
