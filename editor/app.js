@@ -112,16 +112,6 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   })
 
   // --- barra -----------------------------------------------------------
-  const criar = el("button", "ed__criar-grupo", "Novo grupo")
-  criar.setAttribute("type", "button")
-  criar.addEventListener("click", () => {
-    const antes = new Set(atual.grupos.map((g) => g.id))
-    atual = criarGrupo(atual, { x: 80, y: 80 })
-    const novo = atual.grupos.find((g) => !antes.has(g.id))
-    selecao = { grupo: novo.id, bloco: null }
-    redesenhar()
-  })
-
   const ajustar = el("button", "ed__ajustar", "Ajustar à tela")
   ajustar.setAttribute("type", "button")
   ajustar.addEventListener("click", () => canvas.enquadrar())
@@ -140,12 +130,15 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   baixar.setAttribute("type", "button")
   baixar.addEventListener("click", () => aoBaixar(JSON.stringify(atual, null, 2), "fluxo.json"))
 
-  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), criar, testar, ajustar, baixar)
+  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), testar, ajustar, baixar)
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
     const caixa = el("div", "ed__paleta-corpo")
     caixa.append(el("div", "ed__recado", recado))
+    // O gesto não se descobre sozinho: sem o botão "Novo grupo", alguém tem
+    // de dizer que é arrastando daqui que um grupo nasce.
+    caixa.append(el("p", "ed__dica", "Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele."))
 
     const porCategoria = new Map()
     for (const definicao of todos()) {
@@ -159,27 +152,70 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
       for (const definicao of lista) {
         const botao = el("button", `ed__tipo ed__tipo--${categoria}`, definicao.rotulo)
         botao.setAttribute("type", "button")
+        botao.addEventListener("mousedown", (ev) => arrastarTipo(ev, definicao))
         botao.addEventListener("click", () => {
           if (!selecao.grupo) {
-            // Sem grupo escolhido não há onde pôr o bloco. Dizer isso é melhor
-            // que criar um grupo por conta própria no meio do canvas.
-            recado = "Selecione um grupo no canvas antes de acrescentar um bloco."
+            // Sem grupo escolhido não há onde pôr o bloco — e agora há um
+            // gesto melhor que escolher: arrastar até o quadro.
+            recado = "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar."
             desenharPaleta()
             return
           }
-          const antes = new Set((atual.grupos.find((g) => g.id === selecao.grupo).blocos || []).map((b) => b.id))
-          atual = acrescentarBloco(atual, { grupo: selecao.grupo, tipo: definicao.tipo, apos: selecao.bloco })
-          const grupo = atual.grupos.find((g) => g.id === selecao.grupo)
-          const novo = grupo.blocos.find((b) => !antes.has(b.id))
-          selecao = { grupo: selecao.grupo, bloco: novo.id }
-          recado = ""
-          redesenhar()
+          acrescentarNoGrupo(selecao.grupo, definicao.tipo, selecao.bloco)
         })
         grade.append(botao)
       }
       caixa.append(grade)
     }
     paleta.replaceChildren(caixa)
+  }
+
+  // O mesmo caminho para o clique e para o arrasto: o bloco entra no grupo e
+  // nasce selecionado, pronto para escrever.
+  function acrescentarNoGrupo(grupoId, tipo, apos = null) {
+    const antes = new Set((atual.grupos.find((g) => g.id === grupoId)?.blocos || []).map((b) => b.id))
+    atual = acrescentarBloco(atual, { grupo: grupoId, tipo, apos })
+    const grupo = atual.grupos.find((g) => g.id === grupoId)
+    const novo = (grupo?.blocos || []).find((b) => !antes.has(b.id))
+    selecao = { grupo: grupoId, bloco: novo ? novo.id : null }
+    recado = ""
+    redesenhar()
+  }
+
+  // Arrastar um tipo da paleta até o quadro. Solto no vazio, cria um grupo
+  // ali mesmo com o bloco dentro; solto sobre um cartão, entra nele. É o que
+  // substituiu o botão "Novo grupo": grupo vazio não serve para nada, e o
+  // gesto diz onde ele deve ficar.
+  function arrastarTipo(ev, definicao) {
+    if (ev.button !== undefined && ev.button !== 0) return
+    ev.preventDefault?.()
+    const fantasma = el("div", "ed__fantasma", definicao.rotulo)
+    let visivel = false
+
+    function mover(e) {
+      if (!visivel) { raiz.append(fantasma); visivel = true }
+      fantasma.style.setProperty("left", `${e.clientX + 14}px`)
+      fantasma.style.setProperty("top", `${e.clientY + 14}px`)
+    }
+
+    function soltar(e) {
+      document.removeEventListener("mousemove", mover)
+      document.removeEventListener("mouseup", soltar)
+      fantasma.remove()
+      // Soltar fora do palco não faz nada — inclusive o clique seco na
+      // própria paleta, que termina onde começou e cai aqui.
+      const alvo = canvas.alvoDe(e)
+      if (!alvo.dentro) return
+      if (alvo.grupo) { acrescentarNoGrupo(alvo.grupo, definicao.tipo); return }
+
+      const antes = new Set(atual.grupos.map((g) => g.id))
+      atual = criarGrupo(atual, alvo.ponto)
+      const novo = atual.grupos.find((g) => !antes.has(g.id))
+      acrescentarNoGrupo(novo.id, definicao.tipo)
+    }
+
+    document.addEventListener("mousemove", mover)
+    document.addEventListener("mouseup", soltar)
   }
 
   function desenharProblemas() {

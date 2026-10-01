@@ -361,3 +361,22 @@ Dois defeitos sérios, nenhum deles visível em teste, os dois achados medindo:
 **O padrão, de novo:** clique que não chega não deixa rastro. Antes de dizer
 que um controle funciona, vale perguntar ao navegador quem recebe o clique
 naquele ponto (`elementFromPoint`) — foi o que achou os dois.
+
+### O botão "Novo grupo" deu lugar ao arrasto
+
+403 testes. Grupo vazio não serve para nada, e um botão que cria um cartão num
+canto fixo obriga a arrastar depois. Agora o gesto é um só: **arrasta-se um
+tipo da paleta até o quadro**. Solto no vazio, nasce um grupo naquele ponto já
+com o bloco dentro, numerado `Grupo #1`, `#2`, `#3`… (a numeração pula os
+números já usados, então renomear um não faz dois saírem iguais). Solto sobre
+um cartão, o bloco entra nele. Clicar continua valendo para quem já tem grupo
+selecionado, e a paleta diz o gesto em uma linha — gesto escondido é gesto que
+não existe.
+
+O canvas ganhou `alvoDe(ev)`: onde um ponto da janela cai no fluxo, e se havia
+cartão ali. A paleta não precisa saber de zoom nem de deslocamento.
+
+Achado no caminho: o fluxo de exemplo (`exemplos/captacao-simples.json`, que é
+o que abre sem `?cliente=`) tinha o mesmo problema de sobreposição do da Osher.
+O teste de cartões que se cobrem agora varre **todo fluxo versionado**, exemplo
+e clientes, em vez de só o da Osher.

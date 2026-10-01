@@ -217,20 +217,3 @@ test("nenhum caminho do fluxo dispensa nome ou telefone", () => {
     "voltou o desvio que deixa o lead passar sem os dados de contato")
 })
 
-// O fluxo é desenhado no editor, e cartão que cobre cartão não recebe clique:
-// foi assim que o "padrão" do grupo de idade ficou inalcançável, escondido
-// embaixo do grupo seguinte. As alturas vêm medidas do navegador.
-test("nenhum cartao do fluxo cobre outro no editor", async () => {
-  const { cartoes, caixas } = await import("../editor/modelo.js")
-  const mapa = [...caixas(cartoes(fluxo))].map(([id, c]) => ({ id, ...c }))
-  const colisoes = []
-  for (let i = 0; i < mapa.length; i++) {
-    for (let j = i + 1; j < mapa.length; j++) {
-      const a = mapa[i], b = mapa[j]
-      const cruza = a.x < b.x + b.largura && b.x < a.x + a.largura &&
-        a.y < b.y + b.altura && b.y < a.y + a.altura
-      if (cruza) colisoes.push(`${a.id} x ${b.id}`)
-    }
-  }
-  assert.deepEqual(colisoes, [])
-})

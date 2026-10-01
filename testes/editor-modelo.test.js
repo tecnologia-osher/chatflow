@@ -227,3 +227,36 @@ test("a caixa do evento serve de ancora para a seta", async () => {
   const mapa = caixasDeEventos(eventosDoCanvas(fluxo))
   assert.ok(mapa.get("inicio").largura > 0 && mapa.get("inicio").altura > 0)
 })
+
+// --- os fluxos que o editor abre de verdade --------------------------------
+
+// Cartão que cobre cartão não recebe clique: foi assim que o "padrão" do grupo
+// de idade ficou inalcançável, escondido embaixo do cartão seguinte. Vale para
+// todo fluxo versionado aqui — o do cliente e o exemplo, que é o que abre
+// quando ninguém diz `?cliente=`.
+const { readFileSync, readdirSync } = await import("node:fs")
+
+const arquivosDeFluxo = [
+  new URL("../exemplos/captacao-simples.json", import.meta.url),
+  ...readdirSync(new URL("../clientes", import.meta.url), { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => new URL(`../clientes/${e.name}/fluxo.json`, import.meta.url))
+]
+
+for (const arquivo of arquivosDeFluxo) {
+  const nome = arquivo.pathname.split("/").slice(-2).join("/")
+  test(`nenhum cartao cobre outro em ${nome}`, () => {
+    const lista = [...caixas(cartoes(JSON.parse(readFileSync(arquivo)))).entries()]
+      .map(([id, c]) => ({ id, ...c }))
+    assert.ok(lista.length > 0, "fluxo sem grupos não prova nada")
+    const colisoes = []
+    for (let i = 0; i < lista.length; i++) {
+      for (let j = i + 1; j < lista.length; j++) {
+        const a = lista[i], b = lista[j]
+        if (a.x < b.x + b.largura && b.x < a.x + a.largura &&
+            a.y < b.y + b.altura && b.y < a.y + a.altura) colisoes.push(`${a.id} x ${b.id}`)
+      }
+    }
+    assert.deepEqual(colisoes, [])
+  })
+}

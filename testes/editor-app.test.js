@@ -26,6 +26,34 @@ function montar(fluxo = fluxoBase()) {
 }
 
 const clicar = (n) => n.disparar("click")
+
+// --- arrastar da paleta para o quadro --------------------------------------
+
+const tipoDaPaleta = (h, rotulo) => porClasse(h, "ed__tipo").find((b) => b.textContent === rotulo)
+
+// Onde um ponto do fluxo aparece na janela. Lê a mesma transformação que o
+// navegador aplica — é o caminho inverso do que o canvas faz ao receber o
+// clique, e sem ele o teste teria de adivinhar onde o cartão foi parar.
+function naJanela(hospedeiro, ponto) {
+  const mundo = porClasse(hospedeiro, "ed__mundo")[0]
+  const t = mundo.style.propriedades.transform
+  const [, x, y, escala] = t.match(/translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([\d.]+)\)/)
+  return {
+    clientX: Number(x) + ponto.x * Number(escala),
+    clientY: Number(y) + ponto.y * Number(escala)
+  }
+}
+
+function arrastar(hospedeiro, rotulo, destino) {
+  const botao = tipoDaPaleta(hospedeiro, rotulo)
+  botao.disparar("mousedown", { button: 0, clientX: 5, clientY: 5 })
+  document.disparar("mousemove", destino)
+  document.disparar("mouseup", destino)
+}
+
+const gruposNovos = (editor, antes) =>
+  editor.fluxo().grupos.filter((g) => !antes.has(g.id))
+
 const porClasse = (h, c) => h.porClasse(c)
 
 test("a paleta oferece todos os tipos do catalogo, agrupados", () => {
@@ -87,9 +115,9 @@ test("arrastar o grupo grava a posicao no fluxo", () => {
   assert.deepEqual(editor.fluxo().grupos[0].posicao, { x: 60, y: 40 })
 })
 
-test("criar grupo acrescenta um cartao", () => {
+test("o grupo criado pelo arrasto aparece como cartao na hora", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__criar-grupo")[0].disparar("click")
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
   assert.equal(editor.fluxo().grupos.length, 3)
   assert.equal(porClasse(hospedeiro, "ed__cartao").length, 3)
 })
@@ -105,7 +133,7 @@ test("o preview nao envia nada a lugar nenhum", async () => {
 
 test("baixar entrega o json do fluxo atual", () => {
   const { hospedeiro, editor, baixados } = montar()
-  porClasse(hospedeiro, "ed__criar-grupo")[0].disparar("click")
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
   porClasse(hospedeiro, "ed__baixar")[0].disparar("click")
   const { t, n } = baixados.at(-1)
   assert.match(n, /\.json$/)
@@ -249,7 +277,7 @@ test("redesenhar com a aba aberta nao faz o botao reaparecer", async () => {
   const { hospedeiro } = montar()
   porClasse(hospedeiro, "ed__testar")[0].disparar("click")
   await assentar()
-  porClasse(hospedeiro, "ed__criar-grupo")[0].disparar("click")
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
   await assentar()
   assert.equal(porClasse(hospedeiro, "ed__testar")[0].className.includes("ed__oculto"), true)
 })
@@ -423,4 +451,90 @@ test("limpar vazias nao mexe no resto do fluxo", () => {
   const antes = JSON.stringify(editor.fluxo())
   porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
   assert.equal(JSON.stringify(editor.fluxo()), antes, "redesenhar não pode reescrever o fluxo")
+})
+
+test("arrastar um tipo para o vazio cria um grupo com aquele bloco dentro", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  arrastar(hospedeiro, "Texto", { clientX: 400, clientY: 300 })
+
+  const novos = gruposNovos(editor, antes)
+  assert.equal(novos.length, 1, "o grupo precisa nascer do arrasto")
+  assert.equal(novos[0].blocos.length, 1)
+  assert.equal(novos[0].blocos[0].tipo, "texto")
+  assert.equal(novos[0].titulo, "Grupo #1")
+})
+
+test("os grupos criados assim seguem a numeracao", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  arrastar(hospedeiro, "Texto", { clientX: 300, clientY: 200 })
+  arrastar(hospedeiro, "Texto", { clientX: 600, clientY: 450 })
+  assert.deepEqual(gruposNovos(editor, antes).map((g) => g.titulo), ["Grupo #1", "Grupo #2"])
+})
+
+test("o grupo nasce onde foi solto, nao num canto fixo", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  // Longe dos cartões que já existem, para o lugar pedido ser o lugar livre.
+  const pedido = { x: 100, y: 300 }
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, pedido))
+  assert.deepEqual(gruposNovos(editor, antes)[0].posicao, pedido)
+})
+
+test("soltar sobre um cartao poe o bloco nele, sem criar grupo novo", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  const alvo = editor.fluxo().grupos[0]
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, {
+    x: alvo.posicao.x + 20, y: alvo.posicao.y + 20
+  }))
+
+  assert.deepEqual(gruposNovos(editor, antes), [], "soltar no cartão não cria grupo")
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.tipo), ["texto", "texto"])
+})
+
+test("soltar fora do palco nao cria nada", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = JSON.stringify(editor.fluxo())
+  arrastar(hospedeiro, "Texto", { clientX: 9000, clientY: 9000 })
+  assert.equal(JSON.stringify(editor.fluxo()), antes)
+})
+
+test("o bloco que chega arrastado ja vem selecionado para editar", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  arrastar(hospedeiro, "Texto", { clientX: 400, clientY: 300 })
+  const novo = gruposNovos(editor, antes)[0]
+  const cartao = porClasse(hospedeiro, "ed__cartao").at(-1)
+  assert.equal(porClasse(cartao, "ed__bloco--ativo").length, 1,
+    `o bloco de ${novo.id} devia estar ativo`)
+})
+
+test("enquanto arrasta, um fantasma acompanha o cursor", () => {
+  const { hospedeiro } = montar()
+  const botao = tipoDaPaleta(hospedeiro, "Texto")
+  botao.disparar("mousedown", { button: 0, clientX: 5, clientY: 5 })
+  document.disparar("mousemove", { clientX: 300, clientY: 200 })
+  const fantasma = porClasse(hospedeiro, "ed__fantasma")[0]
+  assert.ok(fantasma, "sem fantasma, ninguém sabe que está arrastando")
+  assert.match(fantasma.textContent, /Texto/)
+  document.disparar("mouseup", { clientX: 300, clientY: 200 })
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0, "o fantasma precisa sumir")
+})
+
+test("nao existe mais botao de novo grupo: o quadro recebe o arrasto", () => {
+  const { hospedeiro } = montar()
+  assert.equal(porClasse(hospedeiro, "ed__criar-grupo").length, 0)
+  // Gesto escondido é gesto que não existe: a paleta precisa dizer qual é.
+  const dica = porClasse(hospedeiro, "ed__dica")[0]
+  assert.ok(dica, "sem dica, ninguém descobre que se arrasta")
+  assert.match(dica.textContent, /arraste/i)
+})
+
+test("clicar no tipo continua valendo para quem ja tem grupo selecionado", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  tipoDaPaleta(hospedeiro, "Texto").disparar("click")
+  assert.equal(editor.fluxo().grupos[0].blocos.length, 2)
 })

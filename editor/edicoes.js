@@ -148,12 +148,22 @@ function lugarLivre(fluxo, x, y) {
   return lugar
 }
 
+// Grupo #1, #2, #3… na ordem em que a pessoa cria. Pula os números já usados
+// em vez de contar grupos: assim dois cartões nunca saem com o mesmo nome,
+// mesmo que um do meio tenha sido renomeado à mão.
+export function proximoNomeDeGrupo(fluxo) {
+  const usados = new Set((fluxo.grupos || []).map((g) => g.titulo))
+  let n = 1
+  while (usados.has(`Grupo #${n}`)) n++
+  return `Grupo #${n}`
+}
+
 export function criarGrupo(fluxo, { x = 0, y = 0, titulo } = {}) {
   const id = idNovo(fluxo, "g")
   return {
     ...fluxo,
     grupos: [...(fluxo.grupos || []), {
-      id, titulo: titulo || `Grupo ${id}`, posicao: lugarLivre(fluxo, x, y), blocos: []
+      id, titulo: titulo || proximoNomeDeGrupo(fluxo), posicao: lugarLivre(fluxo, x, y), blocos: []
     }]
   }
 }

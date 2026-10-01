@@ -6,6 +6,7 @@ import { instalarNavegador, Elemento, assentar } from "./apoio/navegador.js"
 instalarNavegador()
 
 const { criarCanvas } = await import("../editor/canvas.js")
+const { cartoes: cartoesDoFluxo, caixas } = await import("../editor/modelo.js")
 
 const fluxo = {
   versao: 2,
@@ -561,4 +562,49 @@ test("puxar a ligacao de uma opcao vazia nao a perde pelo caminho", () => {
   // Sem preventDefault o clique no círculo tira o foco da caixa, ela sai
   // vazia e a opção que se estava ligando desaparece no meio do arrasto.
   assert.equal(segurouOFoco, true)
+})
+
+// --- onde um ponto da janela cai no fluxo -----------------------------------
+
+test("alvoDe traduz o ponto da janela para o fluxo, descontando o palco", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  palco.deslocamento = { left: 272, top: 57 }
+  palco.clientWidth = 900
+  palco.clientHeight = 600
+
+  const vista = canvas.vista()
+  const esperado = { x: 100, y: 100 }
+  const naJanela = {
+    clientX: esperado.x * vista.escala + vista.x + 272,
+    clientY: esperado.y * vista.escala + vista.y + 57
+  }
+  const alvo = canvas.alvoDe(naJanela)
+  assert.equal(alvo.dentro, true)
+  assert.deepEqual(alvo.ponto, esperado)
+})
+
+test("alvoDe diz sobre qual grupo o ponto caiu", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  const caixa = [...caixas(cartoesDoFluxo(fluxo)).entries()][0]
+  const dentro = { clientX: caixa[1].x + 10, clientY: caixa[1].y + 10 }
+  assert.equal(canvas.alvoDe(dentro).grupo, caixa[0])
+  assert.equal(canvas.alvoDe({ clientX: 10_000, clientY: 10_000 }).grupo, null)
+})
+
+test("alvoDe avisa quando o ponto nem esta no palco", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  palco.deslocamento = { left: 272, top: 57 }
+  palco.clientWidth = 900
+  palco.clientHeight = 600
+  assert.equal(canvas.alvoDe({ clientX: 100, clientY: 300 }).dentro, false,
+    "100px está na paleta, antes do palco começar")
+  assert.equal(canvas.alvoDe({ clientX: 500, clientY: 300 }).dentro, true)
 })

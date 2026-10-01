@@ -453,6 +453,20 @@ export function criarCanvas({
       const campo = alvo.find((c) => c.dadosBloco === blocoId && c.dadosOpcao === opcaoId)
       if (campo) campo.focus()
     },
+    // Onde um ponto da janela cai no fluxo. Quem arrasta um tipo da paleta
+    // precisa saber se soltou no palco, em que ponto do fluxo foi, e se havia
+    // um cartão ali — a paleta não conhece zoom nem deslocamento.
+    alvoDe(ev) {
+      const area = palco.getBoundingClientRect?.() || { left: 0, top: 0, right: 0, bottom: 0 }
+      const dentro = ev.clientX >= area.left && ev.clientX <= area.right &&
+        ev.clientY >= area.top && ev.clientY <= area.bottom
+      const ponto = paraMundo(vista, noPalco(ev))
+      return {
+        dentro,
+        ponto,
+        grupo: dentro && fluxoAtual ? caixaEm(caixas(cartoes(fluxoAtual)), ponto) : null
+      }
+    },
     vista: () => ({ ...vista }),
     selecionar(nova) {
       selecao = { grupo: nova.grupo ?? null, bloco: nova.bloco ?? null }

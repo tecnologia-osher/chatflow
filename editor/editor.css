@@ -37,10 +37,11 @@ html, body { margin: 0; height: 100%; }
 .ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ed-suave); margin: 1.2rem 0 0.5rem; }
 .ed__categoria:first-of-type { margin-top: 0; }
+.ed__dica { margin: 0 0 0.9rem; font-size: 0.74rem; line-height: 1.35; color: var(--ed-suave); }
 .ed__grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-.ed__tipo { padding: 0.55rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
+.ed__tipo { cursor: grab; padding: 0.55rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
   background: var(--ed-superficie); color: var(--ed-texto); font: inherit; font-size: 0.82rem;
-  text-align: left; cursor: pointer; }
+  text-align: left; }
 .ed__tipo:hover { border-color: var(--ed-acento); }
 .ed__tipo--fala { border-left: 3px solid var(--ed-fala); }
 .ed__tipo--entrada { border-left: 3px solid var(--ed-entrada); }
@@ -188,6 +189,9 @@ html, body { margin: 0; height: 100%; }
    cartões de baixo continuavam desenhados e deixavam de receber clique —
    ninguém vê um clique que não chega. Fora da grade, com tamanho zero, nada
    do que nasce aqui dentro pode roubar altura do canvas. */
+.ed__fantasma { position: fixed; z-index: 40; pointer-events: none;
+  padding: 0.3rem 0.6rem; border-radius: 7px; font-size: 0.78rem;
+  background: var(--ed-acento); color: #fff; box-shadow: 0 6px 18px rgba(20,25,40,0.22); }
 .ed__area-painel, .ed__area-preview {
   position: fixed; top: 0; left: 0; width: 0; height: 0; }
 .ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);
