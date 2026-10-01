@@ -341,3 +341,58 @@ test("o canvas desconta a propria posicao na janela", () => {
   assert.equal(ligacoes.at(-1)?.destino, "g2",
     "sem descontar a origem do palco, a ligação cai num grupo que não é o de baixo do cursor")
 })
+
+// --- o cartão de Start -----------------------------------------------------
+
+function montarComEventos(f = fluxo) {
+  const hospedeiro = new Elemento("div")
+  const avisos = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro,
+    aoLigarEvento: (o) => avisos.push({ tipo: "ligar", ...o }),
+    aoMoverEvento: (o) => avisos.push({ tipo: "mover", ...o })
+  })
+  canvas.desenhar(f)
+  return { hospedeiro, canvas, avisos }
+}
+
+test("o Start aparece como cartao, com bandeira", () => {
+  const { hospedeiro } = montarComEventos()
+  const start = hospedeiro.porClasse("ed__evento").find((e) => e.textContent.includes("Start"))
+  assert.ok(start, "o fluxo precisa começar de algum lugar visível")
+  assert.match(start.textContent, /⚑/)
+})
+
+test("fluxo do zero ja mostra o Start esperando ligacao", () => {
+  const { hospedeiro } = montarComEventos({ versao: 2, grupos: [] })
+  assert.equal(hospedeiro.porClasse("ed__evento").length, 1)
+  assert.equal(hospedeiro.porClasse("ed__evento-ponto")[0].className.includes("ed__evento-ponto--ligado"), false)
+})
+
+test("a bola do Start puxa a ligacao ate um grupo", () => {
+  const { hospedeiro, avisos } = montarComEventos()
+  // g1 ocupa x 300–560, y 40–148; soltar dentro dele
+  hospedeiro.porClasse("ed__evento-ponto")[0].disparar("mousedown", { clientX: 230, clientY: 64, button: 0 })
+  document.disparar("mousemove", { clientX: 350, clientY: 60 })
+  document.disparar("mouseup", { clientX: 350, clientY: 60 })
+  assert.deepEqual(avisos.at(-1), { tipo: "ligar", evento: "inicio", destino: "g1" })
+})
+
+test("arrastar o Start reposiciona o cartao dele", () => {
+  const { hospedeiro, avisos } = montarComEventos()
+  hospedeiro.porClasse("ed__evento")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 40, clientY: 25 })
+  document.disparar("mouseup", {})
+  const movido = avisos.filter((a) => a.tipo === "mover").at(-1)
+  assert.equal(movido?.evento, "inicio")
+  assert.ok(Number.isFinite(movido?.x))
+})
+
+test("a seta do inicio sai do cartao de Start, nao do nada", () => {
+  const { hospedeiro } = montarComEventos()
+  const doEvento = hospedeiro.porClasse("ed__seta--evento")
+  assert.ok(doEvento.length > 0)
+  const caminho = doEvento[0].atributos.d
+  // o Start está em x=40,y=40 e tem 190x48: a seta precisa partir da borda dele
+  assert.match(caminho, /^M 230 64/)
+})

@@ -6,7 +6,8 @@ import assert from "node:assert/strict"
 import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
-  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao
+  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
+  definirProximoDoEvento, moverEvento
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -209,4 +210,32 @@ test("proximoIdDeOpcao diz o id antes de acrescentar", () => {
   const previsto = proximoIdDeOpcao(f, { grupo: "g1", bloco: "b" })
   const depois = acrescentarOpcao(f, { grupo: "g1", bloco: "b" })
   assert.equal(opcoes(depois).at(-1).id, previsto)
+})
+
+// --- ligar o evento --------------------------------------------------------
+
+test("ligar o inicio num grupo", () => {
+  const f = definirProximoDoEvento(base(), { tipo: "inicio", destino: "g2" })
+  assert.equal(f.eventos.find((e) => e.tipo === "inicio").proximo, "g2")
+})
+
+test("fluxo sem evento de inicio ganha um ao ser ligado", () => {
+  const semEvento = { versao: 2, grupos: [{ id: "g1", blocos: [] }] }
+  const f = definirProximoDoEvento(semEvento, { tipo: "inicio", destino: "g1" })
+  assert.equal(f.eventos.length, 1)
+  assert.equal(f.eventos[0].tipo, "inicio")
+  assert.equal(f.eventos[0].proximo, "g1")
+})
+
+test("mover o evento grava a posicao", () => {
+  const f = moverEvento(base(), { tipo: "inicio", x: 12.6, y: 80.2 })
+  assert.deepEqual(f.eventos.find((e) => e.tipo === "inicio").posicao, { x: 13, y: 80 })
+})
+
+test("ligar evento nao modifica o fluxo recebido", () => {
+  const f = base()
+  const copia = JSON.parse(JSON.stringify(f))
+  definirProximoDoEvento(f, { tipo: "inicio", destino: "g2" })
+  moverEvento(f, { tipo: "inicio", x: 1, y: 1 })
+  assert.deepEqual(f, copia)
 })

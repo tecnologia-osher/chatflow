@@ -9,7 +9,8 @@ import { todos } from "./catalogo.js"
 import { campoPrincipal } from "./modelo.js"
 import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
-  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao
+  definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
+  definirProximoDoEvento, moverEvento
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
@@ -74,6 +75,14 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     },
     aoRemoverOpcao: ({ grupo, bloco, opcao }) => {
       atual = removerOpcao(atual, { grupo, bloco, opcao })
+      redesenhar()
+    },
+    aoLigarEvento: ({ evento, destino }) => {
+      atual = definirProximoDoEvento(atual, { tipo: evento, destino })
+      redesenhar()
+    },
+    aoMoverEvento: ({ evento, x, y }) => {
+      atual = moverEvento(atual, { tipo: evento, x, y })
       redesenhar()
     },
     aoLigarOpcao: ({ grupo, bloco, opcao, destino }) => {

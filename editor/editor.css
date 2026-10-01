@@ -75,7 +75,23 @@ html, body { margin: 0; height: 100%; }
 .ed__seta--evento { stroke-dasharray: 5 4; }
 .ed__seta--orfa { stroke: var(--ed-erro); stroke-dasharray: 3 3; }
 
-.ed__cartoes { position: absolute; top: 0; left: 0; }
+.ed__cartoes, .ed__eventos { position: absolute; top: 0; left: 0; }
+
+/* O Start: a largada do fluxo. Sem ele, a primeira seta parecia nascer do
+   nada, e num fluxo novo não havia de onde puxar a ligação. */
+.ed__evento { position: absolute; top: 0; left: 0; box-sizing: border-box;
+  display: flex; align-items: center; gap: 0.5rem; height: 3rem; padding: 0 0.95rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(20,25,40,0.07); cursor: grab; font-weight: 600; }
+.ed__evento:active { cursor: grabbing; }
+.ed__evento-icone { color: var(--ed-suave); font-size: 1rem; }
+.ed__evento-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed__evento--invalido { border-style: dashed; font-weight: 500; color: var(--ed-suave); }
+.ed__evento-ponto { position: absolute; right: -0.55rem; top: 50%; transform: translateY(-50%);
+  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
+  border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
+.ed__evento-ponto:hover { box-shadow: 0 0 0 4px rgba(234,123,60,0.18); }
+.ed__evento-ponto--ligado { background: var(--ed-entrada); }
 .ed__cartao { position: absolute; top: 0; left: 0; background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 1px 3px rgba(20,25,40,0.07); }
 /* O bloco não pode recortar o círculo que fica para fora do cartão. */

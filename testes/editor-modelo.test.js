@@ -150,3 +150,38 @@ test("o cartao diz qual campo cada bloco edita direto", () => {
   assert.equal(c[0].blocos[0].campoPrincipal, "texto")
   assert.equal(c[1].blocos[0].campoPrincipal, null)   // entrada_botoes
 })
+
+// --- eventos como cartões --------------------------------------------------
+
+test("o inicio vira um cartao proprio, com bandeira", async () => {
+  const { eventosDoCanvas } = await import("../editor/modelo.js")
+  const inicio = eventosDoCanvas(fluxo).find((e) => e.tipo === "inicio")
+  assert.ok(inicio)
+  assert.equal(inicio.rotulo, "Start")
+  assert.equal(inicio.icone, "⚑")
+  assert.deepEqual(inicio.posicao, { x: 40, y: 40 })
+  assert.equal(inicio.proximo, "g1")
+})
+
+test("fluxo do zero ja nasce com o Start na tela", async () => {
+  const { eventosDoCanvas } = await import("../editor/modelo.js")
+  const vazio = { versao: 2, grupos: [] }
+  const eventos = eventosDoCanvas(vazio)
+  assert.equal(eventos.length, 1)
+  assert.equal(eventos[0].tipo, "inicio")
+  assert.equal(eventos[0].proximo, null, "nasce sem destino, esperando ser ligado")
+  assert.ok(Number.isFinite(eventos[0].posicao.x), "sem posição gravada, ganha uma")
+})
+
+test("os outros eventos tambem aparecem, com o proprio rotulo", async () => {
+  const { eventosDoCanvas } = await import("../editor/modelo.js")
+  const invalido = eventosDoCanvas(fluxo).find((e) => e.tipo === "invalido")
+  assert.ok(invalido, "quem edita precisa ver para onde vai quem erra a resposta")
+  assert.equal(invalido.rotulo, "Resposta inválida")
+})
+
+test("a caixa do evento serve de ancora para a seta", async () => {
+  const { eventosDoCanvas, caixasDeEventos } = await import("../editor/modelo.js")
+  const mapa = caixasDeEventos(eventosDoCanvas(fluxo))
+  assert.ok(mapa.get("inicio").largura > 0 && mapa.get("inicio").altura > 0)
+})

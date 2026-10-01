@@ -197,3 +197,25 @@ export function removerOpcao(fluxo, { grupo, bloco, opcao }) {
     return restantes.length === opcoes.length ? opcoes : restantes
   })
 }
+
+
+// --- eventos ---------------------------------------------------------------
+
+function trocarEvento(fluxo, tipo, transformar) {
+  const eventos = fluxo.eventos || []
+  const indice = eventos.findIndex((e) => e && e.tipo === tipo)
+  // Fluxo começado do zero não tem evento nenhum: ligar o Start cria o que
+  // faltava, em vez de a ligação cair no vazio.
+  if (indice === -1) return { ...fluxo, eventos: [...eventos, transformar({ tipo })] }
+  return { ...fluxo, eventos: eventos.map((e, i) => (i === indice ? transformar(e) : e)) }
+}
+
+export function definirProximoDoEvento(fluxo, { tipo, destino }) {
+  return trocarEvento(fluxo, tipo, (e) => comCampo(e, "proximo", destino))
+}
+
+export function moverEvento(fluxo, { tipo, x, y }) {
+  return trocarEvento(fluxo, tipo, (e) => ({
+    ...e, posicao: { x: Math.round(x), y: Math.round(y) }
+  }))
+}

@@ -165,3 +165,47 @@ export function caixas(listaDeCartoes) {
 }
 
 export const MEDIDAS = { CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_RODAPE }
+
+
+// --- eventos como cartões --------------------------------------------------
+
+const ROTULO_DO_EVENTO = {
+  inicio: "Start",
+  invalido: "Resposta inválida",
+  comando: "Comando",
+  resposta: "Resposta"
+}
+const ICONE_DO_EVENTO = { inicio: "\u2691" }
+
+const EVENTO_LARGURA = 190
+const EVENTO_ALTURA = 48
+
+// O início deixa de ser uma seta que nasce do nada e vira um cartão. Um fluxo
+// começado do zero já aparece com ele, sem destino, esperando a ligação —
+// senão não há de onde puxar a primeira seta.
+export function eventosDoCanvas(fluxo) {
+  const declarados = (fluxo?.eventos || []).filter(Boolean)
+  const temInicio = declarados.some((e) => e.tipo === "inicio")
+  const lista = temInicio ? declarados : [{ tipo: "inicio" }, ...declarados]
+
+  return lista.map((evento, indice) => ({
+    tipo: evento.tipo,
+    rotulo: ROTULO_DO_EVENTO[evento.tipo] || evento.tipo,
+    icone: ICONE_DO_EVENTO[evento.tipo] || "",
+    posicao: evento.posicao && typeof evento.posicao.x === "number"
+      ? { x: evento.posicao.x, y: evento.posicao.y }
+      : { x: 40, y: 40 + indice * 120 },
+    proximo: evento.proximo || null
+  }))
+}
+
+export function caixasDeEventos(listaDeEventos) {
+  const mapa = new Map()
+  for (const evento of listaDeEventos) {
+    mapa.set(evento.tipo, {
+      x: evento.posicao.x, y: evento.posicao.y,
+      largura: EVENTO_LARGURA, altura: EVENTO_ALTURA
+    })
+  }
+  return mapa
+}

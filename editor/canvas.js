@@ -3,7 +3,7 @@
 // Não mede nada do DOM. O tamanho do cartão vem de `caixas()` e a matemática
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
-import { cartoes, setas, caixas } from "./modelo.js"
+import { cartoes, setas, caixas, eventosDoCanvas, caixasDeEventos } from "./modelo.js"
 import { criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm } from "./vista.js"
 
 const SVG = "http://www.w3.org/2000/svg"
@@ -27,13 +27,15 @@ export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
-  aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {}
+  aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
+  aoLigarEvento = () => {}, aoMoverEvento = () => {}
 }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
   const tela = svg("svg", "ed__setas")
+  const camadaEventos = el("div", "ed__eventos")
   const camadaCartoes = el("div", "ed__cartoes")
-  mundo.append(tela, camadaCartoes)
+  mundo.append(tela, camadaEventos, camadaCartoes)
   palco.append(mundo)
   elemento.replaceChildren(palco)
 
@@ -42,6 +44,7 @@ export function criarCanvas({
   let selecao = { grupo: null, bloco: null }
   let editandoTitulo = null
   let caixasAtuais = new Map()
+  let caixasEventoAtuais = new Map()
   let fioTemporario = null
 
   // clientX/clientY são da JANELA; o palco começa depois da paleta e da
@@ -94,7 +97,7 @@ export function criarCanvas({
   // Arrastar a ligação: um fio acompanha o cursor e, ao soltar, o grupo que
   // estiver embaixo vira o destino. Soltar no vazio não faz nada — apagar uma
   // ligação por acidente seria pior que exigir um clique a mais no painel.
-  function iniciarLigacao(ev, origem) {
+  function iniciarLigacao(ev, origem, avisar = (o, destino) => aoLigarOpcao({ ...o, destino })) {
     if (ev.button !== undefined && ev.button !== 0) return
     ev.preventDefault?.()
     ev.stopPropagation?.()
@@ -110,7 +113,7 @@ export function criarCanvas({
       fioTemporario = null
       desenharFio()
       const destino = caixaEm(caixasAtuais, paraMundo(vista, noPalco(e)))
-      if (destino) aoLigarOpcao({ ...origem, destino })
+      if (destino) avisar(origem, destino)
     }
     document.addEventListener("mousemove", mover)
     document.addEventListener("mouseup", soltar)
@@ -143,7 +146,9 @@ export function criarCanvas({
       })
       if (!destino) continue
 
-      const caixaDeSaida = origem || {
+      // A seta do evento parte do cartão dele. Antes nascia de uma caixa
+      // imaginária, e por isso parecia vir do nada.
+      const caixaDeSaida = origem || caixasEventoAtuais.get(seta.evento) || {
         x: destino.x - 260, y: destino.y - 120, largura: 200, altura: 60
       }
       const { caminho } = ancoras(caixaDeSaida, destino)
@@ -155,6 +160,36 @@ export function criarCanvas({
       linha.setAttribute("d", caminho)
       linha.setAttribute("fill", "none")
       tela.append(linha)
+    }
+  }
+
+  function desenharEventos(lista, mapa) {
+    camadaEventos.replaceChildren()
+    for (const evento of lista) {
+      const caixa = mapa.get(evento.tipo)
+      const no = el("div", `ed__evento ed__evento--${evento.tipo}`)
+      no.style.setProperty("transform", `translate(${caixa.x}px, ${caixa.y}px)`)
+      no.style.setProperty("width", `${caixa.largura}px`)
+      if (evento.icone) no.append(el("span", "ed__evento-icone", evento.icone))
+      no.append(el("span", "ed__evento-rotulo", evento.rotulo))
+
+      no.addEventListener("mousedown", (ev) => {
+        const base = { x: caixa.x, y: caixa.y }
+        iniciarArrasto(ev, (dx, dy) => aoMoverEvento({
+          evento: evento.tipo, x: base.x + dx / vista.escala, y: base.y + dy / vista.escala
+        }))
+      })
+
+      const ponto = el("span", `ed__evento-ponto${evento.proximo ? " ed__evento-ponto--ligado" : ""}`)
+      ponto.setAttribute("title", evento.proximo
+        ? `Começa em ${evento.proximo} — arraste para mudar`
+        : "Arraste até o primeiro grupo")
+      ponto.addEventListener("mousedown", (ev) => {
+        iniciarLigacao(ev, { evento: evento.tipo }, (origem, destino) => aoLigarEvento({ ...origem, destino }))
+      })
+      no.append(ponto)
+
+      camadaEventos.append(no)
     }
   }
 
@@ -317,8 +352,11 @@ export function criarCanvas({
     fluxoAtual = fluxo
     const lista = cartoes(fluxo)
     const mapa = caixas(lista)
+    const listaEventos = eventosDoCanvas(fluxo)
     caixasAtuais = mapa
+    caixasEventoAtuais = caixasDeEventos(listaEventos)
     desenharSetas(setas(fluxo), mapa)
+    desenharEventos(listaEventos, caixasEventoAtuais)
     desenharCartoes(lista, mapa)
     aplicarVista()
   }
@@ -329,7 +367,10 @@ export function criarCanvas({
     // nunca em cada redesenho, senão brigaria com quem está arrastando.
     enquadrar() {
       if (!fluxoAtual) return
-      vista = enquadrar([...caixas(cartoes(fluxoAtual)).values()], {
+      vista = enquadrar([
+        ...caixas(cartoes(fluxoAtual)).values(),
+        ...caixasDeEventos(eventosDoCanvas(fluxoAtual)).values()
+      ], {
         largura: palco.clientWidth || elemento.clientWidth || 0,
         altura: palco.clientHeight || elemento.clientHeight || 0
       })
