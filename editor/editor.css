@@ -15,6 +15,8 @@
   --ed-recado-fundo: #fff5ec;
   --ed-recado-texto: #8a4a1d;
   --ed-seta: #b6bcc6;
+  --ed-conector: var(--ed-entrada);
+  --ed-conector-halo: rgba(234, 123, 60, 0.18);
   --ed-selecionado: #eef2f8;
   --ed-problema-fundo: #fdeceb;
 
@@ -87,11 +89,6 @@ html, body { margin: 0; height: 100%; }
 .ed__evento-icone { color: var(--ed-suave); font-size: 1rem; }
 .ed__evento-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed__evento--invalido { border-style: dashed; font-weight: 500; color: var(--ed-suave); }
-.ed__evento-ponto { position: absolute; right: -1.4rem; top: 50%; transform: translateY(-50%);
-  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
-  border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
-.ed__evento-ponto:hover { box-shadow: 0 0 0 4px rgba(234,123,60,0.18); }
-.ed__evento-ponto--ligado { background: var(--ed-entrada); }
 .ed__cartao { position: absolute; top: 0; left: 0; background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 1px 3px rgba(20,25,40,0.07); }
 /* O bloco não pode recortar o círculo que fica para fora do cartão. */
@@ -129,11 +126,22 @@ html, body { margin: 0; height: 100%; }
 /* A saída do grupo: de onde se puxa para o próximo cartão. Fica no canto de
    baixo para não disputar espaço com as bolinhas das opções. */
 .ed__rodape { position: relative; height: 1.6rem; }
-.ed__grupo-ponto { position: absolute; right: -1.4rem; top: 50%; transform: translateY(-50%);
+
+/* Toda ligação se puxa do mesmo lugar visual: anel laranja, miolo branco.
+   Uma só regra para as três — opção, saída do grupo e Start — para não
+   divergirem quando uma delas for mexida.
+   Não distinguem ligado de solto: quem mostra isso é a seta no canvas, e
+   dois jeitos de dizer a mesma coisa viram dois jeitos de se contradizer. */
+.ed__opcao-ponto, .ed__grupo-ponto, .ed__evento-ponto {
+  position: absolute; top: 50%; transform: translateY(-50%);
   width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
-  border: 2px solid var(--ed-acento); background: var(--ed-superficie); }
-.ed__grupo-ponto:hover { box-shadow: 0 0 0 4px rgba(12,35,64,0.15); }
-.ed__grupo-ponto--ligado { background: var(--ed-acento); }
+  border: 2px solid var(--ed-conector); background: var(--ed-superficie);
+}
+.ed__opcao-ponto:hover, .ed__grupo-ponto:hover, .ed__evento-ponto:hover {
+  box-shadow: 0 0 0 4px var(--ed-conector-halo);
+}
+.ed__opcao-ponto { right: -2.25rem; }
+.ed__grupo-ponto, .ed__evento-ponto { right: -1.4rem; }
 
 /* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
    é o destino daquela opção: cheio quando leva a algum grupo. */
@@ -154,11 +162,6 @@ html, body { margin: 0; height: 100%; }
 .ed__opcao-campo::placeholder { color: var(--ed-suave); }
 /* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
    daquela resposta até outro grupo. Dentro, pareceria decoração. */
-.ed__opcao-ponto { position: absolute; right: -2.25rem; top: 50%; transform: translateY(-50%);
-  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
-  border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
-.ed__opcao-ponto:hover { box-shadow: 0 0 0 4px rgba(234,123,60,0.18); }
-.ed__opcao-ponto--ligado { background: var(--ed-entrada); }
 .ed__seta--arrastando { stroke: var(--ed-entrada); stroke-width: 2; stroke-dasharray: 5 4; }
 
 /* --- lateral --- */
