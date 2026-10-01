@@ -7,7 +7,7 @@ import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, limparOpcoesVazias
+  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -301,4 +301,82 @@ test("limpar vazias nao mexe em bloco sem opcoes", () => {
     { id: "g1", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
       { id: "b1", tipo: "texto", conteudo: { texto: "" } }] }] }
   assert.equal(limparOpcoesVazias(f), f)
+})
+
+test("o numero do grupo novo conta os que ja existem, com nome proprio ou nao", () => {
+  const seisComNome = { versao: 2, eventos: [], grupos: ["Abertura", "Contato", "Idade", "Objetivo", "Valor", "Fim"]
+    .map((titulo, i) => ({ id: `g${i + 1}`, titulo, posicao: { x: 0, y: i * 400 }, blocos: [] })) }
+  assert.equal(proximoNomeDeGrupo(seisComNome), "Grupo #7",
+    "seis grupos na tela e o novo saindo como #1 parece que o editor não os viu")
+})
+
+test("numero ja usado e pulado, para dois grupos nao saírem iguais", () => {
+  // Dois grupos: o próximo seria o #3, mas alguém já se chama assim.
+  const f = { versao: 2, eventos: [], grupos: [
+    { id: "g1", titulo: "Grupo #3", posicao: { x: 0, y: 0 }, blocos: [] },
+    { id: "g2", titulo: "Abertura", posicao: { x: 0, y: 400 }, blocos: [] }] }
+  assert.equal(proximoNomeDeGrupo(f), "Grupo #4")
+})
+
+test("fluxo vazio comeca no Grupo #1", () => {
+  assert.equal(proximoNomeDeGrupo({ versao: 2, eventos: [], grupos: [] }), "Grupo #1")
+})
+
+// --- apagar um grupo -------------------------------------------------------
+
+const comReferencias = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }, { tipo: "invalido", proximo: "g2" }],
+  grupos: [
+    { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, proximo: "g2", blocos: [
+      { id: "b_bot", tipo: "entrada_botoes", salvar_em: "v", conteudo: { opcoes: [
+        { id: "o1", label: "Sim", proximo: "g2#b_fala" },
+        { id: "o2", label: "Não", proximo: "g3" }] } },
+      { id: "b_ir", tipo: "ir_para", conteudo: { destino: "g2" } },
+      { id: "b_cond", tipo: "condicao", conteudo: { regras: [
+        { se: { variavel: "v", vazio: true }, entao: "g2" }] } }] },
+    { id: "g2", titulo: "b", posicao: { x: 400, y: 0 }, blocos: [
+      { id: "b_fala", tipo: "texto", conteudo: { texto: "Oi" } }] },
+    { id: "g3", titulo: "c", posicao: { x: 800, y: 0 }, blocos: [] }
+  ]
+})
+
+test("remover o grupo tira o cartao e todo destino que apontava para ele", () => {
+  const f = removerGrupo(comReferencias(), { grupo: "g2" })
+  assert.deepEqual(f.grupos.map((g) => g.id), ["g1", "g3"])
+
+  const g1 = f.grupos[0]
+  assert.equal("proximo" in g1, false, "a saída do grupo apontava para g2")
+  assert.equal("proximo" in g1.blocos[0].conteudo.opcoes[0], false, "a opção apontava para g2#b_fala")
+  assert.equal(g1.blocos[0].conteudo.opcoes[1].proximo, "g3", "a opção que ia para g3 continua")
+  assert.equal("destino" in g1.blocos[1].conteudo, false, "o ir_para apontava para g2")
+  assert.equal("entao" in g1.blocos[2].conteudo.regras[0], false, "a regra apontava para g2")
+  assert.equal("proximo" in f.eventos[1], false, "o evento invalido apontava para g2")
+  assert.equal(f.eventos[0].proximo, "g1", "o início não era para g2")
+})
+
+test("remover grupo nao toca no fluxo recebido", () => {
+  const antes = comReferencias()
+  const copia = JSON.parse(JSON.stringify(antes))
+  removerGrupo(antes, { grupo: "g2" })
+  assert.deepEqual(antes, copia)
+})
+
+test("remover grupo que ninguem aponta so tira o cartao", () => {
+  const f = removerGrupo(comReferencias(), { grupo: "g3" })
+  assert.deepEqual(f.grupos.map((g) => g.id), ["g1", "g2"])
+  assert.equal(f.grupos[0].proximo, "g2")
+  assert.equal("proximo" in f.grupos[0].blocos[0].conteudo.opcoes[1], false, "essa ia para g3")
+})
+
+test("remover grupo inexistente nao muda nada de verdade", () => {
+  const f = removerGrupo(comReferencias(), { grupo: "g_nada" })
+  assert.deepEqual(f.grupos.map((g) => g.id), ["g1", "g2", "g3"])
+  assert.equal(f.grupos[0].proximo, "g2")
+})
+
+test("o fluxo sem o grupo apagado continua valido quando sobra caminho", () => {
+  const f = removerGrupo(comReferencias(), { grupo: "g3" })
+  const r = validarFluxo(f, { destinos: {} })
+  assert.equal(r.erros.some((e) => /g3/.test(e)), false, `sobrou referência a g3: ${r.erros.join(" | ")}`)
 })

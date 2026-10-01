@@ -1012,3 +1012,52 @@ test("arrastar o fundo nao e clicar na linha: a faixa nao move o canvas", () => 
   document.disparar("mouseup", {})
   assert.deepEqual(canvas.vista(), antes)
 })
+
+// --- apagar o grupo --------------------------------------------------------
+
+test("botao direito no cartao abre o menu com Excluir grupo, e seleciona", () => {
+  const hospedeiro = new Elemento("div")
+  const selecoes = []
+  criarCanvas({ elemento: hospedeiro, aoSelecionar: (s) => selecoes.push(s) }).desenhar(fluxo)
+  let barrou = false
+  hospedeiro.porClasse("ed__cartao")[0].disparar("contextmenu", {
+    clientX: 340, clientY: 90, preventDefault() { barrou = true }
+  })
+  assert.equal(barrou, true)
+  assert.deepEqual(selecoes.at(-1), { grupo: "g1", bloco: null })
+  const menu = hospedeiro.porClasse("ed__menu-ligacao")[0]
+  assert.ok(menu)
+  assert.equal(menu.style.propriedades.left, "340px")
+  assert.match(hospedeiro.porClasse("ed__menu-excluir")[0].textContent, /excluir grupo/i)
+})
+
+test("o botao diz quantos blocos vao embora", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cartao")[0].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  assert.match(hospedeiro.porClasse("ed__menu-excluir")[0].textContent, /1 bloco\b/,
+    "sem desfazer, o tamanho do estrago precisa estar no botão")
+
+  hospedeiro.porClasse("ed__cartao")[1].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  assert.equal(hospedeiro.porClasse("ed__menu-excluir")[0].textContent, "Excluir grupo",
+    "grupo vazio não precisa anunciar zero blocos")
+})
+
+test("Excluir grupo avisa qual, e fecha o menu", () => {
+  const hospedeiro = new Elemento("div")
+  const apagados = []
+  criarCanvas({ elemento: hospedeiro, aoApagarGrupo: (o) => apagados.push(o) }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cartao")[1].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  hospedeiro.porClasse("ed__menu-excluir")[0].disparar("click")
+  assert.deepEqual(apagados, [{ grupo: "g2" }])
+  assert.equal(hospedeiro.porClasse("ed__menu-ligacao").length, 0)
+})
+
+test("o menu do grupo nao abre o menu do navegador por cima", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cartao")[0].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  let barrou = false
+  hospedeiro.porClasse("ed__menu-ligacao")[0].disparar("contextmenu", { preventDefault() { barrou = true } })
+  assert.equal(barrou, true)
+})

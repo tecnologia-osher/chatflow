@@ -5,6 +5,7 @@
 
 import { obter, todos } from "./catalogo.js"
 import { cartoes, caixas, alturaDoCartao } from "./modelo.js"
+import { partesDoDestino } from "../motor/destino.js"
 
 function trocarGrupo(fluxo, id, transformar) {
   const grupos = fluxo.grupos || []
@@ -148,12 +149,44 @@ function lugarLivre(fluxo, x, y) {
   return lugar
 }
 
-// Grupo #1, #2, #3… na ordem em que a pessoa cria. Pula os números já usados
-// em vez de contar grupos: assim dois cartões nunca saem com o mesmo nome,
-// mesmo que um do meio tenha sido renomeado à mão.
+// O número é a posição do grupo no fluxo: num fluxo com seis grupos, o
+// próximo é o #7, mesmo que os seis tenham nome próprio. Contar só os que já
+// se chamam "Grupo #N" fazia o sétimo nascer como #1, e parecia que o editor
+// não tinha visto os outros. Números já usados são pulados, para dois cartões
+// nunca saírem com o mesmo nome.
+// Apagar um grupo é apagar também quem apontava para ele: destino para grupo
+// que não existe mais não é caminho, é erro espalhado pelo fluxo. Vale para as
+// duas metades do destino — "g2" e "g2#bloco" morrem junto com g2.
+export function removerGrupo(fluxo, { grupo }) {
+  const sobra = (destino) => partesDoDestino(destino).grupo !== grupo
+
+  const limparDestino = (objeto, chave) =>
+    objeto[chave] && !sobra(objeto[chave]) ? comCampo(objeto, chave, "") : objeto
+
+  const eventos = (fluxo.eventos || []).map((e) => (e ? limparDestino(e, "proximo") : e))
+
+  const grupos = (fluxo.grupos || []).filter((g) => g && g.id !== grupo).map((g) => {
+    const blocos = (g.blocos || []).map((b) => {
+      if (!b) return b
+      const conteudo = b.conteudo || {}
+      let novo = limparDestino(conteudo, "destino")
+      if (Array.isArray(conteudo.opcoes)) {
+        novo = { ...novo, opcoes: conteudo.opcoes.map((o) => (o ? limparDestino(o, "proximo") : o)) }
+      }
+      if (Array.isArray(conteudo.regras)) {
+        novo = { ...novo, regras: conteudo.regras.map((r) => (r ? limparDestino(r, "entao") : r)) }
+      }
+      return novo === conteudo ? b : { ...b, conteudo: novo }
+    })
+    return { ...limparDestino(g, "proximo"), blocos }
+  })
+
+  return { ...fluxo, eventos, grupos }
+}
+
 export function proximoNomeDeGrupo(fluxo) {
-  const usados = new Set((fluxo.grupos || []).map((g) => g.titulo))
-  let n = 1
+  const usados = new Set((fluxo.grupos || []).filter(Boolean).map((g) => g.titulo))
+  let n = (fluxo.grupos || []).filter(Boolean).length + 1
   while (usados.has(`Grupo #${n}`)) n++
   return `Grupo #${n}`
 }

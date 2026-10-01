@@ -31,7 +31,7 @@ function svg(tag, classe) {
 
 export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
-  aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {},
+  aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {}, aoApagarGrupo = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
@@ -210,6 +210,31 @@ export function criarCanvas({
       })
       menu.append(apagar)
     }
+    palco.append(menu)
+    menuAberto = menu
+  }
+
+  function abrirMenuDoGrupo(ev, cartao) {
+    fecharMenu()
+    const onde = noPalco(ev)
+    const menu = el("div", "ed__menu-ligacao")
+    menu.style.setProperty("left", `${onde.x}px`)
+    menu.style.setProperty("top", `${onde.y}px`)
+    menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
+    menu.addEventListener("contextmenu", (e) => e.preventDefault?.())
+
+    const quantos = cartao.blocos.length
+    // O número de blocos no botão é o peso do que vai embora. Sem desfazer no
+    // editor, a pessoa merece saber o tamanho do estrago antes de clicar.
+    const apagar = el("button", "ed__menu-excluir",
+      quantos ? `Excluir grupo (${quantos} ${quantos === 1 ? "bloco" : "blocos"})` : "Excluir grupo")
+    apagar.setAttribute("type", "button")
+    apagar.addEventListener("click", (e) => {
+      e.stopPropagation?.()
+      fecharMenu()
+      aoApagarGrupo({ grupo: cartao.id })
+    })
+    menu.append(apagar)
     palco.append(menu)
     menuAberto = menu
   }
@@ -498,6 +523,18 @@ export function criarCanvas({
       rodape.append(el("span", "ed__rodape-rotulo", temBotoes ? "padrão" : "seguinte"))
       rodape.append(pontoDeSaida(cartao))
       no.append(rodape)
+
+      // Mesmo gesto da linha: esquerdo seleciona (o cabeçalho já fazia),
+      // direito abre o menu no ponto clicado.
+      no.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault?.()
+        ev.stopPropagation?.()
+        selecao = { grupo: cartao.id, bloco: null }
+        setaSelecionada = null
+        desenhar(fluxoAtual)
+        aoSelecionar({ grupo: cartao.id, bloco: null })
+        abrirMenuDoGrupo(ev, cartao)
+      })
 
       nosDeCartoes.set(cartao.id, no)
       camadaCartoes.append(no)

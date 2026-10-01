@@ -10,7 +10,7 @@ import { campoPrincipal } from "./modelo.js"
 import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias
+  definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias, removerGrupo
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
@@ -95,6 +95,14 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     },
     aoLigarOpcao: ({ grupo, bloco, opcao, destino }) => {
       atual = definirOpcao(atual, { grupo, bloco, opcao, campo: "proximo", valor: destino })
+      redesenhar()
+    },
+    aoApagarGrupo: ({ grupo }) => {
+      atual = removerGrupo(atual, { grupo })
+      // Seleção apontando para o que não existe mais deixaria o painel e a
+      // paleta trabalhando num grupo fantasma.
+      if (selecao.grupo === grupo) selecao = { grupo: null, bloco: null }
+      detalhesAbertos = false
       redesenhar()
     },
     // Apagar a ligação é apagar o destino de quem a criou. Qual campo é

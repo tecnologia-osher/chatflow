@@ -491,3 +491,24 @@ como recriar. É a única exceção, e está escrita na tela.
 De passagem: apagar a ligação do Start fazia o aviso dizer `aponta para o grupo
 "", que não existe` — mandava procurar um grupo que nunca existiu. Agora diz
 "O início não aponta para nenhum grupo: ligue o Start ao primeiro grupo".
+
+### Excluir grupo, e a numeração que não via os grupos existentes
+
+491 testes.
+
+**O gesto do grupo é o mesmo da linha:** esquerdo seleciona, direito abre o
+menu no ponto clicado — agora com "Excluir grupo (3 blocos)". O número de
+blocos está no botão de propósito: sem desfazer no editor, a pessoa merece ver
+o tamanho do estrago antes de clicar.
+
+Apagar um grupo apaga também **quem apontava para ele** — saída de grupo,
+`proximo` de opção, `destino` de `ir_para`, `entao` de regra e `proximo` de
+evento, nas duas formas do destino (`g2` e `g2#bloco`). Destino para grupo que
+não existe não é caminho, é erro espalhado pelo fluxo. E a seleção é largada
+junto: presa num grupo fantasma, clicar num tipo da paleta não acrescentava
+nada e também não avisava.
+
+**O defeito da numeração:** `proximoNomeDeGrupo` contava só os cartões que já
+se chamavam "Grupo #N". Num fluxo com seis grupos de nome próprio, o sétimo
+nascia como "Grupo #1" — parecia que o editor não tinha visto os outros. Agora
+o número é a posição no fluxo (seis grupos → #7), pulando números já usados.

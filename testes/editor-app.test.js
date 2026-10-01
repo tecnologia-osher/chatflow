@@ -470,7 +470,7 @@ test("arrastar um tipo para o vazio cria um grupo com aquele bloco dentro", () =
   assert.equal(novos.length, 1, "o grupo precisa nascer do arrasto")
   assert.equal(novos[0].blocos.length, 1)
   assert.equal(novos[0].blocos[0].tipo, "texto")
-  assert.equal(novos[0].titulo, "Grupo #1")
+  assert.equal(novos[0].titulo, "Grupo #3", "o fluxo já tinha dois grupos: o novo é o terceiro")
 })
 
 test("os grupos criados assim seguem a numeracao", () => {
@@ -478,7 +478,7 @@ test("os grupos criados assim seguem a numeracao", () => {
   const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
   arrastar(hospedeiro, "Texto", { clientX: 300, clientY: 200 })
   arrastar(hospedeiro, "Texto", { clientX: 600, clientY: 450 })
-  assert.deepEqual(gruposNovos(editor, antes).map((g) => g.titulo), ["Grupo #1", "Grupo #2"])
+  assert.deepEqual(gruposNovos(editor, antes).map((g) => g.titulo), ["Grupo #3", "Grupo #4"])
 })
 
 test("o grupo nasce onde foi solto, nao num canto fixo", () => {
@@ -602,4 +602,31 @@ test("depois de excluir, a linha sai do desenho", () => {
   const antes = porClasse(hospedeiro, "ed__seta").length
   apagarLigacao(hospedeiro, (s) => s.de === "g1" && !s.saida)
   assert.equal(porClasse(hospedeiro, "ed__seta").length, antes - 1)
+})
+
+test("excluir o grupo tira o cartao e quem apontava para ele", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cartao")[1].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
+
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g1"])
+  assert.equal("proximo" in editor.fluxo().grupos[0], false, "g1 apontava para g2")
+  assert.equal(porClasse(hospedeiro, "ed__cartao").length, 1)
+})
+
+test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
+
+  porClasse(hospedeiro, "ed__cartao")[0].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0, "painel de grupo que não existe mais")
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g2"])
+
+  // Com a seleção presa no grupo apagado, clicar num tipo tentaria acrescentar
+  // bloco nele e não diria nada: nem avisa, nem acrescenta.
+  tipoDaPaleta(hospedeiro, "Texto").disparar("click")
+  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste|selecione/i)
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [0])
 })
