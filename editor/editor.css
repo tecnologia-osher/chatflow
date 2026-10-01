@@ -98,8 +98,12 @@ html, body { margin: 0; height: 100%; }
 .ed__cartao--ativo { border-color: var(--ed-acento); box-shadow: 0 0 0 2px rgba(12,35,64,0.15); }
 .ed__cabecalho { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem 0.55rem 0.85rem;
   font-weight: 600; cursor: grab; border-bottom: 1px solid var(--ed-linha); }
-.ed__cabecalho-titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+.ed__cabecalho-titulo { flex: 0 1 auto; min-width: 1.5rem; max-width: 60%;
+  overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; cursor: text; border-radius: 5px; padding: 0.1rem 0.25rem; margin: -0.1rem -0.25rem; }
+/* O que sobra do cabeçalho depois do nome: é por aqui que se pega o cartão.
+   Precisa de largura mínima, senão um nome comprido não deixa onde pegar. */
+.ed__cabecalho-arrasto { flex: 1 1 auto; min-width: 2.5rem; align-self: stretch; cursor: grab; }
 .ed__cabecalho-titulo:hover { background: var(--ed-fundo); }
 .ed__cabecalho-mais { flex: none; width: 1.4rem; height: 1.4rem; display: grid; place-items: center;
   border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);

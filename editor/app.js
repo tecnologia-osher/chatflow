@@ -272,6 +272,9 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   // Edição dentro do cartão: refaz tudo menos os cartões, para a caixa de
   // texto não ser recriada a cada tecla e o cursor não saltar para o fim.
   function semRedesenharCartoes() {
+    // O canvas não redesenha, mas passa a conhecer o fluxo novo: sem isto o
+    // próximo redesenho interno dele volta o texto que acabou de ser digitado.
+    canvas.sincronizar(atual)
     desenharProblemas()
     preview.atualizar(atual)
   }

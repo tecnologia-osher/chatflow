@@ -1061,3 +1061,68 @@ test("o menu do grupo nao abre o menu do navegador por cima", () => {
   hospedeiro.porClasse("ed__menu-ligacao")[0].disparar("contextmenu", { preventDefault() { barrou = true } })
   assert.equal(barrou, true)
 })
+
+// --- alça de arrasto no cabeçalho ------------------------------------------
+
+test("o cabecalho tem uma alca livre depois do nome", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  const cabecalho = hospedeiro.porClasse("ed__cabecalho")[0]
+  const alca = cabecalho.porClasse("ed__cabecalho-arrasto")[0]
+  assert.ok(alca, "sem alça, pegar o cartão é pegar o nome")
+  assert.match(alca.atributos.title || "", /arraste/i)
+})
+
+test("clicar na alca nao abre a caixa de renomear", () => {
+  const { hospedeiro } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-arrasto")[0].disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 0,
+    "quem clica no vazio do cabeçalho quer selecionar, não renomear")
+})
+
+test("arrastar pela alca move o cartao, e nao o fundo", () => {
+  const hospedeiro = new Elemento("div")
+  const movidos = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoMover: (id, p) => movidos.push({ id, ...p }) })
+  canvas.desenhar(fluxo)
+  const antes = canvas.vista()
+
+  hospedeiro.porClasse("ed__cabecalho-arrasto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 120, clientY: 60 })
+  document.disparar("mouseup", { clientX: 120, clientY: 60 })
+
+  assert.equal(movidos.at(-1)?.id, "g1", "a alça move o cartão dela")
+  assert.ok(movidos.at(-1).x > fluxo.grupos[0].posicao.x, "para onde o cursor foi")
+  assert.deepEqual(canvas.vista(), antes, "e não arrasta o canvas junto")
+})
+
+test("comecar a arrastar fecha a caixa de renomear", () => {
+  const { hospedeiro } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1)
+
+  // O arrasto segura o foco com preventDefault, então o blur nunca vem: quem
+  // fecha a caixa é o próprio começo do arrasto.
+  hospedeiro.porClasse("ed__palco")[0].disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 0)
+  assert.equal(hospedeiro.porClasse("ed__cabecalho-titulo").length,
+    hospedeiro.porClasse("ed__cartao").length, "todo cartão volta a mostrar o nome")
+})
+
+test("arrastar outro cartao tambem fecha a caixa aberta", () => {
+  const { hospedeiro } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  hospedeiro.porClasse("ed__cabecalho")[1].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 0)
+})
+
+test("digitar dentro da caixa nao a fecha", () => {
+  const { hospedeiro, edicoes } = montarEditavel()
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  const campo = hospedeiro.porClasse("ed__titulo-campo")[0]
+  campo.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  campo.value = "Boas-vindas"
+  campo.disparar("input")
+  assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1, "o cursor está nela")
+  assert.deepEqual(edicoes.at(-1), { grupo: "g1", valor: "Boas-vindas" })
+})

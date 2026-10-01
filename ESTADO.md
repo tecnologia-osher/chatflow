@@ -536,3 +536,26 @@ O guarda disso é um teste que percorre as setas dos fluxos versionados de 6 em 
 unidades e falha se qualquer amostra cair dentro de um cartão que não seja a
 ponta daquela seta. Foi ele que achou a segunda causa — eu tinha trocado a
 curva pela ortogonal e o desenho continuava invadindo.
+
+### O nome ocupa o que as letras pedem, e o resto do cabeçalho é alça
+
+512 testes. O nome esticava até o fim do cabeçalho, então qualquer ponto para
+pegar o cartão era também um ponto para renomeá-lo sem querer. Agora ele ocupa
+só a largura do texto (medido no Chrome: 45px de letras em 51px de caixa) e o
+que sobra é uma alça de arrasto — de 41px no nome mais comprido do fluxo da
+Osher a 103px no mais curto. Nome muito longo é cortado com reticência, e a
+alça tem largura mínima garantida: num nome de 51 caracteres sobraram 29px.
+
+**Dois defeitos achados ao medir isso, e o segundo é o grave:**
+
+1. Clicar no fundo ou no cabeçalho **não fechava a caixa de renomear**. O
+   arrasto chama `preventDefault` no mousedown, que segura o foco onde está —
+   e sem perder o foco não há `blur`. Agora começar um arrasto fecha a caixa.
+2. **O canvas repintava texto velho.** Ele guarda o fluxo do último desenho, e
+   digitar de propósito não redesenha os cartões (recriar a caixa jogaria o
+   cursor para o fim). Qualquer redesenho interno depois — clicar numa linha,
+   começar um arrasto, abrir um menu — pintava o fluxo guardado e desfazia na
+   tela o que tinha sido digitado. O dado nunca se perdia, a tela mentia.
+   Agora `canvas.sincronizar(fluxo)` mantém o fluxo e as caixas em dia sem
+   tocar no DOM. Era defeito antigo: só apareceu porque o arrasto passou a
+   redesenhar.

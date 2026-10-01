@@ -630,3 +630,57 @@ test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma",
   assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste|selecione/i)
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [0])
 })
+
+test("texto digitado nao volta atras quando o canvas se redesenha sozinho", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  campo.value = "Bom dia"
+  campo.disparar("input")
+
+  // Começar a arrastar o fundo faz o canvas se redesenhar por conta própria.
+  // Se ele tiver guardado o fluxo do último desenho, repinta "Olá" por cima.
+  porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Bom dia")
+  // O bloco segue selecionado, então o que está na tela é a caixa de edição:
+  // recriada a partir do fluxo guardado, ela voltaria com "Olá".
+  assert.equal(porClasse(hospedeiro, "ed__bloco-campo")[0].value, "Bom dia",
+    "a caixa voltou com o texto antigo")
+})
+
+test("nome digitado sobrevive ao arrasto que fecha a caixa", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  campo.value = "Qualificação do lead"
+  campo.disparar("input")
+
+  porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  assert.equal(editor.fluxo().grupos[0].titulo, "Qualificação do lead")
+  assert.equal(porClasse(hospedeiro, "ed__cabecalho-titulo")[0].textContent, "Qualificação do lead")
+})
+
+test("ligar logo depois de digitar usa o tamanho novo do cartao", async () => {
+  const { cartoes, caixas } = await import("../editor/modelo.js")
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  const alturaAntes = caixas(cartoes(editor.fluxo())).get("g1").altura
+
+  // Texto de quatro linhas: o cartão cresce bastante.
+  campo.value = "Bem-vindo à Osher Capital. Queremos te conhecer melhor para " +
+    "indicar o consórcio certo, com a parcela que caiba no seu mês, sem susto."
+  campo.disparar("input")
+  const caixa = caixas(cartoes(editor.fluxo())).get("g1")
+  assert.ok(caixa.altura > alturaAntes + 30, "o cartão precisa ter crescido para o teste valer")
+
+  // Solta a ligação de g2 numa faixa que só existe depois do crescimento.
+  const ponto = naJanela(hospedeiro, { x: caixa.x + 30, y: alturaAntes + 20 + caixa.y })
+  const saidaDeG2 = porClasse(hospedeiro, "ed__grupo-ponto").at(-1)
+  saidaDeG2.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", ponto)
+  document.disparar("mouseup", ponto)
+
+  assert.equal(editor.fluxo().grupos[1].proximo, "g1",
+    "com as caixas do desenho anterior, o ponto cairia fora do cartão e nada ligaria")
+})

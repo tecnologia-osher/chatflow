@@ -78,6 +78,13 @@ export function criarCanvas({
   // vezes convidaria a corrigir um e esquecer o outro.
   function iniciarArrasto(ev, aoDeslocar) {
     if (ev.button !== undefined && ev.button !== 0) return
+    // Arrastar é sair de perto: a caixa de renomear fecha. Ela não fechava
+    // sozinha porque o preventDefault abaixo segura o foco onde está, e sem
+    // perder o foco não há blur — a caixa ficava aberta atrás do arrasto.
+    if (editandoTitulo) {
+      editandoTitulo = null
+      desenhar(fluxoAtual)
+    }
     ev.preventDefault?.()
     ev.stopPropagation?.()
     const inicio = { x: ev.clientX, y: ev.clientY }
@@ -417,6 +424,12 @@ export function criarCanvas({
           desenhar(fluxoAtual)
         })
         cabecalho.append(titulo)
+        // O nome ocupa só o que as letras pedem; o resto do cabeçalho é a
+        // alça de arrasto. Com o nome esticado até o fim, qualquer ponto para
+        // pegar o cartão era também um ponto para renomeá-lo sem querer.
+        const alca = el("div", "ed__cabecalho-arrasto")
+        alca.setAttribute("title", "Arraste para mover o grupo")
+        cabecalho.append(alca)
       }
 
       // Testar a partir daqui. Para o clique e o mousedown: sem isso ele
@@ -693,6 +706,16 @@ export function criarCanvas({
         ponto,
         grupo: dentro && fluxoAtual ? caixaEm(caixas(cartoes(fluxoAtual)), ponto) : null
       }
+    },
+    // O fluxo mudou, mas os cartões não vão ser redesenhados agora: é o caso
+    // de quem está digitando, porque recriar a caixa jogaria o cursor para o
+    // fim. Ainda assim o canvas precisa saber do novo fluxo — qualquer
+    // redesenho interno depois (clicar numa linha, começar um arrasto) usaria
+    // o fluxo do último desenho e repintaria o texto velho por cima.
+    sincronizar(fluxo) {
+      fluxoAtual = fluxo
+      caixasAtuais = caixas(cartoes(fluxo))
+      caixasEventoAtuais = caixasDeEventos(eventosDoCanvas(fluxo))
     },
     vista: () => ({ ...vista }),
     selecionar(nova) {
