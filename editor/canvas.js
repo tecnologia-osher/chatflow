@@ -300,6 +300,7 @@ export function criarCanvas({
       // A saída do grupo. No chatflow quem segue adiante é o grupo inteiro —
       // só os botões ramificam por opção — então é uma bolinha por cartão, no
       // canto de baixo, longe das bolinhas das opções.
+      const rodape = el("div", "ed__rodape")
       const saida = el("span", `ed__grupo-ponto${cartao.proximo ? " ed__grupo-ponto--ligado" : ""}`)
       saida.setAttribute("title", cartao.proximo
         ? `Segue para ${cartao.proximo} — arraste para mudar`
@@ -307,7 +308,8 @@ export function criarCanvas({
       saida.addEventListener("mousedown", (ev) => {
         iniciarLigacao(ev, { grupo: cartao.id }, (origem, destino) => aoLigarGrupo({ ...origem, destino }))
       })
-      no.append(saida)
+      rodape.append(saida)
+      no.append(rodape)
 
       camadaCartoes.append(no)
     }

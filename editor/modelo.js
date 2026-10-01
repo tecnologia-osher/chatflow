@@ -149,7 +149,9 @@ export function setas(fluxo) {
 const CARTAO_LARGURA = 260
 const CARTAO_CABECALHO = 44
 const CARTAO_BLOCO = 52
-const CARTAO_RODAPE = 12
+// O rodapé é a faixa onde mora a saída do grupo. Sem faixa própria, a
+// bolinha disputava altura com as das opções e as duas se sobrepunham.
+const CARTAO_RODAPE = 26
 
 export function caixas(listaDeCartoes) {
   const mapa = new Map()

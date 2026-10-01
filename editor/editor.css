@@ -87,7 +87,7 @@ html, body { margin: 0; height: 100%; }
 .ed__evento-icone { color: var(--ed-suave); font-size: 1rem; }
 .ed__evento-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed__evento--invalido { border-style: dashed; font-weight: 500; color: var(--ed-suave); }
-.ed__evento-ponto { position: absolute; right: -0.55rem; top: 50%; transform: translateY(-50%);
+.ed__evento-ponto { position: absolute; right: -1.4rem; top: 50%; transform: translateY(-50%);
   width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
   border: 2px solid var(--ed-entrada); background: var(--ed-superficie); }
 .ed__evento-ponto:hover { box-shadow: 0 0 0 4px rgba(234,123,60,0.18); }
@@ -128,7 +128,8 @@ html, body { margin: 0; height: 100%; }
 
 /* A saída do grupo: de onde se puxa para o próximo cartão. Fica no canto de
    baixo para não disputar espaço com as bolinhas das opções. */
-.ed__grupo-ponto { position: absolute; right: -0.55rem; bottom: 0.75rem;
+.ed__rodape { position: relative; height: 1.6rem; }
+.ed__grupo-ponto { position: absolute; right: -1.4rem; top: 50%; transform: translateY(-50%);
   width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
   border: 2px solid var(--ed-acento); background: var(--ed-superficie); }
 .ed__grupo-ponto:hover { box-shadow: 0 0 0 4px rgba(12,35,64,0.15); }
