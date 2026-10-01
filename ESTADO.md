@@ -294,3 +294,42 @@ Abre em `editor/index.html?cliente=osher`.
 
 **Ainda não editável:** as `regras` de condição. O painel avisa em vez de
 fingir que não existem.
+
+### Segunda fatia — 01/10/2026
+
+O editor deixou de ser um visualizador com painel ao lado e virou um canvas
+onde se escreve direto:
+
+- **Teste sob demanda.** `▶ Testar` na barra abre a conversa numa gaveta; um
+  `▶` em cada cartão começa o teste daquela etapa, pulando o que vem antes.
+  O botão some enquanto a gaveta está aberta.
+- **Enquadramento ao abrir** e botão `Ajustar à tela`. O fluxo da Osher vai de
+  y=40 a y=1020 numa área de 843px — abrindo sem enquadrar, o último grupo
+  ficava invisível e parecia que o editor tinha cortado o trabalho.
+- **Edição dentro do cartão.** Clicar num bloco de fala abre a caixa ali
+  mesmo; duplo clique renomeia o grupo. O painel sumiu da coluna fixa e só
+  aparece pelo `⋯` ou ao selecionar um grupo.
+- **Opções dos botões empilhadas no bloco**, cada uma com sua caixa. Enter
+  abre a próxima e põe o cursor nela; Backspace numa vazia remove.
+- **Ligações arrastáveis.** Bolinha por opção, uma por grupo (a saída, numa
+  faixa de rodapé própria) e uma no Start. Soltar no vazio não faz nada —
+  apagar ligação por acidente é pior que exigir um clique no painel.
+- **Start como cartão**, com bandeira, na `posicao` que já estava no JSON
+  desde agosto sem nunca ter sido desenhada. Fluxo do zero já nasce com ele, e
+  ligá-lo cria o evento `inicio` que faltava.
+
+**Três defeitos que só o Chrome de verdade pegou**, e o que cada um ensinou
+sobre o dublê de DOM:
+
+1. `className` em SVG é somente leitura — atribuir lança e derruba o render.
+   O dublê tratava como propriedade comum. Agora recusa igual.
+2. `clientX/clientY` são da **janela**, não do palco. O canvas começa depois
+   da paleta (272px) e da barra (57px), então o zoom ancorava deslocado e a
+   ligação era solta no grupo errado. O dublê não tinha posição; agora
+   responde `getBoundingClientRect()` e um teste desloca o palco.
+3. Posicionamento com margem negativa que não vencia o preenchimento: a
+   bolinha ficava dentro do cartão, e a saída do grupo colidia com a da
+   opção. Medido no navegador, não olhado.
+
+**O padrão:** um dublê só protege até onde é honesto. Quando simplifica demais,
+para de testar e passa a concordar.
