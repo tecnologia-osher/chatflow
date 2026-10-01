@@ -59,12 +59,13 @@ function pontoNoLado(caixa, lado) {
 // mesma coluna e abaixo entra por cima, senão a linha teria de contornar o
 // cartão inteiro para alcançar a lateral.
 function ladosEntre(a, b) {
+  // A saída é sempre pela direita: é lá que a bolinha está, em todo cartão e
+  // no Start. Sair por outro lado faz a linha nascer longe dela.
   const paraEsquerda = centro(b).x < centro(a).x
-  const ladoDe = paraEsquerda ? "esquerda" : "direita"
   const mesmaColuna = Math.abs(b.x - a.x) < a.largura
   const abaixo = b.y > a.y + a.altura
-  if (abaixo && mesmaColuna) return [ladoDe, "cima"]
-  return [ladoDe, paraEsquerda ? "direita" : "esquerda"]
+  if (abaixo && mesmaColuna) return ["direita", "cima"]
+  return ["direita", paraEsquerda ? "direita" : "esquerda"]
 }
 
 // O comprimento do toco que sai perpendicular à borda antes de a linha virar.
@@ -150,7 +151,14 @@ export function ancoras(a, b) {
   const tocoPara = desloca(para, ladoPara, TOCO)
 
   const meio = []
-  if (horizontal(ladoDe) && horizontal(ladoPara)) {
+  // Indo para trás, os dois tocos apontam para o mesmo lado e a virada não
+  // pode ser no meio deles — cairia dentro de um dos cartões. A linha sai,
+  // desce (ou sobe) até a altura do meio, volta e entra pelo mesmo lado.
+  const paraTras = ladoDe === ladoPara
+  if (horizontal(ladoDe) && horizontal(ladoPara) && paraTras) {
+    const y = (tocoDe.y + tocoPara.y) / 2
+    meio.push({ x: tocoDe.x, y }, { x: tocoPara.x, y })
+  } else if (horizontal(ladoDe) && horizontal(ladoPara)) {
     const x = (tocoDe.x + tocoPara.x) / 2
     meio.push({ x, y: tocoDe.y }, { x, y: tocoPara.y })
   } else if (horizontal(ladoDe)) {

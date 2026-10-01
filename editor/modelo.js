@@ -194,6 +194,11 @@ const CARTAO_OPCAO = 40
 // O rodapé é a faixa onde mora a saída do grupo, em todo cartão: é a única
 // saída que existe, com botões ou sem.
 const CARTAO_RODAPE = 27
+// Onde fica o centro da bolinha, medido da borda direita do cartão: a bolinha
+// tem 14.4px e está presa 36px para fora (`right: -2.25rem` no CSS). A linha
+// nasce nela, não na borda — nascendo na borda, parecia sair do cartão e
+// deixava um vão de 29px entre a bolinha e o começo do traço.
+const CARTAO_CONECTOR = 29
 
 function alturaDoBloco(bloco) {
   if (bloco.opcoes) {
@@ -259,8 +264,17 @@ export function caixaDaSaida(caixa, saida) {
   const faixa = (caixa.blocos || []).find((b) => b.id === saida?.bloco)
   const linha = (faixa?.opcoes || []).find((o) => o.id === saida?.opcao)
   const alvo = linha || faixa || caixa.rodape
-  if (!alvo) return caixa
-  return { x: caixa.x, y: caixa.y + alvo.y, largura: caixa.largura, altura: alvo.altura }
+  if (!alvo) return comConector(caixa)
+  return {
+    x: caixa.x, y: caixa.y + alvo.y,
+    largura: caixa.largura + CARTAO_CONECTOR, altura: alvo.altura
+  }
+}
+
+// A caixa esticada até o centro da bolinha. Serve para a saída da seta cair
+// exatamente nela.
+export function comConector(caixa) {
+  return caixa && { ...caixa, largura: caixa.largura + CARTAO_CONECTOR }
 }
 
 // Qual bloco está sob um ponto, dentro de um cartão. Cabeçalho e rodapé
@@ -275,7 +289,7 @@ export function blocoEmCaixa(caixa, ponto) {
 
 export const MEDIDAS = {
   CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_LINHA,
-  CARTAO_OPCOES_TOPO, CARTAO_OPCAO, CARTAO_RODAPE
+  CARTAO_OPCOES_TOPO, CARTAO_OPCAO, CARTAO_RODAPE, CARTAO_CONECTOR
 }
 
 

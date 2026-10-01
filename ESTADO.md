@@ -581,3 +581,31 @@ o lead de volta para o original. A cópia nasce selecionada.
 **O que se perdeu com o painel do grupo:** escolher o destino numa lista, útil
 para ligar num cartão fora da tela. Se fizer falta, cabe como um terceiro ícone
 nessa mesma caixa.
+
+### A linha nasce na bolinha, e um botão que ninguém via
+
+529 testes. A seta saía da **borda do cartão**, e a bolinha fica para fora
+dela: sobrava um vão, e a linha parecia sair do grupo. Agora a caixa de saída
+se estica até o centro da bolinha (`CARTAO_CONECTOR`), e a saída é sempre pela
+direita, que é onde a bolinha está — indo para trás, a linha sai, contorna pela
+altura do meio e volta a entrar pela direita do destino.
+
+As bolinhas não estavam todas à mesma distância da borda: cada uma mora num
+container com recuo próprio (a linha da opção fica dentro do bloco, que tem
+0.85rem de preenchimento; o rodapé encosta na borda). O `right` de cada uma
+agora desconta o recuo do próprio container a partir de uma medida só, e a
+conta inclui os 2px de borda da bolinha — foi esse 2px que deixou tudo 2
+unidades fora na primeira tentativa. Medido no Chrome: as seis setas nascem a
+1–2px do centro da bolinha mais próxima, e todas as bolinhas do cartão têm o
+mesmo recuo.
+
+**E um achado que só a captura de tela deu:** o botão "Baixar fluxo.json"
+estava **invisível** — `.ed__baixar` pintava a letra de branco e o fundo de
+azul, mas `.ed__barra button` tem especificidade maior e devolvia o fundo para
+branco. Texto branco em fundo branco, o botão existindo e ninguém vendo, e
+nenhuma medição geométrica pegaria isso. Virou `testes/editor-estilo.test.js`,
+que lê o CSS e reprova letra branca sem fundo na mesma regra, e variante de
+botão da barra que perca para a regra geral.
+
+**O padrão novo:** medir pega geometria; olhar pega cor. Uma captura por
+mudança visual.

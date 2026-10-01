@@ -73,10 +73,23 @@ test("destino a direita: sai pela direita, entra pela esquerda", () => {
   perto(a.para.x, 500)
 })
 
-test("destino a esquerda: sai pela esquerda, entra pela direita", () => {
+test("destino a esquerda: sai pela direita, onde esta a bolinha, e entra pela direita", () => {
   const a = ancoras(caixa(500, 0), caixa(0, 0))
-  assert.equal(a.de.lado, "esquerda")
+  assert.equal(a.de.lado, "direita", "a bolinha fica na direita de todo cartão")
   assert.equal(a.para.lado, "direita")
+})
+
+test("indo para tras, a linha sai, contorna pela altura do meio e volta", () => {
+  const origem = caixa(500, 0)
+  const destino = caixa(0, 300)
+  const a = ancoras(origem, destino)
+  const foraDosDois = (p) =>
+    !(p.x > origem.x && p.x < origem.x + origem.largura && p.y > origem.y && p.y < origem.y + origem.altura) &&
+    !(p.x > destino.x && p.x < destino.x + destino.largura && p.y > destino.y && p.y < destino.y + destino.altura)
+  assert.ok(a.pontos.every(foraDosDois),
+    `a volta passou por dentro de um cartão: ${JSON.stringify(a.pontos)}`)
+  const vertical = a.pontos.find((p, i) => i > 0 && Math.abs(p.x - a.pontos[i - 1].x) < 0.01)
+  assert.ok(vertical.x > origem.x + origem.largura, "a descida acontece fora do cartão de origem")
 })
 
 test("destino abaixo e na mesma coluna: sai pela lateral, entra por cima", () => {
@@ -87,11 +100,7 @@ test("destino abaixo e na mesma coluna: sai pela lateral, entra por cima", () =>
   assert.equal(a.para.lado, "cima")
 })
 
-test("sai pela esquerda quando o destino esta para tras", () => {
-  const a = ancoras(caixa(500, 0), caixa(0, 0))
-  assert.equal(a.de.lado, "esquerda")
-  assert.equal(a.para.lado, "direita")
-})
+
 
 test("indo para o cartao de baixo, desce pelo lado antes de atravessar", () => {
   const origem = caixa(0, 0)

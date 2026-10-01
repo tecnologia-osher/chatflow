@@ -17,6 +17,10 @@
   --ed-seta: #b6bcc6;
   --ed-conector: var(--ed-entrada);
   --ed-conector-halo: rgba(234, 123, 60, 0.18);
+  /* Onde fica o centro das bolinhas, medido da borda do cartão, e metade
+     da bolinha (miolo de 0.9rem mais 2px de borda de cada lado). */
+  --ed-conector-fora: 29px;
+  --ed-conector-meio: calc(0.45rem + 2px);
   --ed-selecionado: #eef2f8;
   --ed-problema-fundo: #fdeceb;
 
@@ -57,7 +61,11 @@ html, body { margin: 0; height: 100%; }
 .ed__marca { font-weight: 600; margin-right: auto; }
 .ed__barra button { padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--ed-linha);
   background: var(--ed-superficie); font: inherit; cursor: pointer; }
-.ed__baixar { background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
+/* Com `.ed__baixar` sozinho a regra perdia para `.ed__barra button`, que tem
+   especificidade maior: o fundo voltava a branco e sobrava texto branco em
+   fundo branco — o botão existia e não se via. */
+.ed__barra button.ed__baixar { background: var(--ed-acento); color: #fff;
+  border-color: var(--ed-acento); }
 .ed__testar { font-weight: 600; }
 .ed__oculto { display: none; }
 .ed__testar:hover { border-color: var(--ed-acento); }
@@ -157,8 +165,20 @@ html, body { margin: 0; height: 100%; }
 .ed__opcao-ponto:hover, .ed__grupo-ponto:hover, .ed__evento-ponto:hover {
   box-shadow: 0 0 0 4px var(--ed-conector-halo);
 }
-.ed__opcao-ponto { right: -2.25rem; }
-.ed__grupo-ponto, .ed__evento-ponto { right: -1.4rem; }
+/* Todas as bolinhas com o centro a --ed-conector-fora da borda do cartão: é
+   essa distância que o modelo usa para a linha nascer dentro delas
+   (CARTAO_CONECTOR em editor/modelo.js, e os dois precisam bater).
+   O `right` de cada uma desconta o recuo do próprio container, porque é dele
+   que a posição absoluta parte: a linha da opção fica dentro do bloco, que
+   tem 0.85rem de preenchimento, e o rodapé encosta na borda do cartão, que
+   tem 1px. Mexer nesses preenchimentos move as bolinhas — e aí a linha nasce
+   fora delas de novo. A conferência é no navegador, medindo. */
+/* A meia-bolinha é 0.45rem de miolo mais os 2px da borda dela — foi esse 2px
+   que fez a conta fechar 2 fora na primeira tentativa. */
+.ed__opcao-ponto {
+  right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 0.85rem + 1px) * -1); }
+.ed__grupo-ponto { right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 1px) * -1); }
+.ed__evento-ponto { right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 1px) * -1); }
 
 /* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
    é o destino daquela opção: cheio quando leva a algum grupo. */

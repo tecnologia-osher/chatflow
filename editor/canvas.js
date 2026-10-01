@@ -4,7 +4,7 @@
 // da vista vem de `vista.js` — o que sobra aqui é traduzir isso em elemento.
 
 import {
-  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, blocoEmCaixa,
+  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, comConector, blocoEmCaixa,
   eventosDoCanvas, caixasDeEventos
 } from "./modelo.js"
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
@@ -134,7 +134,7 @@ export function criarCanvas({
       return caixaDaSaida(caixasAtuais.get(origem.grupo), origem) ||
         { x: partida.x, y: partida.y, largura: 0, altura: 0 }
     }
-    return caixasEventoAtuais.get(origem.evento) ||
+    return comConector(caixasEventoAtuais.get(origem.evento)) ||
       { x: partida.x, y: partida.y, largura: 0, altura: 0 }
   }
 
@@ -362,7 +362,7 @@ export function criarCanvas({
       // A seta parte da altura do conector de onde ela sai: a linha daquela
       // opção, ou o rodapé do grupo. É a mesma conta do fio que se arrasta.
       const caixaDeSaida = caixaDaSaida(origem, seta.saida) ||
-        caixasEventoAtuais.get(seta.evento) || {
+        comConector(caixasEventoAtuais.get(seta.evento)) || {
         x: destino.x - 260, y: destino.y - 120, largura: 200, altura: 60
       }
       const { caminho, para: fim, ladoPara } = ancoras(caixaDeSaida, destino)

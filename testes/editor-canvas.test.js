@@ -399,8 +399,9 @@ test("a seta do inicio sai do cartao de Start, nao do nada", () => {
   const doEvento = hospedeiro.porClasse("ed__seta--evento")
   assert.ok(doEvento.length > 0)
   const caminho = doEvento[0].atributos.d
-  // o Start está em x=40,y=40 e tem 190x48: a seta precisa partir da borda dele
-  assert.match(caminho, /^M 230 64/)
+  // O Start está em x=40,y=40 e tem 190x48: a seta parte da bolinha dele, que
+  // fica 29 à direita da borda (230 + 29).
+  assert.match(caminho, /^M 259 64/)
 })
 
 // --- a saída do grupo ------------------------------------------------------
@@ -784,22 +785,24 @@ test("o fio solto tem os mesmos cantos da seta pronta, nao e uma reta", () => {
   document.disparar("mouseup", { clientX: 1200, clientY: 300 })
 })
 
-test("o fio sai da borda do cartao de origem, e troca de lado com o cursor", () => {
+test("o fio nasce na bolinha, para qualquer lado que o cursor va", async () => {
+  const { MEDIDAS } = await import("../editor/modelo.js")
   const { hospedeiro } = montarSaida()
   const origem = caixas(cartoesDoFluxo(fluxo)).get("g1")
   const comeco = (d) => {
     const n = d.match(/-?[\d.]+/g).map(Number)
     return { x: n[0], y: n[1] }
   }
+  const naBolinha = origem.x + origem.largura + MEDIDAS.CARTAO_CONECTOR
   hospedeiro.porClasse("ed__grupo-ponto")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
 
   document.disparar("mousemove", { clientX: origem.x + 900, clientY: origem.y + 20 })
-  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x,
-    origem.x + origem.largura, "cursor à direita: o fio nasce na borda direita")
+  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x, naBolinha,
+    "cursor à direita")
 
   document.disparar("mousemove", { clientX: origem.x - 400, clientY: origem.y + 20 })
-  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x,
-    origem.x, "cursor à esquerda: o fio nasce na borda esquerda")
+  assert.equal(comeco(hospedeiro.porClasse("ed__seta--arrastando")[0].atributos.d).x, naBolinha,
+    "cursor à esquerda: a bolinha continua sendo a mesma, na direita")
   document.disparar("mouseup", { clientX: origem.x - 400, clientY: origem.y + 20 })
 })
 

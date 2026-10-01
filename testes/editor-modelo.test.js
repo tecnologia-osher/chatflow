@@ -4,7 +4,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, blocoEmCaixa, MEDIDAS
+  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, comConector, blocoEmCaixa, MEDIDAS
 } from "../editor/modelo.js"
 
 const fluxo = {
@@ -436,3 +436,36 @@ for (const arquivo of arquivosDeFluxo) {
     assert.deepEqual([...new Set(invasoes)], [])
   })
 }
+
+test("a caixa de saida chega ate o centro da bolinha, nao a borda do cartao", () => {
+  const cartao = { id: "g", titulo: "x", posicao: { x: 100, y: 50 }, blocos: [
+    { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }] }] }
+  const caixa = caixas([cartao]).get("g")
+
+  // A bolinha fica para fora do cartão: a seta precisa nascer nela, senão
+  // sobra um vão entre a bolinha e o começo do traço e a linha parece sair
+  // do cartão.
+  for (const saida of [{ bloco: "b", opcao: "o1" }, { bloco: "b" }, null]) {
+    const daSaida = caixaDaSaida(caixa, saida)
+    assert.equal(daSaida.x + daSaida.largura, caixa.x + caixa.largura + MEDIDAS.CARTAO_CONECTOR,
+      `saída ${JSON.stringify(saida)} não alcançou a bolinha`)
+  }
+  assert.equal(comConector(caixa).largura, caixa.largura + MEDIDAS.CARTAO_CONECTOR)
+  assert.equal(comConector(null), null)
+})
+
+test("esticar ate a bolinha nao mexe na altura nem no topo", () => {
+  const caixa = caixas([{ id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [] }]).get("g")
+  const esticada = comConector(caixa)
+  assert.equal(esticada.altura, caixa.altura)
+  assert.equal(esticada.y, caixa.y)
+  assert.equal(esticada.x, caixa.x, "o cartão não anda: só a caixa da saída é mais larga")
+})
+
+test("caixa sem rodape, como a do Start, tambem nasce na bolinha", () => {
+  // As caixas dos eventos não têm rodapé: a saída cai no fallback, que
+  // precisa esticar igual, senão a seta do Start nasce longe da bolinha.
+  const doStart = { x: 40, y: 40, largura: 190, altura: 48 }
+  const daSaida = caixaDaSaida(doStart, null)
+  assert.equal(daSaida.x + daSaida.largura, 40 + 190 + MEDIDAS.CARTAO_CONECTOR)
+})
