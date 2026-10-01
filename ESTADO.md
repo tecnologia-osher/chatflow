@@ -559,3 +559,25 @@ alça tem largura mínima garantida: num nome de 51 caracteres sobraram 29px.
    Agora `canvas.sincronizar(fluxo)` mantém o fluxo e as caixas em dia sem
    tocar no DOM. Era defeito antigo: só apareceu porque o arrasto passou a
    redesenhar.
+
+### O ⋯ do grupo virou uma caixa de ações, com duplicar
+
+524 testes. O `⋯` do cabeçalho abria o painel da direita com o nome do grupo —
+formulário que já não tinha razão de existir, porque o nome se edita no cartão
+e o destino se arrasta pela bolinha. Agora ele abre uma **caixa flutuante acima
+do próprio botão**, que cresce para a esquerda, para dentro do cartão: a borda
+direita encosta no `⋯`, então ela não vaza para fora do canvas nem no cartão
+mais à direita (medido: caixa 1108→1181 num cartão que vai até 1197).
+
+Dentro dela, dois ícones desenhados em SVG — **duplicar** e **lixeira** — com
+dica própria ao passar o mouse ("Duplicar", "Excluir"). A dica é nossa e não a
+do navegador: a nativa demora um segundo e não dá para alinhar.
+
+**Duplicar** copia o grupo com id novo, nome `(cópia)` e lugar livre (nunca em
+cima de outro cartão). Os destinos de fora são preservados; o que apontava para
+o próprio grupo passa a apontar para a cópia, senão o laço do original mandaria
+o lead de volta para o original. A cópia nasce selecionada.
+
+**O que se perdeu com o painel do grupo:** escolher o destino numa lista, útil
+para ligar num cartão fora da tela. Se fizer falta, cabe como um terceiro ícone
+nessa mesma caixa.

@@ -641,12 +641,54 @@ test("tremida de mao sobre o nome ainda conta como clique", () => {
   assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1)
 })
 
-test("o cabecalho tem um pedido de detalhes do grupo", () => {
+test("o ... do cabecalho abre as acoes do grupo, nao um painel", () => {
   const hospedeiro = new Elemento("div")
   const pedidos = []
   criarCanvas({ elemento: hospedeiro, aoAbrirDetalhes: (o) => pedidos.push(o) }).desenhar(fluxo)
-  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click")
-  assert.deepEqual(pedidos, [{ grupo: "g1", bloco: null }])
+  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click", { clientX: 300, clientY: 80 })
+
+  assert.deepEqual(pedidos, [], "o painel da direita saiu de cena")
+  const menu = hospedeiro.porClasse("ed__menu-acoes")[0]
+  assert.ok(menu, "a caixa de ações precisa aparecer")
+  assert.equal(menu.style.propriedades.left, "300px", "ela nasce onde está o botão")
+  assert.deepEqual(hospedeiro.porClasse("ed__acao").map((b) => b.atributos["aria-label"]),
+    ["Duplicar", "Excluir"])
+})
+
+test("cada acao tem a sua dica escrita, para aparecer no passar do mouse", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click", { clientX: 0, clientY: 0 })
+  assert.deepEqual(hospedeiro.porClasse("ed__acao-dica").map((d) => d.textContent),
+    ["Duplicar", "Excluir"])
+  assert.equal(hospedeiro.porClasse("ed__acao-icone").length, 2, "ícone, não palavra, no botão")
+})
+
+test("duplicar avisa qual grupo copiar, e fecha a caixa", () => {
+  const hospedeiro = new Elemento("div")
+  const copiados = []
+  criarCanvas({ elemento: hospedeiro, aoDuplicarGrupo: (o) => copiados.push(o) }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click", { clientX: 0, clientY: 0 })
+  hospedeiro.porClasse("ed__acao--duplicar")[0].disparar("click")
+  assert.deepEqual(copiados, [{ grupo: "g1" }])
+  assert.equal(hospedeiro.porClasse("ed__menu-acoes").length, 0)
+})
+
+test("a lixeira das acoes apaga o mesmo grupo", () => {
+  const hospedeiro = new Elemento("div")
+  const apagados = []
+  criarCanvas({ elemento: hospedeiro, aoApagarGrupo: (o) => apagados.push(o) }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-mais")[1].disparar("click", { clientX: 0, clientY: 0 })
+  hospedeiro.porClasse("ed__acao--excluir")[0].disparar("click")
+  assert.deepEqual(apagados, [{ grupo: "g2" }])
+})
+
+test("clicar no fundo fecha as acoes", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__cabecalho-mais")[0].disparar("click", { clientX: 0, clientY: 0 })
+  hospedeiro.porClasse("ed__palco")[0].disparar("mousedown", { clientX: 5, clientY: 5, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__menu-acoes").length, 0)
 })
 
 test("renomear continua funcionando depois de arrastar um cartao", () => {

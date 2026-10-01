@@ -32,6 +32,7 @@ function svg(tag, classe) {
 export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
   aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {}, aoApagarGrupo = () => {},
+  aoDuplicarGrupo = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
@@ -217,6 +218,51 @@ export function criarCanvas({
       })
       menu.append(apagar)
     }
+    palco.append(menu)
+    menuAberto = menu
+  }
+
+  const LIXEIRA = "M3 5h10M6.5 5V3.5h3V5M4.5 5l.6 7.5h5.8L11.5 5"
+  const DUPLICAR = "M5.5 2.5h6a1 1 0 0 1 1 1v6M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"
+
+  function iconeDeAcao(classe, caminho, rotulo, aoClicar) {
+    const botao = el("button", `ed__acao ${classe}`)
+    botao.setAttribute("type", "button")
+    botao.setAttribute("aria-label", rotulo)
+    const desenho = document.createElementNS(SVG, "svg")
+    desenho.setAttribute("class", "ed__acao-icone")
+    desenho.setAttribute("viewBox", "0 0 16 16")
+    const traco = svg("path")
+    traco.setAttribute("d", caminho)
+    desenho.append(traco)
+    botao.append(desenho)
+    // Dica própria, não a do navegador: a nativa demora um segundo para
+    // aparecer e não dá para alinhar com o menu.
+    botao.append(el("span", "ed__acao-dica", rotulo))
+    botao.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+    botao.addEventListener("click", (ev) => {
+      ev.stopPropagation?.()
+      fecharMenu()
+      aoClicar()
+    })
+    return botao
+  }
+
+  // As ações do grupo, numa caixa flutuante acima do ⋯. Ela abre para dentro
+  // do cartão — a borda direita encosta no botão e o resto cresce para a
+  // esquerda — senão vazaria para fora do canvas em qualquer cartão da ponta.
+  function abrirAcoesDoGrupo(ev, cartao) {
+    fecharMenu()
+    const onde = noPalco(ev)
+    const menu = el("div", "ed__menu-ligacao ed__menu-acoes")
+    menu.style.setProperty("left", `${onde.x}px`)
+    menu.style.setProperty("top", `${onde.y}px`)
+    menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
+    menu.addEventListener("contextmenu", (e) => e.preventDefault?.())
+    menu.append(
+      iconeDeAcao("ed__acao--duplicar", DUPLICAR, "Duplicar", () => aoDuplicarGrupo({ grupo: cartao.id })),
+      iconeDeAcao("ed__acao--excluir", LIXEIRA, "Excluir", () => aoApagarGrupo({ grupo: cartao.id }))
+    )
     palco.append(menu)
     menuAberto = menu
   }
@@ -444,16 +490,13 @@ export function criarCanvas({
       })
       cabecalho.append(play)
 
-      // O painel do grupo (título e próximo numa lista) deixou de abrir ao
-      // selecionar: quem seleciona quer mexer no cartão, não num formulário.
-      // Fica aqui, para quem precisa escolher o destino sem arrastar até ele.
       const mais = el("button", "ed__cabecalho-mais", "⋯")
       mais.setAttribute("type", "button")
-      mais.setAttribute("title", "Detalhes do grupo")
+      mais.setAttribute("title", "Ações do grupo")
       mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
       mais.addEventListener("click", (ev) => {
         ev.stopPropagation?.()
-        aoAbrirDetalhes({ grupo: cartao.id, bloco: null })
+        abrirAcoesDoGrupo(ev, cartao)
       })
       cabecalho.append(mais)
       cabecalho.addEventListener("click", () => {

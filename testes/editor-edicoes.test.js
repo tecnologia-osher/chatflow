@@ -7,7 +7,7 @@ import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo
+  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo, duplicarGrupo
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -379,4 +379,61 @@ test("o fluxo sem o grupo apagado continua valido quando sobra caminho", () => {
   const f = removerGrupo(comReferencias(), { grupo: "g3" })
   const r = validarFluxo(f, { destinos: {} })
   assert.equal(r.erros.some((e) => /g3/.test(e)), false, `sobrou referência a g3: ${r.erros.join(" | ")}`)
+})
+
+// --- duplicar um grupo -----------------------------------------------------
+
+test("duplicar cria um grupo igual, com id novo e nome marcado", () => {
+  const f = duplicarGrupo(comReferencias(), { grupo: "g1" })
+  assert.equal(f.grupos.length, 4)
+  const copia = f.grupos.at(-1)
+  assert.notEqual(copia.id, "g1")
+  assert.equal(copia.titulo, "a (cópia)")
+  assert.deepEqual(copia.blocos.map((b) => b.tipo), ["entrada_botoes", "ir_para", "condicao"])
+  assert.equal(copia.blocos[0].conteudo.opcoes[1].proximo, "g3", "os destinos de fora continuam")
+})
+
+test("a copia nasce em lugar livre, nao em cima do original", async () => {
+  const { cartoes, caixas } = await import("../editor/modelo.js")
+  const f = duplicarGrupo(comReferencias(), { grupo: "g1" })
+  const lista = [...caixas(cartoes(f)).values()]
+  for (let i = 0; i < lista.length; i++) {
+    for (let j = i + 1; j < lista.length; j++) {
+      const a = lista[i], b = lista[j]
+      const cruza = a.x < b.x + b.largura && b.x < a.x + a.largura &&
+        a.y < b.y + b.altura && b.y < a.y + a.altura
+      assert.equal(cruza, false, "a cópia nasceu sobre outro cartão")
+    }
+  }
+})
+
+test("destino que apontava para o proprio grupo passa a apontar para a copia", () => {
+  const base = comReferencias()
+  base.grupos[0].proximo = "g1"
+  base.grupos[0].blocos[0].conteudo.opcoes[0].proximo = "g1#b_ir"
+  const f = duplicarGrupo(base, { grupo: "g1" })
+  const copia = f.grupos.at(-1)
+  assert.equal(copia.proximo, copia.id, "o laço do original mandaria o lead de volta para o original")
+  assert.equal(copia.blocos[0].conteudo.opcoes[0].proximo, `${copia.id}#b_ir`)
+})
+
+test("duplicar nao mexe no original nem no fluxo recebido", () => {
+  const antes = comReferencias()
+  const copia = JSON.parse(JSON.stringify(antes))
+  const f = duplicarGrupo(antes, { grupo: "g1" })
+  assert.deepEqual(antes, copia)
+  assert.deepEqual(f.grupos[0], copia.grupos[0])
+})
+
+test("duplicar grupo que nao existe nao inventa cartao", () => {
+  const f = duplicarGrupo(comReferencias(), { grupo: "g_nada" })
+  assert.equal(f.grupos.length, 3)
+})
+
+test("o fluxo com a copia continua valido", () => {
+  const f = duplicarGrupo(comReferencias(), { grupo: "g2" })
+  const r = validarFluxo(f, { destinos: {} })
+  // A cópia não é alcançável até ser ligada — isso é esperado e aparece no
+  // aviso. O que não pode é id duplicado ou destino quebrado.
+  assert.equal(r.erros.some((e) => /duplicad|não existe/.test(e)), false, r.erros.join(" | "))
 })

@@ -201,6 +201,21 @@ html, body { margin: 0; height: 100%; }
 .ed__menu-excluir:hover { background: var(--ed-problema-fundo); }
 .ed__menu-aviso { max-width: 15rem; padding: 0.2rem 0.4rem; font-size: 0.74rem;
   color: var(--ed-suave); }
+/* As ações do grupo abrem acima do ⋯ e crescem para a esquerda, para dentro
+   do cartão: a borda direita da caixa encosta no botão. */
+.ed__menu-acoes { transform: translate(-100%, -118%); gap: 0.15rem; padding: 0.25rem; }
+.ed__acao { position: relative; width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
+  border: none; border-radius: 7px; background: transparent; color: var(--ed-suave); cursor: pointer;
+  padding: 0; }
+.ed__acao:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__acao--excluir:hover { background: var(--ed-problema-fundo); color: var(--ed-erro); }
+.ed__acao-icone { width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ed__acao-dica { position: absolute; bottom: calc(100% + 0.3rem); left: 50%;
+  transform: translateX(-50%); display: none; white-space: nowrap;
+  padding: 0.15rem 0.4rem; border-radius: 5px; font-size: 0.7rem;
+  background: var(--ed-acento); color: #fff; pointer-events: none; }
+.ed__acao:hover .ed__acao-dica, .ed__acao:focus-visible .ed__acao-dica { display: block; }
 /* A ponta: mesma cor da linha, por isso cada tipo repete a regra no fill. */
 .ed__ponta { fill: var(--ed-seta); stroke: none; }
 .ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-entrada); }

@@ -141,12 +141,11 @@ test("baixar entrega o json do fluxo atual", () => {
 })
 
 test("o aviso de validacao aparece quando o fluxo quebra", () => {
-  const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
-  const seletor = porClasse(hospedeiro, "ed__proximo")[0]
-  seletor.value = ""
-  seletor.disparar("change")
-  // g1 sem proximo e sem blocos de saída: g2 fica inalcançável
+  const { hospedeiro } = montar()
+  // Apagar a ligação de g1 deixa g2 inalcançável.
+  const faixa = porClasse(hospedeiro, "ed__seta-faixa").find((f) => f.dadosSeta.de === "g1")
+  faixa.disparar("contextmenu", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
   assert.match(porClasse(hospedeiro, "ed__problemas")[0].textContent, /g2/)
 })
 
@@ -317,16 +316,41 @@ test("selecionar o grupo nao abre painel nenhum", () => {
     "formulário que aparece sem ser chamado atrapalha quem ia mexer no cartão")
 })
 
-test("o painel do grupo abre pelo ... do cabecalho, com o proximo numa lista", () => {
+test("o ... do grupo nao abre painel: abre duplicar e excluir", () => {
   const { hospedeiro } = montar()
-  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__proximo").length, 1,
-    "sem lista de destino, ligar num grupo fora da tela exigiria arrastar às cegas")
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click", { clientX: 0, clientY: 0 })
+  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
+  assert.deepEqual(porClasse(hospedeiro, "ed__acao").map((b) => b.atributos["aria-label"]),
+    ["Duplicar", "Excluir"])
+})
+
+test("duplicar pelo ... cria a copia do grupo, ja selecionada", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__acao--duplicar")[0].disparar("click")
+
+  const fluxo = editor.fluxo()
+  assert.equal(fluxo.grupos.length, 3)
+  assert.equal(fluxo.grupos.at(-1).titulo, "Abertura (cópia)")
+  assert.deepEqual(fluxo.grupos.at(-1).blocos.map((b) => b.tipo), ["texto"])
+  assert.equal(porClasse(hospedeiro, "ed__cartao").length, 3)
+
+  // Selecionada: clicar num tipo da paleta acrescenta nela, não no original.
+  tipoDaPaleta(hospedeiro, "Texto").disparar("click")
+  assert.equal(editor.fluxo().grupos.at(-1).blocos.length, 2)
+  assert.equal(editor.fluxo().grupos[0].blocos.length, 1)
+})
+
+test("excluir pela lixeira do ... apaga o grupo", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cabecalho-mais")[1].disparar("click", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__acao--excluir")[0].disparar("click")
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g1"])
 })
 
 test("fechar o painel some com ele", () => {
-  const { hospedeiro } = montar()
-  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
+  const { hospedeiro } = montar(comBotoes())
+  porClasse(hospedeiro, "ed__bloco-mais")[1].disparar("click")
   porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
 })
@@ -616,12 +640,10 @@ test("excluir o grupo tira o cartao e quem apontava para ele", () => {
 
 test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho-mais")[0].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
 
   porClasse(hospedeiro, "ed__cartao")[0].disparar("contextmenu", { clientX: 0, clientY: 0 })
   porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0, "painel de grupo que não existe mais")
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g2"])
 
   // Com a seleção presa no grupo apagado, clicar num tipo tentaria acrescentar

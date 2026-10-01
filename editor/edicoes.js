@@ -5,7 +5,7 @@
 
 import { obter, todos } from "./catalogo.js"
 import { cartoes, caixas, alturaDoCartao } from "./modelo.js"
-import { partesDoDestino } from "../motor/destino.js"
+import { partesDoDestino, montarDestino } from "../motor/destino.js"
 
 function trocarGrupo(fluxo, id, transformar) {
   const grupos = fluxo.grupos || []
@@ -182,6 +182,47 @@ export function removerGrupo(fluxo, { grupo }) {
   })
 
   return { ...fluxo, eventos, grupos }
+}
+
+// Duplicar: um grupo igual, com id novo, logo abaixo do original. Os blocos
+// mantêm os ids deles — eles só precisam ser únicos dentro do grupo — e os
+// destinos são preservados, com uma exceção: o que apontava para o próprio
+// grupo passa a apontar para a cópia, senão o laço do original continuaria
+// mandando o lead de volta para o original.
+export function duplicarGrupo(fluxo, { grupo }) {
+  const original = (fluxo.grupos || []).find((g) => g && g.id === grupo)
+  if (!original) return fluxo
+
+  const id = idNovo(fluxo, "g")
+  const trocarSeForEleMesmo = (destino) => {
+    const partes = partesDoDestino(destino)
+    return partes.grupo === grupo ? montarDestino(id, partes.bloco) : destino
+  }
+
+  const blocos = (original.blocos || []).filter(Boolean).map((bloco) => {
+    const conteudo = { ...(bloco.conteudo || {}) }
+    if (conteudo.destino) conteudo.destino = trocarSeForEleMesmo(conteudo.destino)
+    if (Array.isArray(conteudo.opcoes)) {
+      conteudo.opcoes = conteudo.opcoes.map((o) =>
+        o && o.proximo ? { ...o, proximo: trocarSeForEleMesmo(o.proximo) } : { ...o })
+    }
+    if (Array.isArray(conteudo.regras)) {
+      conteudo.regras = conteudo.regras.map((r) =>
+        r && r.entao ? { ...r, entao: trocarSeForEleMesmo(r.entao) } : { ...r })
+    }
+    return { ...bloco, conteudo }
+  })
+
+  const copia = {
+    ...original,
+    id,
+    titulo: `${original.titulo || original.id} (cópia)`,
+    posicao: lugarLivre(fluxo, original.posicao?.x ?? 0, original.posicao?.y ?? 0),
+    blocos
+  }
+  if (copia.proximo) copia.proximo = trocarSeForEleMesmo(copia.proximo)
+
+  return { ...fluxo, grupos: [...(fluxo.grupos || []), copia] }
 }
 
 export function proximoNomeDeGrupo(fluxo) {

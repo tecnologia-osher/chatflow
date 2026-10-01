@@ -10,7 +10,7 @@ import { campoPrincipal } from "./modelo.js"
 import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias, removerGrupo
+  definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias, removerGrupo, duplicarGrupo
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
@@ -95,6 +95,14 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     },
     aoLigarOpcao: ({ grupo, bloco, opcao, destino }) => {
       atual = definirOpcao(atual, { grupo, bloco, opcao, campo: "proximo", valor: destino })
+      redesenhar()
+    },
+    aoDuplicarGrupo: ({ grupo }) => {
+      const antes = new Set(atual.grupos.map((g) => g.id))
+      atual = duplicarGrupo(atual, { grupo })
+      const copia = atual.grupos.find((g) => !antes.has(g.id))
+      // A cópia nasce selecionada: é nela que a pessoa vai mexer agora.
+      if (copia) selecao = { grupo: copia.id, bloco: null }
       redesenhar()
     },
     aoApagarGrupo: ({ grupo }) => {
