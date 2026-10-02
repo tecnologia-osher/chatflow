@@ -1361,3 +1361,40 @@ test("falhar ao atualizar tira a tabela velha, em vez de mostrar dado de antes",
     "tabela velha ao lado de um aviso de erro é mentira com cara de dado")
   assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /500/)
 })
+
+test("chave recusada devolve o campo, para colar outra", async () => {
+  let chaveBoa = false
+  const { hospedeiro, pedidos } = montarComLeads(async (chave) => {
+    if (chave !== "certa") throw new Error("Chave inválida.")
+    chaveBoa = true
+    return [{ atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "concluído" }]
+  })
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "errada"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  assert.equal(porClasse(hospedeiro, "ed__chave").length, 1,
+    "com o aviso e sem campo, não havia como corrigir a chave")
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "certa"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  assert.deepEqual(pedidos, ["errada", "certa"])
+  assert.equal(chaveBoa, true)
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 1)
+  assert.equal(porClasse(hospedeiro, "ed__chave").length, 0, "deu certo: o campo sai de cena")
+})
+
+test("com a tabela na tela, da para trocar a chave", async () => {
+  const { hospedeiro } = montarComLeads([{ atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "ok" }])
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 1)
+
+  porClasse(hospedeiro, "ed__resultados-trocar")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__chave").length, 1)
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
+})

@@ -109,8 +109,13 @@ html, body { margin: 0; height: 100%; }
 /* A aba Resultados: uma tabela de gente, larga, com rolagem própria. */
 .ed__resultados { display: grid; align-content: start; gap: 0.8rem;
   padding: 1.2rem 1.4rem; overflow: auto; }
-.ed__resultados-topo { display: flex; align-items: center; gap: 0.8rem; }
+.ed__resultados-topo { display: flex; align-items: center; gap: 0.4rem; }
+.ed__resultados-topo > :nth-child(2) { margin-left: auto; }
 .ed__resultados-titulo { margin: 0; font-size: 1rem; }
+.ed__resultados-trocar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__resultados-trocar:hover { background: var(--ed-fundo); color: var(--ed-texto); }
 .ed__resultados-atualizar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
   border: 1px solid var(--ed-linha); background: var(--ed-superficie); font: inherit;
   font-size: 0.82rem; font-weight: 600; cursor: pointer; }

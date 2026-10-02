@@ -586,6 +586,18 @@ export function criarEditor({
 
     const topo = el("div", "ed__resultados-topo")
     topo.append(el("h2", "ed__resultados-titulo", "Resultados"))
+    if (chaveDosResultados() && !erroDosLeads) {
+      const trocar = el("button", "ed__resultados-trocar", "Trocar chave")
+      trocar.setAttribute("type", "button")
+      trocar.addEventListener("click", () => {
+        guardarChave("")
+        leads = null
+        erroDosLeads = ""
+        desenharResultados()
+      })
+      topo.append(trocar)
+    }
+
     const atualizar = el("button", "ed__resultados-atualizar", buscandoLeads ? "Buscando…" : "Atualizar")
     atualizar.setAttribute("type", "button")
     atualizar.disabled = buscandoLeads
@@ -594,13 +606,14 @@ export function criarEditor({
     areaResultados.append(topo)
 
     if (erroDosLeads) {
-      const aviso = el("p", "ed__resultados-aviso", erroDosLeads)
-      areaResultados.append(aviso)
+      areaResultados.append(el("p", "ed__resultados-aviso", erroDosLeads))
     }
 
-    if (!chaveDosResultados()) {
+    // O campo volta sempre que não há chave ou que a leitura falhou: era aí
+    // que a pessoa precisava trocar a chave e não tinha onde colar.
+    if (!chaveDosResultados() || erroDosLeads) {
       areaResultados.append(formularioDaChave())
-      return
+      if (!erroDosLeads) return
     }
 
     if (leads === null) {
@@ -643,8 +656,9 @@ export function criarEditor({
 
   function formularioDaChave() {
     const caixa = el("form", "ed__chave")
-    caixa.append(el("p", "ed__chave-texto",
-      "Para ver os leads, cole a chave de leitura da planilha. Ela fica guardada só neste navegador."))
+    caixa.append(el("p", "ed__chave-texto", erroDosLeads
+      ? "Cole a chave de leitura da planilha — a que está nas propriedades do script, em CHAVE_LEITURA."
+      : "Para ver os leads, cole a chave de leitura da planilha. Ela fica guardada só neste navegador."))
     const campo = el("input", "ed__chave-campo")
     campo.setAttribute("type", "password")
     campo.setAttribute("placeholder", "chave de leitura")
