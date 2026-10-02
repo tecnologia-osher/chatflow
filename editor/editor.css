@@ -19,7 +19,7 @@
   --ed-conector-halo: rgba(234, 123, 60, 0.18);
   /* Onde fica o centro das bolinhas, medido da borda do cartão, e metade
      da bolinha (miolo de 0.9rem mais 2px de borda de cada lado). */
-  --ed-conector-fora: 29px;
+  --ed-conector-fora: 13px;
   --ed-conector-meio: calc(0.45rem + 2px);
   --ed-selecionado: #eef2f8;
   --ed-problema-fundo: #fdeceb;

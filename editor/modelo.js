@@ -194,11 +194,14 @@ const CARTAO_OPCAO = 40
 // O rodapé é a faixa onde mora a saída do grupo, em todo cartão: é a única
 // saída que existe, com botões ou sem.
 const CARTAO_RODAPE = 27
-// Onde fica o centro da bolinha, medido da borda direita do cartão: a bolinha
-// tem 14.4px e está presa 36px para fora (`right: -2.25rem` no CSS). A linha
-// nasce nela, não na borda — nascendo na borda, parecia sair do cartão e
-// deixava um vão de 29px entre a bolinha e o começo do traço.
-const CARTAO_CONECTOR = 29
+// Onde fica o centro da bolinha, medido da borda direita do cartão. A linha
+// nasce nela, não na borda — nascendo na borda, ficava um vão entre a bolinha
+// e o começo do traço, e a linha parecia sair do cartão.
+//
+// Tem de ser o mesmo valor de `--ed-conector-fora` no editor.css: lá ele põe
+// a bolinha, aqui ele faz a linha nascer nela. Dois números diferentes
+// voltariam a abrir o vão.
+const CARTAO_CONECTOR = 13
 
 function alturaDoBloco(bloco) {
   if (bloco.opcoes) {

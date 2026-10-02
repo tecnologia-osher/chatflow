@@ -394,14 +394,15 @@ test("arrastar o Start reposiciona o cartao dele", () => {
   assert.ok(Number.isFinite(movido?.x))
 })
 
-test("a seta do inicio sai do cartao de Start, nao do nada", () => {
+test("a seta do inicio sai do cartao de Start, nao do nada", async () => {
   const { hospedeiro } = montarComEventos()
   const doEvento = hospedeiro.porClasse("ed__seta--evento")
   assert.ok(doEvento.length > 0)
   const caminho = doEvento[0].atributos.d
   // O Start está em x=40,y=40 e tem 190x48: a seta parte da bolinha dele, que
-  // fica 29 à direita da borda (230 + 29).
-  assert.match(caminho, /^M 259 64/)
+  // fica à direita da borda, a CARTAO_CONECTOR dela.
+  const { MEDIDAS } = await import("../editor/modelo.js")
+  assert.ok(caminho.startsWith(`M ${230 + MEDIDAS.CARTAO_CONECTOR} 64`), caminho)
 })
 
 // --- a saída do grupo ------------------------------------------------------

@@ -41,3 +41,14 @@ test("variante de botao da barra vence a regra geral dos botoes", () => {
       `"${r.seletor}" pinta fundo mas perde para ".ed__barra button": o fundo volta a branco`)
   }
 })
+
+test("a distancia da bolinha e a mesma no CSS e no modelo", async () => {
+  // O CSS põe a bolinha a essa distância da borda; o modelo faz a linha nascer
+  // nela. Mudar um e esquecer o outro reabre o vão entre a bolinha e o traço,
+  // que foi exatamente o defeito relatado.
+  const { MEDIDAS } = await import("../editor/modelo.js")
+  const noCss = css.match(/--ed-conector-fora:\s*(\d+)px/)
+  assert.ok(noCss, "a variável --ed-conector-fora sumiu do CSS")
+  assert.equal(Number(noCss[1]), MEDIDAS.CARTAO_CONECTOR,
+    "CSS e modelo discordando: a linha nasce fora da bolinha")
+})

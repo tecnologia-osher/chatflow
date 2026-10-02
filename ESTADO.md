@@ -636,3 +636,14 @@ mexem no fluxo, e esquecer de marcar num deles perde trabalho em silêncio.
 **O que isto não é:** salvar de qualquer lugar. Grava no arquivo desta
 máquina; publicar segue sendo commit e push, e o cliente editando sozinho da
 casa dele continua sendo o sub-projeto 3.
+
+### As bolinhas voltaram para perto do cartão
+
+537 testes. Ao unificar a distância das bolinhas eu as empurrei para 29px da
+borda — longe do cartão. Voltaram para 13px, que é onde as de opção estavam
+antes, e agora **todas** à mesma distância, que é o que faz a linha nascer
+dentro delas.
+
+A distância vive em dois lugares: `--ed-conector-fora` no CSS põe a bolinha,
+`CARTAO_CONECTOR` no modelo faz a linha nascer nela. Mudar um e esquecer o
+outro reabre o vão — então um teste lê o CSS e compara os dois números.
