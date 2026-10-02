@@ -43,6 +43,27 @@
     }
   }
 
+  // Os leads moram na planilha do cliente, e quem lê de lá é o Apps Script —
+  // o mesmo endereço que recebe os leads, agora respondendo a quem tem a
+  // chave. A chave vem do editor, não daqui: este arquivo é público.
+  async function buscarLeads(chave) {
+    const destinos = await (await fetch(`${base}/destinos.json`)).json().catch(() => ({}))
+    const url = destinos?.destinos?.planilha?.url
+    if (!url) throw new Error("este cliente não tem planilha em destinos.json")
+
+    const resposta = await fetch(`${url}?acao=leads&chave=${encodeURIComponent(chave)}`)
+    if (!resposta.ok) throw new Error(`a planilha respondeu ${resposta.status}`)
+    const corpo = await resposta.json()
+    if (corpo.erro) throw new Error(corpo.erro)
+    // Resposta sem `linhas` é a versão antiga do Apps Script, que só sabia
+    // receber. Devolver lista vazia aqui diria "ninguém entrou no chat" para
+    // uma planilha possivelmente cheia.
+    if (!Array.isArray(corpo.linhas)) {
+      throw new Error("este Apps Script ainda não devolve leads: cole a versão nova do .gs e publique")
+    }
+    return corpo.linhas
+  }
+
   try {
     const resposta = await fetch(arquivo)
     if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
@@ -50,7 +71,8 @@
       elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo",
       aoBaixar: baixar, aoSalvar: salvar,
       // A página de projetos ainda não existe; quando existir, é só apontar.
-      aoVoltar: () => alert("A lista de projetos ainda não existe.")
+      aoVoltar: () => alert("A lista de projetos ainda não existe."),
+      aoBuscarLeads: buscarLeads
     })
 
     // Fechar a aba com trabalho não salvo é a maneira mais boba de perder uma

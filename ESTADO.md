@@ -825,3 +825,32 @@ na paleta e a faixa de recado.
 No header, passar o mouse e estar escolhido falam a mesma língua do Salvar —
 fundo azul, letra branca — nas abas e nos botões Testar e Centralizar. Antes a
 aba escolhida era um cinza que mal se via.
+
+### A aba Resultados
+
+636 testes. Uma linha por pessoa que entrou no chat, com o que ela respondeu
+até onde chegou — inclusive quem parou no meio, que é o lead que some de vista
+em todo lugar menos ali.
+
+**As colunas saem do fluxo, não dos dados:** cada bloco com `salvar_em` vira
+uma coluna, na ordem em que o chat pergunta, com o nome da pergunta e não o da
+variável. Pergunta nova aparece como coluna antes de alguém responder. O que
+vier na planilha e não estiver no fluxo entra no fim, marcado — esconder dado
+que existe é pior que uma coluna a mais. O maquinário (`sessaoId`,
+`ultimoGrupo`, `ultimoBloco`) fica de fora.
+
+**De onde vem:** da aba `Chatflow Parciais`, por um `GET` novo no Apps Script.
+A leitura exige chave, e **a chave não está no repositório**: mora nas
+propriedades do script (`CHAVE_LEITURA`), e no editor fica guardada no
+navegador de quem abriu — em memória durante a sessão, e no armazenamento
+local para não pedir de novo amanhã. Sem a propriedade definida, a leitura
+fica fechada: é melhor a aba dizer "não configurado" do que publicar telefone
+de cliente para quem achar o endereço, num repositório público.
+
+**Para ligar, uma vez:** colar `clientes/osher/apps-script.gs` no editor do
+Apps Script, definir a propriedade `CHAVE_LEITURA` (engrenagem → Propriedades
+do script), publicar, e colar a mesma frase na aba Resultados.
+
+Enquanto isso não acontece, a aba diz exatamente isso em vez de mentir: o
+Apps Script antigo responde sem `linhas`, e devolver lista vazia ali diria
+"ninguém entrou no chat" para uma planilha possivelmente cheia.

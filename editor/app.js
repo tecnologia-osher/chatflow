@@ -16,6 +16,7 @@ import {
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 import { iconeDoTipo, iconeDaAcao } from "./icones.js"
+import { colunasDosResultados, valorNaColuna } from "./resultados.js"
 
 
 const NOME_DA_CATEGORIA = {
@@ -40,7 +41,9 @@ export function criarEditor({
   aoVoltar = () => {},
   // Só os testes passam isto: sem espera de verdade, a conversa do preview
   // acontece de uma vez e a suíte não fica parada esperando o relógio.
-  esperarNoTeste = undefined
+  esperarNoTeste = undefined,
+  // Busca os leads do cliente. Recebe a chave de leitura e devolve as linhas.
+  aoBuscarLeads = null
 }) {
   let atual = fluxo
   let selecao = { grupo: null, bloco: null }
@@ -113,7 +116,8 @@ export function criarEditor({
   const areaPreview = el("div", "ed__area-preview")
   const areaConfiguracoes = el("div", "ed__area-config")
   const emBreve = el("div", "ed__em-breve ed__oculto")
-  centro.append(barra, palcoCanvas, emBreve, problemas)
+  const areaResultados = el("section", "ed__resultados ed__oculto")
+  centro.append(barra, palcoCanvas, emBreve, areaResultados, problemas)
   raiz.append(paleta, centro, areaPainel, areaPreview, areaConfiguracoes)
   elemento.replaceChildren(raiz)
 
@@ -549,20 +553,155 @@ export function criarEditor({
   // ainda não existem: dizem isso, em vez de abrirem uma tela vazia que
   // parece quebrada.
   const EM_CONSTRUCAO = {
-    tema: "As cores, a fonte e o retrato do chat ainda se editam em clientes/<cliente>/tema.json.",
-    resultados: "Os resultados moram na planilha do cliente e no CRM. Trazer para cá é o sub-projeto 4."
+    tema: "As cores, a fonte e o retrato do chat ainda se editam em clientes/<cliente>/tema.json."
   }
 
   function desenharConteudo() {
     const fora = aba !== "fluxo"
     palcoCanvas.className = `ed__area-canvas${fora ? " ed__oculto" : ""}`
     emBreve.replaceChildren()
-    emBreve.className = `ed__em-breve${fora ? "" : " ed__oculto"}`
+    emBreve.className = `ed__em-breve${fora && aba !== "resultados" ? "" : " ed__oculto"}`
+    areaResultados.replaceChildren()
+    areaResultados.className = `ed__resultados${aba === "resultados" ? "" : " ed__oculto"}`
+
+    if (aba === "resultados") return desenharResultados()
     if (fora) {
       emBreve.append(
         el("h2", "ed__em-breve-titulo", botoesDeAba.get(aba).textContent),
         el("p", "ed__em-breve-texto", EM_CONSTRUCAO[aba])
       )
+    }
+  }
+
+  // --- resultados --------------------------------------------------------
+  // Uma linha por pessoa que entrou no chat, com o que ela respondeu até onde
+  // chegou. Os dados vêm da planilha do cliente, por uma leitura protegida
+  // por chave — a chave fica neste navegador, nunca no repositório.
+  let leads = null
+  let erroDosLeads = ""
+  let buscandoLeads = false
+
+  function desenharResultados() {
+    areaResultados.replaceChildren()
+
+    const topo = el("div", "ed__resultados-topo")
+    topo.append(el("h2", "ed__resultados-titulo", "Resultados"))
+    const atualizar = el("button", "ed__resultados-atualizar", buscandoLeads ? "Buscando…" : "Atualizar")
+    atualizar.setAttribute("type", "button")
+    atualizar.disabled = buscandoLeads
+    atualizar.addEventListener("click", () => buscarLeads(true))
+    topo.append(atualizar)
+    areaResultados.append(topo)
+
+    if (erroDosLeads) {
+      const aviso = el("p", "ed__resultados-aviso", erroDosLeads)
+      areaResultados.append(aviso)
+    }
+
+    if (!chaveDosResultados()) {
+      areaResultados.append(formularioDaChave())
+      return
+    }
+
+    if (leads === null) {
+      areaResultados.append(el("p", "ed__resultados-vazio",
+        buscandoLeads ? "Buscando os leads na planilha…" : "Clique em Atualizar para buscar os leads."))
+      if (!buscandoLeads && !erroDosLeads) buscarLeads()
+      return
+    }
+
+    if (!leads.length) {
+      areaResultados.append(el("p", "ed__resultados-vazio",
+        "Ninguém entrou no chat ainda — ou a planilha deste cliente está vazia."))
+      return
+    }
+
+    const colunas = colunasDosResultados(atual, leads)
+    const tabela = el("table", "ed__tabela")
+    const cabecalho = el("tr", "ed__tabela-linha")
+    for (const coluna of colunas) {
+      const celula = el("th", `ed__tabela-cabecalho${coluna.extra ? " ed__tabela-cabecalho--extra" : ""}`,
+        coluna.rotulo)
+      if (coluna.extra) celula.setAttribute("title", "Veio da planilha e não está no fluxo")
+      cabecalho.append(celula)
+    }
+    tabela.append(cabecalho)
+
+    for (const linha of leads) {
+      const no = el("tr", "ed__tabela-linha")
+      for (const coluna of colunas) {
+        no.append(el("td", "ed__tabela-celula", valorNaColuna(linha, coluna)))
+      }
+      tabela.append(no)
+    }
+    const rolagem = el("div", "ed__tabela-rolagem")
+    rolagem.append(tabela)
+    areaResultados.append(rolagem)
+    areaResultados.append(el("p", "ed__resultados-conta",
+      `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`))
+  }
+
+  function formularioDaChave() {
+    const caixa = el("form", "ed__chave")
+    caixa.append(el("p", "ed__chave-texto",
+      "Para ver os leads, cole a chave de leitura da planilha. Ela fica guardada só neste navegador."))
+    const campo = el("input", "ed__chave-campo")
+    campo.setAttribute("type", "password")
+    campo.setAttribute("placeholder", "chave de leitura")
+    const botao = el("button", "ed__chave-botao", "Ver os leads")
+    botao.setAttribute("type", "submit")
+    caixa.addEventListener("submit", (ev) => {
+      ev.preventDefault?.()
+      const valor = String(campo.value || "").trim()
+      if (!valor) return
+      guardarChave(valor)
+      erroDosLeads = ""
+      buscarLeads(true)
+    })
+    caixa.append(campo, botao)
+    return caixa
+  }
+
+  const NOME_DA_CHAVE = `chatflow:chave-leitura:${cliente}`
+  // A chave vive na memória desta sessão; o armazenamento do navegador é só
+  // para não pedir de novo amanhã. Guardar só lá fazia a chave sumir no
+  // instante seguinte em qualquer navegador que recuse armazenamento — e em
+  // janela anônima, que é onde muita gente abre as coisas.
+  let chaveNaMemoria = ""
+  try {
+    chaveNaMemoria = globalThis.localStorage?.getItem(NOME_DA_CHAVE) || ""
+  } catch { /* sem armazenamento: começa sem chave e pede uma */ }
+
+  function chaveDosResultados() {
+    return chaveNaMemoria
+  }
+
+  function guardarChave(valor) {
+    chaveNaMemoria = valor
+    try {
+      globalThis.localStorage?.setItem(NOME_DA_CHAVE, valor)
+    } catch { /* a chave vale só esta sessão */ }
+  }
+
+  async function buscarLeads(forcar = false) {
+    if (buscandoLeads) return
+    if (!aoBuscarLeads) {
+      erroDosLeads = "Este editor está aberto sem de onde buscar os leads."
+      return desenharResultados()
+    }
+    if (!forcar && leads !== null) return
+
+    buscandoLeads = true
+    erroDosLeads = ""
+    desenharResultados()
+    try {
+      leads = await aoBuscarLeads(chaveDosResultados())
+    } catch (falha) {
+      leads = null
+      erroDosLeads = falha?.message || String(falha)
+    } finally {
+      buscandoLeads = false
+      desenharResultados()
     }
   }
 

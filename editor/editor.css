@@ -106,7 +106,42 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__aba:hover, .ed__barra button.ed__aba--ativa {
   background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 
-/* Tema e Resultados ainda não existem: a tela diz isso em vez de ficar vazia. */
+/* A aba Resultados: uma tabela de gente, larga, com rolagem própria. */
+.ed__resultados { display: grid; align-content: start; gap: 0.8rem;
+  padding: 1.2rem 1.4rem; overflow: auto; }
+.ed__resultados-topo { display: flex; align-items: center; gap: 0.8rem; }
+.ed__resultados-titulo { margin: 0; font-size: 1rem; }
+.ed__resultados-atualizar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie); font: inherit;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__resultados-atualizar:hover:not(:disabled) { background: var(--ed-acento); color: #fff;
+  border-color: var(--ed-acento); }
+.ed__resultados-atualizar:disabled { color: var(--ed-suave); cursor: default; }
+.ed__resultados-vazio, .ed__resultados-conta { margin: 0; color: var(--ed-suave); font-size: 0.82rem; }
+.ed__resultados-aviso { margin: 0; padding: 0.6rem 0.8rem; border-radius: 8px;
+  background: var(--ed-problema-fundo); color: var(--ed-erro); font-size: 0.82rem; }
+.ed__tabela-rolagem { overflow-x: auto; border: 1px solid var(--ed-linha); border-radius: 10px; }
+.ed__tabela { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+.ed__tabela-cabecalho { text-align: left; white-space: nowrap; font-weight: 600;
+  padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--ed-linha);
+  border-right: 1px solid var(--ed-linha); background: var(--ed-superficie); }
+.ed__tabela-cabecalho--extra { color: var(--ed-suave); font-style: italic; }
+.ed__tabela-celula { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--ed-linha);
+  border-right: 1px solid var(--ed-linha); vertical-align: top; }
+.ed__tabela-linha:last-child .ed__tabela-celula { border-bottom: none; }
+.ed__tabela-cabecalho:last-child, .ed__tabela-celula:last-child { border-right: none; }
+.ed__tabela-linha:hover .ed__tabela-celula { background: var(--ed-fundo); }
+/* Pedir a chave: caixa pequena, texto curto, sem parecer formulário de login. */
+.ed__chave { display: grid; gap: 0.5rem; max-width: 26rem; padding: 1rem;
+  border: 1px solid var(--ed-linha); border-radius: 10px; background: var(--ed-superficie); }
+.ed__chave-texto { margin: 0; font-size: 0.82rem; color: var(--ed-suave); line-height: 1.4; }
+.ed__chave-campo { padding: 0.5rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
+  font: inherit; font-size: 0.85rem; }
+.ed__chave-botao { justify-self: start; padding: 0.45rem 0.9rem; border-radius: 8px;
+  border: 1px solid var(--ed-acento); background: var(--ed-acento); color: #fff;
+  font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+
+/* Tema ainda não existe: a tela diz isso em vez de ficar vazia. */
 .ed__em-breve { display: grid; place-content: center; gap: 0.4rem; text-align: center;
   padding: 3rem 2rem; }
 .ed__em-breve-titulo { margin: 0; font-size: 1.1rem; }

@@ -1240,3 +1240,124 @@ test("a engrenagem tem o icone maior que os outros da barra", () => {
   const daEngrenagem = porClasse(hospedeiro, "ed__engrenagem")[0].porClasse("ed__barra-icone")[0]
   assert.ok(daEngrenagem.className.includes("ed__barra-icone--grande"))
 })
+
+// --- a aba Resultados ------------------------------------------------------
+
+function montarComLeads(linhas, fluxo = fluxoBase()) {
+  const hospedeiro = new Elemento("div")
+  const pedidos = []
+  const editor = criarEditor({
+    elemento: hospedeiro, fluxo, esperarNoTeste: async () => {},
+    aoBuscarLeads: async (chave) => {
+      pedidos.push(chave)
+      if (typeof linhas === "function") return linhas(chave)
+      return linhas
+    }
+  })
+  return { hospedeiro, editor, pedidos }
+}
+
+const abrirResultados = (h) =>
+  porClasse(h, "ed__aba").find((b) => b.textContent === "Resultados").disparar("click")
+
+test("sem chave, a aba pede a chave em vez de buscar", () => {
+  const { hospedeiro, pedidos } = montarComLeads([])
+  abrirResultados(hospedeiro)
+  assert.equal(porClasse(hospedeiro, "ed__chave").length, 1)
+  assert.deepEqual(pedidos, [], "buscar sem chave só gastaria uma viagem")
+})
+
+test("com a chave colada, busca e monta a tabela com as colunas do fluxo", async () => {
+  const f = fluxoBase()
+  f.grupos[0].blocos.push(
+    { id: "b_nome", tipo: "entrada_texto", salvar_em: "nome", conteudo: { rotulo: "Seu nome" } })
+  const { hospedeiro, pedidos } = montarComLeads([
+    { atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "concluído", nome: "Ana" }
+  ], f)
+  abrirResultados(hospedeiro)
+
+  const campo = porClasse(hospedeiro, "ed__chave-campo")[0]
+  campo.value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  assert.deepEqual(pedidos, ["segredo"])
+  assert.deepEqual(porClasse(hospedeiro, "ed__tabela-cabecalho").map((c) => c.textContent),
+    ["Quando", "Situação", "Seu nome"])
+  assert.deepEqual(porClasse(hospedeiro, "ed__tabela-celula").map((c) => c.textContent),
+    ["02/10 11:05", "concluído", "Ana"])
+})
+
+test("planilha vazia diz que ninguem entrou, em vez de tabela sem linha", async () => {
+  const { hospedeiro } = montarComLeads([])
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
+  assert.match(porClasse(hospedeiro, "ed__resultados-vazio")[0].textContent, /ninguém entrou/i)
+})
+
+test("chave recusada aparece na tela, e a tabela nao mente", async () => {
+  const { hospedeiro } = montarComLeads(async () => { throw new Error("Chave inválida.") })
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "errada"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /chave inválida/i)
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
+})
+
+test("coluna que veio da planilha e nao esta no fluxo aparece marcada", async () => {
+  const { hospedeiro } = montarComLeads([
+    { atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "em andamento", classificacao: "quente" }
+  ])
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+
+  const extra = porClasse(hospedeiro, "ed__tabela-cabecalho--extra")[0]
+  assert.equal(extra.textContent, "classificacao")
+  assert.match(extra.atributos.title || "", /não está no fluxo/i)
+})
+
+test("voltar para o Fluxo guarda o canvas de volta", async () => {
+  const { hospedeiro } = montarComLeads([])
+  abrirResultados(hospedeiro)
+  assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), true)
+
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), false)
+  assert.equal(porClasse(hospedeiro, "ed__resultados")[0].className.includes("ed__oculto"), true)
+})
+
+test("sem de onde buscar, a aba diz isso em vez de ficar rodando", () => {
+  const { hospedeiro } = montar()
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /sem de onde buscar/i)
+})
+
+test("falhar ao atualizar tira a tabela velha, em vez de mostrar dado de antes", async () => {
+  let vez = 0
+  const { hospedeiro } = montarComLeads(async () => {
+    vez += 1
+    if (vez === 1) return [{ atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "concluído" }]
+    throw new Error("a planilha respondeu 500")
+  })
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 1)
+
+  porClasse(hospedeiro, "ed__resultados-atualizar")[0].disparar("click")
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0,
+    "tabela velha ao lado de um aviso de erro é mentira com cara de dado")
+  assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /500/)
+})
