@@ -34,7 +34,7 @@ export function fluxoComecandoEm(fluxo, grupoId) {
   }
 }
 
-export function criarPreview({ elemento, aoFechar = () => {} }) {
+export function criarPreview({ elemento, aoFechar = () => {}, esperar } = {}) {
   let aberto = false
   let fluxoAtual = null
   let comecarEm = null
@@ -80,7 +80,11 @@ export function criarPreview({ elemento, aoFechar = () => {} }) {
       fluxo: fluxoComecandoEm(fluxoAtual, comecarEm),
       modo: "teste",
       armazenamento: undefined,
-      ritmo: { piso: 0, porCaractere: 0, teto: 0 },
+      // O compasso é o do próprio fluxo, como no chat de verdade: testar é
+      // ver o que o lead vê, e o lead vê os três pontinhos. Zerado, como
+      // estava, a conversa inteira aparecia pronta na tela de uma vez.
+      ritmo: fluxoAtual.ritmo,
+      esperar,
       buscar: async () => { throw new Error("o preview não envia nada") }
     })
     chat.reiniciar({ retomar: false })

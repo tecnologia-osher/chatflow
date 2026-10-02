@@ -35,7 +35,10 @@ export function criarEditor({
   aoSalvar = null,
   // Onde ficam os projetos. A página ainda não existe, então o botão existe e
   // avisa — melhor que um botão que não faz nada e não diz por quê.
-  aoVoltar = () => {}
+  aoVoltar = () => {},
+  // Só os testes passam isto: sem espera de verdade, a conversa do preview
+  // acontece de uma vez e a suíte não fica parada esperando o relógio.
+  esperarNoTeste = undefined
 }) {
   let atual = fluxo
   let selecao = { grupo: null, bloco: null }
@@ -210,7 +213,9 @@ export function criarEditor({
     },
     aoTestar: (grupo) => { preview.abrir(atual, grupo); sincronizarTestar() }
   })
-  const preview = criarPreview({ elemento: areaPreview, aoFechar: () => sincronizarTestar() })
+  const preview = criarPreview({
+    elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste
+  })
   const painel = criarPainel({
     elemento: areaPainel,
     aoEditar: (novo) => { trocarFluxo(novo); redesenhar() }

@@ -53,6 +53,7 @@ export function criarCanvas({
   const FOLGA_DO_CLIQUE = 3
   const nosDeCartoes = new Map()
   let setaSelecionada = null
+  let eventoSelecionado = null
   let menuAberto = null
   let editandoTitulo = null
   // Se o último mousedown virou arrasto. O clique no nome consulta isto.
@@ -181,8 +182,9 @@ export function criarCanvas({
   }
 
   function limparLigacao() {
-    if (!setaSelecionada && !menuAberto) return
+    if (!setaSelecionada && !menuAberto && !eventoSelecionado) return
     setaSelecionada = null
+    eventoSelecionado = null
     fecharMenu()
     desenhar(fluxoAtual)
   }
@@ -405,11 +407,24 @@ export function criarCanvas({
     camadaEventos.replaceChildren()
     for (const evento of lista) {
       const caixa = mapa.get(evento.tipo)
-      const no = el("div", `ed__evento ed__evento--${evento.tipo}`)
+      const ativo = eventoSelecionado === evento.tipo
+      const no = el("div",
+        `ed__evento ed__evento--${evento.tipo}${ativo ? " ed__evento--ativo" : ""}`)
       no.style.setProperty("transform", `translate(${caixa.x}px, ${caixa.y}px)`)
       no.style.setProperty("width", `${caixa.largura}px`)
       if (evento.icone) no.append(el("span", "ed__evento-icone", evento.icone))
       no.append(el("span", "ed__evento-rotulo", evento.rotulo))
+
+      // O Start também se seleciona: clicar nele e nada acontecer parece
+      // defeito. Selecionar um evento larga o cartão que estava selecionado,
+      // porque são dois lugares diferentes do fluxo.
+      no.addEventListener("click", (ev) => {
+        ev.stopPropagation?.()
+        eventoSelecionado = evento.tipo
+        selecao = { grupo: null, bloco: null }
+        desenhar(fluxoAtual)
+        aoSelecionar({ grupo: null, bloco: null, evento: evento.tipo })
+      })
 
       no.addEventListener("mousedown", (ev) => {
         const base = { x: caixa.x, y: caixa.y }
@@ -417,6 +432,19 @@ export function criarCanvas({
           evento: evento.tipo, x: base.x + dx / vista.escala, y: base.y + dy / vista.escala
         }))
       })
+
+      // Testar daqui é testar do começo: é a largada do fluxo.
+      if (evento.tipo === "inicio") {
+        const play = el("button", "ed__play ed__play--evento", "▶")
+        play.setAttribute("type", "button")
+        play.setAttribute("title", "Testar do início")
+        play.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+        play.addEventListener("click", (ev) => {
+          ev.stopPropagation?.()
+          aoTestar(null)
+        })
+        no.append(play)
+      }
 
       const ponto = el("span", `ed__evento-ponto${evento.proximo ? " ed__evento-ponto--ligado" : ""}`)
       ponto.setAttribute("title", evento.proximo
@@ -500,6 +528,7 @@ export function criarCanvas({
       })
       cabecalho.append(mais)
       cabecalho.addEventListener("click", () => {
+        eventoSelecionado = null
         selecao = { grupo: cartao.id, bloco: null }
         desenhar(fluxoAtual)
         aoSelecionar({ grupo: cartao.id, bloco: null })
@@ -558,6 +587,7 @@ export function criarCanvas({
         }
         noBloco.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
+          eventoSelecionado = null
           selecao = { grupo: cartao.id, bloco: bloco.id }
           desenhar(fluxoAtual)
           aoSelecionar({ grupo: cartao.id, bloco: bloco.id })

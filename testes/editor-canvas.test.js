@@ -1172,3 +1172,52 @@ test("digitar dentro da caixa nao a fecha", () => {
   assert.equal(hospedeiro.porClasse("ed__titulo-campo").length, 1, "o cursor está nela")
   assert.deepEqual(edicoes.at(-1), { grupo: "g1", valor: "Boas-vindas" })
 })
+
+// --- o Start selecionável --------------------------------------------------
+
+test("clicar no Start o deixa selecionado, e avisa quem escuta", () => {
+  const hospedeiro = new Elemento("div")
+  const selecoes = []
+  criarCanvas({ elemento: hospedeiro, aoSelecionar: (s) => selecoes.push(s) }).desenhar(fluxo)
+  const start = hospedeiro.porClasse("ed__evento")[0]
+  start.disparar("click")
+
+  assert.equal(hospedeiro.porClasse("ed__evento")[0].className.includes("ed__evento--ativo"), true,
+    "clicar e nada acontecer parece defeito")
+  assert.deepEqual(selecoes.at(-1), { grupo: null, bloco: null, evento: "inicio" })
+})
+
+test("selecionar um cartao larga o Start, e vice-versa", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxo)
+  const ativo = (classe) => hospedeiro.porClasse(classe).filter((e) => e.className.includes("--ativo")).length
+
+  hospedeiro.porClasse("ed__evento")[0].disparar("click")
+  assert.equal(ativo("ed__evento"), 1)
+
+  hospedeiro.porClasse("ed__cabecalho")[0].disparar("click")
+  assert.equal(ativo("ed__evento"), 0, "o Start e um grupo são lugares diferentes do fluxo")
+  assert.equal(ativo("ed__cartao"), 1)
+
+  hospedeiro.porClasse("ed__evento")[0].disparar("click")
+  assert.equal(ativo("ed__cartao"), 0)
+})
+
+test("clicar no fundo larga o Start tambem", () => {
+  const hospedeiro = new Elemento("div")
+  criarCanvas({ elemento: hospedeiro }).desenhar(fluxo)
+  hospedeiro.porClasse("ed__evento")[0].disparar("click")
+  hospedeiro.porClasse("ed__palco")[0].disparar("mousedown", { clientX: 5, clientY: 5, button: 0 })
+  assert.equal(hospedeiro.porClasse("ed__evento")[0].className.includes("--ativo"), false)
+})
+
+test("o Start tem um play, e ele testa do comeco", () => {
+  const hospedeiro = new Elemento("div")
+  const testes = []
+  criarCanvas({ elemento: hospedeiro, aoTestar: (g) => testes.push(g) }).desenhar(fluxo)
+  const play = hospedeiro.porClasse("ed__play--evento")[0]
+  assert.ok(play, "a largada do fluxo precisa de um play como os cartões")
+  play.disparar("click")
+  assert.deepEqual(testes, [null], "do começo, não de um grupo")
+})

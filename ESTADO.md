@@ -679,3 +679,17 @@ funcionam, menos dentro de uma caixa de texto, onde o desfazer do próprio campo
 documento, e existe fase de **captura**. Foi assim que o "clicar fora fecha a
 caixa do nome" passou a ser testável — na borbulha ele nunca chegaria, porque
 o canvas para a propagação de tudo o que acontece dentro dele.
+
+### O teste volta a digitar, e o Start se seleciona
+
+567 testes. O preview zerava o compasso (`ritmo: {piso:0, porCaractere:0,
+teto:0}`) — então a conversa inteira aparecia pronta de uma vez, e testar não
+mostrava o que o lead vê. Agora ele usa o compasso do próprio fluxo, como o
+chat de verdade; quem precisa de pressa é a suíte, que injeta a espera.
+Conferido no Chrome: ao abrir, só os três pontinhos; 1,5s depois, a primeira
+fala e os pontinhos de novo; 2,8s depois, as duas falas.
+
+E o **Start** passou a se selecionar como um cartão — clicar nele e nada
+acontecer parecia defeito — e ganhou o seu **▶**, que testa do começo.
+Selecionar o Start larga o cartão selecionado e vice-versa: são dois lugares
+diferentes do fluxo.

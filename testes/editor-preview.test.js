@@ -66,7 +66,9 @@ test("grupo inexistente nao quebra: devolve o fluxo original", () => {
 
 function montar() {
   const hospedeiro = new Elemento("div")
-  const preview = criarPreview({ elemento: hospedeiro })
+  // O preview digita no compasso do fluxo, como o chat de verdade. Aqui a
+  // espera é imediata: o que se quer provar é o que aparece, não o relógio.
+  const preview = criarPreview({ elemento: hospedeiro, esperar: async () => {} })
   return { hospedeiro, preview }
 }
 const bolhas = (h) => h.porClasse("cf__bolha").map((b) => b.textContent)
@@ -145,4 +147,40 @@ test("o preview nunca fala com a rede", async () => {
   preview.abrir({ ...fluxo(), destinos: {} }, null)
   await assentar()
   assert.deepEqual(chamadas, [])
+})
+
+test("o preview digita no compasso do fluxo, com os tres pontinhos", async () => {
+  const hospedeiro = new Elemento("div")
+  const esperas = []
+  const preview = criarPreview({
+    elemento: hospedeiro,
+    esperar: async (ms) => { esperas.push(ms) }
+  })
+  preview.abrir({
+    versao: 2,
+    ritmo: { piso: 900, porCaractere: 0, teto: 900 },
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Bem-vindo" } }] }]
+  })
+  await assentar()
+
+  assert.deepEqual(esperas, [900],
+    "a conversa aparecia inteira de uma vez: o preview zerava o compasso")
+  assert.deepEqual(hospedeiro.porClasse("cf__bolha").map((b) => b.textContent), ["Bem-vindo"])
+})
+
+test("fluxo sem ritmo proprio usa o compasso padrao do motor, nao zero", async () => {
+  const hospedeiro = new Elemento("div")
+  const esperas = []
+  const preview = criarPreview({ elemento: hospedeiro, esperar: async (ms) => { esperas.push(ms) } })
+  preview.abrir({
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Oi" } }] }]
+  })
+  await assentar()
+  assert.equal(esperas.length, 1)
+  assert.ok(esperas[0] > 0, "sem pausa, o lead vê a frase pronta e não vê ninguém digitando")
 })

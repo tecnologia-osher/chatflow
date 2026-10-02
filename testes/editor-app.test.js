@@ -21,7 +21,10 @@ const fluxoBase = () => ({
 function montar(fluxo = fluxoBase()) {
   const hospedeiro = new Elemento("div")
   const baixados = []
-  const editor = criarEditor({ elemento: hospedeiro, fluxo, aoBaixar: (t, n) => baixados.push({ t, n }) })
+  const editor = criarEditor({
+    elemento: hospedeiro, fluxo, aoBaixar: (t, n) => baixados.push({ t, n }),
+    esperarNoTeste: async () => {}
+  })
   return { hospedeiro, editor, baixados }
 }
 
@@ -178,7 +181,8 @@ test("cada cartao tem um play que comeca o teste dali", async () => {
   const fluxo = fluxoBase()
   fluxo.grupos[1].blocos.push({ id: "b2", tipo: "texto", conteudo: { texto: "Fim do papo" } })
   const { hospedeiro } = montar(fluxo)
-  const plays = porClasse(hospedeiro, "ed__play")
+  // Um por grupo, mais o do Start — que testa do começo.
+  const plays = porClasse(hospedeiro, "ed__play").filter((b) => !b.className.includes("--evento"))
   assert.equal(plays.length, 2, "um por grupo")
   plays[1].disparar("click")
   await assentar()
@@ -718,7 +722,8 @@ function montarComServidor(fluxo = fluxoBase(), responder = async () => {}) {
   const editor = criarEditor({
     elemento: hospedeiro, fluxo,
     aoBaixar: (t, n) => baixados.push({ t, n }),
-    aoSalvar: async (texto) => { salvos.push(texto); return responder(texto) }
+    aoSalvar: async (texto) => { salvos.push(texto); return responder(texto) },
+    esperarNoTeste: async () => {}
   })
   return { hospedeiro, editor, salvos, baixados }
 }
