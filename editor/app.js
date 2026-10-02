@@ -361,14 +361,20 @@ export function criarEditor({
     nome.append(texto)
   }
 
-  const voltarPasso = el("button", "ed__passo ed__passo--desfazer", "↶")
+  const voltarPasso = el("button", "ed__passo ed__passo--desfazer")
   voltarPasso.setAttribute("type", "button")
+  const icDesfazer = iconeDaAcao("desfazer", "ed__barra-icone ed__barra-icone--passo")
+  if (icDesfazer) voltarPasso.append(icDesfazer)
+  else voltarPasso.textContent = "↶"
   voltarPasso.setAttribute("title", "Desfazer")
   voltarPasso.setAttribute("aria-label", "Desfazer")
   voltarPasso.addEventListener("click", () => desfazer())
 
-  const refazerPasso = el("button", "ed__passo ed__passo--refazer", "↷")
+  const refazerPasso = el("button", "ed__passo ed__passo--refazer")
   refazerPasso.setAttribute("type", "button")
+  const icRefazer = iconeDaAcao("refazer", "ed__barra-icone ed__barra-icone--passo")
+  if (icRefazer) refazerPasso.append(icRefazer)
+  else refazerPasso.textContent = "↷"
   refazerPasso.setAttribute("title", "Refazer")
   refazerPasso.setAttribute("aria-label", "Refazer")
   refazerPasso.addEventListener("click", () => refazer())

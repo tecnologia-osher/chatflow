@@ -32,6 +32,10 @@ export function iconeDoTipo(tipo, classe = "ed__tipo-icone") {
 
 // Ícones da barra. Mesmo traço dos tipos, nomes de ação em vez de tipo.
 export const ICONE_DA_ACAO = {
+  // Desfazer e refazer: seta deitada, com a cauda virando para baixo. Os
+  // glifos ↶ ↷ do texto saíam em pé e finos demais para um botão.
+  desfazer: { viewBox: "0 0 24 24", d: "M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4" },
+  refazer: { viewBox: "0 0 24 24", d: "M15 14l5-5-5-5M4 20v-7a4 4 0 0 1 4-4h12" },
   // Quatro cantos apontando para dentro: pôr tudo na tela.
   centralizar: "M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3",
   // Disquete, que ainda é o que todo mundo lê como "guardar".
