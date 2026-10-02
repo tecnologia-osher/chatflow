@@ -719,3 +719,19 @@ O dublê aprendeu que, no DOM, `img.src = x` e `setAttribute("src", x)` são a
 mesma coisa — sem isso, o código podia pôr o endereço pela propriedade e o
 teste jurar, olhando o atributo, que ele não estava lá. `value` ficou de fora
 de propósito: nele propriedade e atributo são coisas diferentes de verdade.
+
+### O cursor diz o que dá para fazer
+
+586 testes. O quadro mostrava a mão aberta em toda a sua extensão, como se
+tudo ali fosse arrastável. Agora o quadro usa a seta de sempre e a **mão é do
+cartão** — e, para a mão não mentir, **o cartão inteiro virou alça**: arrastar
+de qualquer parte dele move o grupo, não só pelo cabeçalho. Quem precisa do
+clique parado para do mousedown antes: as caixas de texto (cursor de escrita),
+os botões (mãozinha) e as bolinhas (mira).
+
+Arrastando o fundo, a mão fechada aparece enquanto dura o arrasto: isso é
+retorno do que está acontecendo, não promessa do que dá para fazer.
+
+Medido no Chrome: quadro `default`, cartão e bloco `grab`, nome `text`,
+bolinha `crosshair`, botão `pointer` — e arrastar pelo corpo do cartão move o
+grupo exatamente o que o mouse andou.

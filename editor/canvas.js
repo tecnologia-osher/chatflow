@@ -533,6 +533,20 @@ export function criarCanvas({
         desenhar(fluxoAtual)
         aoSelecionar({ grupo: cartao.id, bloco: null })
       })
+      // O cartão inteiro é alça: a mão aparece em cima dele, e arrastar de
+      // qualquer parte move o grupo. Quem precisa do clique parado — as
+      // caixas de texto, os botões, as bolinhas — para o mousedown antes de
+      // chegar aqui.
+      no.addEventListener("mousedown", (ev) => {
+        const base = { x: caixa.x, y: caixa.y }
+        iniciarArrasto(ev, (dx, dy) => {
+          aoMover(cartao.id, {
+            x: base.x + dx / vista.escala,
+            y: base.y + dy / vista.escala
+          })
+        })
+      })
+
       cabecalho.addEventListener("mousedown", (ev) => {
         const base = { x: caixa.x, y: caixa.y }
         iniciarArrasto(ev, (dx, dy) => {

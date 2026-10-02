@@ -1221,3 +1221,48 @@ test("o Start tem um play, e ele testa do comeco", () => {
   play.disparar("click")
   assert.deepEqual(testes, [null], "do começo, não de um grupo")
 })
+
+// --- o cartão inteiro é alça ------------------------------------------------
+
+test("arrastar pelo corpo do cartao move o grupo, nao o fundo", () => {
+  const hospedeiro = new Elemento("div")
+  const movidos = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoMover: (id, p) => movidos.push({ id, ...p }) })
+  canvas.desenhar(fluxo)
+  const vista = canvas.vista()
+
+  hospedeiro.porClasse("ed__bloco")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 90, clientY: 50 })
+  document.disparar("mouseup", { clientX: 90, clientY: 50 })
+
+  assert.equal(movidos.at(-1)?.id, "g1", "o bloco é parte do cartão")
+  assert.deepEqual(canvas.vista(), vista, "e o quadro fica onde estava")
+})
+
+test("clicar num bloco sem arrastar continua selecionando", () => {
+  const hospedeiro = new Elemento("div")
+  const selecoes = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoSelecionar: (s) => selecoes.push(s) })
+  canvas.desenhar(fluxo)
+  const bloco = hospedeiro.porClasse("ed__bloco")[0]
+  bloco.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  document.disparar("mouseup", { clientX: 10, clientY: 10 })
+  bloco.disparar("click")
+  assert.deepEqual(selecoes.at(-1), { grupo: "g1", bloco: "b1" })
+})
+
+test("escrever na caixa do bloco nao arrasta o cartao", () => {
+  const hospedeiro = new Elemento("div")
+  const movidos = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro, aoMover: (id, p) => movidos.push({ id, ...p }),
+    aoEditarCampo: () => {}
+  })
+  canvas.desenhar(fluxo)
+  hospedeiro.porClasse("ed__bloco")[0].disparar("click")
+  const campo = hospedeiro.porClasse("ed__bloco-campo")[0]
+  campo.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  document.disparar("mousemove", { clientX: 80, clientY: 40 })
+  document.disparar("mouseup", {})
+  assert.deepEqual(movidos, [], "quem escolhe onde pôr o cursor não quer mover o cartão")
+})

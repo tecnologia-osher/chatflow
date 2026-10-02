@@ -141,7 +141,10 @@ html, body { margin: 0; height: 100%; }
 
 /* --- canvas --- */
 .ed__area-canvas { position: relative; overflow: hidden; }
-.ed__palco { position: absolute; inset: 0; cursor: grab;
+/* O quadro mostra a seta de sempre: a mão é para o que se arrasta, e aqui o
+   que se arrasta é o cartão. Enquanto a pessoa de fato arrasta o fundo, a mão
+   fechada aparece — isso é retorno do que está acontecendo, não promessa. */
+.ed__palco { position: absolute; inset: 0; cursor: default;
   background-image: radial-gradient(var(--ed-linha) 1px, transparent 1px);
   background-size: 22px 22px; }
 .ed__palco:active { cursor: grabbing; }
@@ -165,11 +168,12 @@ html, body { margin: 0; height: 100%; }
 .ed__evento-icone { color: var(--ed-suave); font-size: 1rem; }
 .ed__evento-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed__evento--invalido { border-style: dashed; font-weight: 500; color: var(--ed-suave); }
-.ed__cartao { position: absolute; top: 0; left: 0; background: var(--ed-superficie);
+.ed__cartao { position: absolute; top: 0; left: 0; cursor: grab; background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 1px 3px rgba(20,25,40,0.07); }
 /* O bloco não pode recortar o círculo que fica para fora do cartão. */
 .ed__bloco { overflow: visible; }
 .ed__cartao { overflow: visible; }
+.ed__cartao:active { cursor: grabbing; }
 .ed__cartao--ativo { border-color: var(--ed-acento); box-shadow: 0 0 0 2px rgba(12,35,64,0.15); }
 .ed__cabecalho { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem 0.55rem 0.85rem;
   font-weight: 600; cursor: grab; border-bottom: 1px solid var(--ed-linha); }
@@ -188,7 +192,7 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--ed-linha); border-radius: 50%; background: var(--ed-superficie);
   color: var(--ed-suave); font-size: 0.62rem; line-height: 1; cursor: pointer; padding: 0; }
 .ed__play:hover { background: var(--ed-acento); border-color: var(--ed-acento); color: #fff; }
-.ed__bloco { display: grid; gap: 0.1rem; padding: 0.5rem 0.85rem; cursor: pointer;
+.ed__bloco { display: grid; gap: 0.1rem; padding: 0.5rem 0.85rem; cursor: grab;
   border-left: 3px solid transparent; }
 .ed__bloco:hover { background: var(--ed-fundo); }
 .ed__bloco--ativo { background: var(--ed-selecionado); }
