@@ -84,6 +84,16 @@ export function criarEditor({
   // e não no projeto: dobrar "Lógica" é arrumação de quem edita, não uma
   // decisão do fluxo. Guarda-se o que está FECHADO para que seção nova nasça
   // aberta — ninguém descobre um grupo que já abre dobrado.
+  // Painel preso ou solto. Preso é o que sempre foi: a coluna fica na tela.
+  // Solto, ela se recolhe para a esquerda e volta quando o mouse chega perto
+  // da borda — quem trabalha num fluxo largo ganha a tela inteira.
+  const NOME_DO_LADO = "chatflow:lado-preso"
+  let ladoPreso = true
+  try {
+    const guardado = armazenamento?.getItem(NOME_DO_LADO)
+    if (guardado === "nao") ladoPreso = false
+  } catch { /* sem armazenamento: o painel fica preso, como sempre esteve */ }
+
   const NOME_DAS_SECOES = "chatflow:secoes"
   const secoesFechadas = { fluxo: new Set(), tema: new Set() }
   try {
@@ -237,7 +247,11 @@ export function criarEditor({
   // que fazia as abas deslizarem quando a coluna da esquerda sumia na aba
   // Resultados. E a paleta flutua por cima do quadro, sem empurrar nada.
   const corpo = el("div", "ed__corpo")
-  corpo.append(paleta, centro)
+  // A pílula que fica na beira da tela quando o painel está recolhido: é o
+  // alvo do mouse para trazê-lo de volta, e a única pista de que ele existe.
+  const puxador = el("span", "ed__puxador")
+  puxador.append(el("span", "ed__puxador-marca"))
+  corpo.append(puxador, paleta, centro)
   raiz.append(barra, corpo, areaPainel, areaPreview, areaConfiguracoes)
   elemento.replaceChildren(raiz)
 
@@ -595,17 +609,46 @@ export function criarEditor({
   // O lado esquerdo serve à aba aberta: na do fluxo são os tipos de bloco,
   // na do tema são as seções de cor. Paleta de blocos na aba Tema seria só
   // ruído com gesto que não leva a nada.
+  function sincronizarLado() {
+    const semLado = aba === "resultados"
+    corpo.className = `ed__corpo${!semLado && !ladoPreso ? " ed__corpo--solto" : ""}`
+  }
+
   function desenharLado() {
     const semLado = aba === "resultados"
     paleta.className = `ed__paleta${semLado ? " ed__oculto" : ""}`
+    sincronizarLado()
     if (aba === "tema") return desenharLadoDoTema()
     if (aba === "resultados") return paleta.replaceChildren()
     desenharPaleta()
   }
 
+  // Cadeado no alto da coluna: fechado, ela fica onde está; aberto, ela se
+  // recolhe sozinha quando o mouse sai.
+  function cadeadoDoLado() {
+    const botao = el("button", `ed__trava${ladoPreso ? " ed__trava--presa" : ""}`)
+    botao.setAttribute("type", "button")
+    botao.setAttribute("aria-pressed", ladoPreso ? "true" : "false")
+    const dica = ladoPreso
+      ? t("Soltar o painel: ele se recolhe quando o mouse sai")
+      : t("Prender o painel no lugar")
+    botao.setAttribute("title", dica)
+    botao.setAttribute("aria-label", dica)
+    const icone = iconeDaAcao(ladoPreso ? "cadeado" : "cadeado_aberto", "ed__trava-icone")
+    if (icone) botao.append(icone)
+    else botao.textContent = ladoPreso ? "🔒" : "🔓"
+    botao.addEventListener("click", () => {
+      ladoPreso = !ladoPreso
+      try { armazenamento?.setItem(NOME_DO_LADO, ladoPreso ? "sim" : "nao") } catch { /* vale esta sessão */ }
+      desenharLado()
+    })
+    return botao
+  }
+
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
     const caixa = el("div", "ed__paleta-corpo")
+    caixa.append(cadeadoDoLado())
     caixa.append(el("div", "ed__recado", recado))
     // O gesto não se descobre sozinho: sem o botão "Novo grupo", alguém tem
     // de dizer que é arrastando daqui que um grupo nasce.
@@ -847,6 +890,7 @@ export function criarEditor({
     camposDeCor.clear()
     camposDeTexto.clear()
     const caixa = el("div", "ed__paleta-corpo")
+    caixa.append(cadeadoDoLado())
     caixa.append(el("div", "ed__recado", recado))
     caixa.append(el("p", "ed__dica",
       t("O que mudar aqui vale para a conversa de todos os leads deste projeto.")))

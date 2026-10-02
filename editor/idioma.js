@@ -36,6 +36,10 @@ export const EM_INGLES = {
   "Entrada": "Input",
   "Lógica": "Logic",
   "Conexão": "Connection",
+  "Soltar o painel: ele se recolhe quando o mouse sai":
+    "Unpin the panel: it slides away when the mouse leaves",
+  "Prender o painel no lugar": "Pin the panel in place",
+  "Mostrar o painel": "Show the panel",
   "Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele.":
     "Drag a type onto the board to create a group. Drop it on a card to put the block inside it.",
   "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.":

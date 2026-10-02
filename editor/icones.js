@@ -39,6 +39,11 @@ export const ICONE_DA_ACAO = {
   // Seta da seção que abre e fecha. Deitada para baixo quando aberta; o CSS
   // a gira quando fechada, para não haver dois desenhos dizendo a mesma coisa.
   seta: { viewBox: "0 0 24 24", d: "M6 9l6 6 6-6" },
+  // Cadeado fechado e aberto: o painel preso no lugar ou livre para se
+  // recolher. A diferença é só a haste — fechada desce dos dois lados,
+  // aberta fica solta de um deles.
+  cadeado: { viewBox: "0 0 24 24", d: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" },
+  cadeado_aberto: { viewBox: "0 0 24 24", d: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0" },
   // Quatro cantos apontando para dentro: pôr tudo na tela.
   centralizar: "M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3",
   // Disquete, que ainda é o que todo mundo lê como "guardar".

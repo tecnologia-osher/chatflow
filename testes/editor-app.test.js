@@ -1977,7 +1977,7 @@ test("o header nao mora na coluna do meio, e a paleta nao empurra nada", () => {
   assert.deepEqual(raiz.filhos.map((f) => f.className).slice(0, 2), ["ed__barra", "ed__corpo"])
 
   const corpo = porClasse(hospedeiro, "ed__corpo")[0]
-  assert.deepEqual(corpo.filhos.map((f) => f.className), ["ed__paleta", "ed__centro"],
+  assert.deepEqual(corpo.filhos.map((f) => f.className), ["ed__puxador", "ed__paleta", "ed__centro"],
     "a paleta flutua sobre o corpo, do lado do centro — nunca dentro dele")
   assert.equal(porClasse(hospedeiro, "ed__centro")[0].filhos.some((f) => f.className === "ed__barra"),
     false)
@@ -2132,4 +2132,56 @@ test("copia estragada do que esta fechado abre tudo, em vez de quebrar", () => {
   const { hospedeiro } = montar(fluxoBase(), guardado)
   assert.equal(porClasse(hospedeiro, "ed__secao-corpo").length,
     porClasse(hospedeiro, "ed__secao").length)
+})
+
+// --- o painel preso ou solto -----------------------------------------------
+
+const trava = (h) => porClasse(h, "ed__trava")[0]
+const corpoDoEditor = (h) => porClasse(h, "ed__corpo")[0]
+
+test("o painel comeca preso, e o cadeado diz isso", () => {
+  const { hospedeiro } = montar()
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo")
+  assert.equal(trava(hospedeiro).atributos["aria-pressed"], "true")
+  assert.match(trava(hospedeiro).atributos.title, /Soltar o painel/)
+})
+
+test("soltar o painel deixa ele se recolher, e prender traz de volta", () => {
+  const { hospedeiro } = montar()
+  clicar(trava(hospedeiro))
+  assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--solto/)
+  assert.equal(trava(hospedeiro).atributos["aria-pressed"], "false")
+  assert.match(trava(hospedeiro).atributos.title, /Prender o painel/)
+
+  clicar(trava(hospedeiro))
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo")
+})
+
+test("o painel solto continua solto na proxima vez que abrir o editor", () => {
+  const guardado = criarArmazenamento()
+  clicar(trava(montar(fluxoBase(), guardado).hospedeiro))
+  assert.equal(guardado.getItem("chatflow:lado-preso"), "nao")
+
+  const outro = montar(fluxoBase(), guardado)
+  assert.match(corpoDoEditor(outro.hospedeiro).className, /ed__corpo--solto/)
+  assert.equal(trava(outro.hospedeiro).atributos["aria-pressed"], "false")
+})
+
+test("na aba Resultados o painel nao existe, entao nao fica nem preso nem solto", () => {
+  const { hospedeiro } = montarComLeads([])
+  clicar(trava(hospedeiro))
+  assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--solto/)
+
+  abrirResultados(hospedeiro)
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo",
+    "pílula na beira de uma tela sem painel só faria perguntar o que é aquilo")
+})
+
+test("o cadeado tambem esta no alto da aba Tema, e segue o mesmo estado", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  assert.ok(trava(hospedeiro), "a coluna do tema é a mesma coluna")
+  clicar(trava(hospedeiro))
+  assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--solto/)
+  assert.equal(trava(hospedeiro).atributos["aria-pressed"], "false")
 })

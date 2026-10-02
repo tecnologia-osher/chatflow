@@ -52,3 +52,19 @@ test("a distancia da bolinha e a mesma no CSS e no modelo", async () => {
   assert.equal(Number(noCss[1]), MEDIDAS.CARTAO_CONECTOR,
     "CSS e modelo discordando: a linha nasce fora da bolinha")
 })
+
+// O painel que se recolhe é feito de CSS: o JavaScript só põe a classe. Estes
+// são os quatro pedaços sem os quais a classe não faz nada — e um painel que
+// sai da tela e não volta é pior que um painel que nunca sai.
+test("o painel solto sai da tela e volta pela beira", () => {
+  assert.match(css, /\.ed__corpo--solto \.ed__paleta \{[^}]*transform: translateX\(/,
+    "sem isto o cadeado aberto não recolhe nada")
+  assert.match(css, /\.ed__corpo--solto \.ed__puxador:hover ~ \.ed__paleta[^{]*\{[^}]*transform: none/,
+    "a pílula na beira é o que traz o painel de volta")
+  assert.match(css, /\.ed__corpo--solto \.ed__paleta:hover \{[^}]*transform: none/,
+    "com o mouse dentro do painel ele não pode fugir")
+  assert.match(css, /\.ed__puxador \{[^}]*display: none/,
+    "preso, a pílula não tem o que fazer na tela")
+  assert.match(css, /\.ed__paleta \{[^}]*transition: transform/,
+    "sem transição ele pula, em vez de correr")
+})

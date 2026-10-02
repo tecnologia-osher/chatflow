@@ -52,7 +52,40 @@ html, body { margin: 0; height: 100%; }
   left: var(--ed-flutua); top: var(--ed-flutua); bottom: var(--ed-flutua);
   width: var(--ed-lado); background: var(--ed-superficie);
   border: 1px solid var(--ed-linha); border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.08); overflow-y: auto; }
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.08); overflow-y: auto;
+  transition: transform 0.18s ease; }
+
+/* --- painel solto: recolhe para a esquerda e volta pela beira --- */
+/* Com o cadeado aberto, o painel sai da tela e deixa a pílula na borda. O
+   alvo do mouse é uma faixa estreita colada na esquerda: "chegar perto da
+   beira" traz o painel de volta, que é o gesto do Typebot. */
+.ed__corpo--solto .ed__paleta {
+  transform: translateX(calc(-100% - var(--ed-flutua) - 8px)); }
+.ed__corpo--solto .ed__puxador:hover ~ .ed__paleta,
+.ed__corpo--solto .ed__paleta:hover { transform: none; }
+
+.ed__puxador { display: none; }
+.ed__corpo--solto .ed__puxador {
+  display: block; position: absolute; z-index: 4;
+  left: 0; top: 0; bottom: 0; width: 1.1rem; cursor: pointer; }
+/* A faixa é invisível; o que se vê é a pílula no meio dela. */
+.ed__puxador-marca { position: absolute; left: 0.25rem; top: 50%; transform: translateY(-50%);
+  width: 0.32rem; height: 3.2rem; border-radius: 999px; background: var(--ed-seta);
+  opacity: 0.55; transition: opacity 0.15s ease, background 0.15s ease; }
+/* Com o painel na tela a pílula não tem mais o que dizer: ela some, em vez de
+   ficar como um risco por cima da borda dele. */
+.ed__corpo--solto:has(.ed__puxador:hover) .ed__puxador-marca,
+.ed__corpo--solto:has(.ed__paleta:hover) .ed__puxador-marca { opacity: 0; }
+
+/* Cadeado no alto da coluna, discreto até o mouse chegar. */
+.ed__trava { position: sticky; top: 0; float: right; margin: -0.2rem -0.2rem 0 0.4rem;
+  width: 1.7rem; height: 1.7rem; display: grid; place-items: center; padding: 0;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--ed-seta); cursor: pointer; }
+.ed__trava:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__trava--presa { color: var(--ed-suave); }
+.ed__trava-icone { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ed__paleta-corpo { padding: 1rem; }
 .ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ed-suave); margin: 0; }
@@ -144,8 +177,10 @@ html, body { margin: 0; height: 100%; }
 .ed__tema { display: grid; grid-template-rows: auto 1fr; gap: 0.8rem;
   padding: 1.2rem 1.4rem; min-height: 0;
   /* A conversa de exemplo começa depois do painel: ela é uma tela, não um
-     quadro infinito, e metade dela atrás do painel não serviria para nada. */
+     quadro infinito, e metade dela atrás do painel não serviria para nada.
+     Com o painel solto, ele passa por cima e a conversa fica com a tela toda. */
   padding-left: calc(var(--ed-lado) + var(--ed-flutua) * 2); }
+.ed__corpo--solto .ed__tema { padding-left: 1.4rem; }
 .ed__tema-topo { display: flex; align-items: center; gap: 0.6rem; }
 .ed__tema-titulo { margin: 0; font-size: 1rem; }
 .ed__tema-reiniciar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;

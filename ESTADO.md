@@ -1035,3 +1035,24 @@ deixar a coluna vazia.
 
 Dobrar uma seção de cores **não reinicia a conversa** da aba Tema, e a cor da
 seção fechada continua valendo: ela some da tela, não do tema.
+
+### O painel se recolhe, e o cadeado o prende
+
+755 testes. No alto da coluna da esquerda há um **cadeado**. Fechado (o
+padrão), nada muda: a coluna fica onde está. Aberto, ela **corre para fora da
+tela** quando o mouse sai e deixa uma pílula cinza na beira; chegar perto da
+beira com o mouse a traz de volta, e ela só vai embora de novo quando o mouse
+sai do painel. É o gesto do Typebot, e quem trabalha num fluxo largo ganha a
+tela inteira.
+
+O movimento é CSS puro — `transform` com transição, `:hover` na pílula e no
+próprio painel. O JavaScript só põe a classe no corpo e lembra a escolha
+(`chatflow:lado-preso`). A pílula **some enquanto o painel está na tela**, em
+vez de ficar como um risco por cima da borda dele.
+
+Medido no Chrome com mouse de verdade: preso, o painel em x=11; solto e com o
+mouse longe, x=−282 (fora da tela) e a pílula em x=4; mouse na beira, x=11 de
+volta; mouse dentro do painel, continua em 11; mouse longe, −282 outra vez.
+
+Na aba Resultados não existe painel, então ele não fica nem preso nem solto:
+pílula na beira de uma tela sem painel só faria perguntar o que é aquilo.
