@@ -543,6 +543,9 @@ export function criarEditor({
     botao.setAttribute("type", "button")
     botao.addEventListener("click", () => {
       aba = chave
+      // O clique foi no header, longe da beira: a aba nova abre com o painel
+      // recolhido, não com um espiar que sobrou da aba anterior.
+      espiando = false
       sincronizarAbas()
       desenharLado()
       desenharConteudo()
@@ -609,10 +612,36 @@ export function criarEditor({
   // O lado esquerdo serve à aba aberta: na do fluxo são os tipos de bloco,
   // na do tema são as seções de cor. Paleta de blocos na aba Tema seria só
   // ruído com gesto que não leva a nada.
+  // De quão longe o mouse já chama o painel de volta, e quanto ele pode se
+  // afastar do painel aberto antes de ele ir embora. Encostar na pílula é
+  // mira demais para um gesto que se faz o tempo todo: 80px é um terço da
+  // largura do painel, perto o bastante para não atrapalhar quem trabalha na
+  // beira esquerda do quadro.
+  const PERTO_DA_BEIRA = 80
+  const FOLGA_DO_PAINEL = 24
+  let espiando = false
+
   function sincronizarLado() {
-    const semLado = aba === "resultados"
-    corpo.className = `ed__corpo${!semLado && !ladoPreso ? " ed__corpo--solto" : ""}`
+    const solto = aba !== "resultados" && !ladoPreso
+    corpo.className =
+      `ed__corpo${solto ? " ed__corpo--solto" : ""}${solto && espiando ? " ed__corpo--espiando" : ""}`
   }
+
+  // O painel volta por proximidade, não por encostar: enquanto está fora da
+  // tela basta o mouse chegar perto da beira; aberto, ele só se recolhe
+  // quando o mouse se afasta dele. Medir o painel só quando ele está na tela
+  // deixa o caso comum — painel recolhido — em uma comparação de números. E
+  // preso, ou sem painel, nem isso: o mouse passa sem custo nenhum.
+  document.addEventListener("mousemove", (ev) => {
+    if (ladoPreso || aba === "resultados") return
+    const limite = espiando
+      ? (paleta.getBoundingClientRect?.()?.right ?? 0) + FOLGA_DO_PAINEL
+      : PERTO_DA_BEIRA
+    const perto = ev.clientX <= limite
+    if (perto === espiando) return
+    espiando = perto
+    sincronizarLado()
+  })
 
   function desenharLado() {
     const semLado = aba === "resultados"
@@ -639,6 +668,9 @@ export function criarEditor({
     else botao.textContent = ladoPreso ? "🔒" : "🔓"
     botao.addEventListener("click", () => {
       ladoPreso = !ladoPreso
+      // Quem acabou de soltar está com o mouse em cima do cadeado, dentro do
+      // painel: ele fica até o mouse sair, em vez de fugir de baixo da mão.
+      espiando = !ladoPreso
       try { armazenamento?.setItem(NOME_DO_LADO, ladoPreso ? "sim" : "nao") } catch { /* vale esta sessão */ }
       desenharLado()
     })

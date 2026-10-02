@@ -59,10 +59,10 @@ test("a distancia da bolinha e a mesma no CSS e no modelo", async () => {
 test("o painel solto sai da tela e volta pela beira", () => {
   assert.match(css, /\.ed__corpo--solto \.ed__paleta \{[^}]*transform: translateX\(/,
     "sem isto o cadeado aberto não recolhe nada")
-  assert.match(css, /\.ed__corpo--solto \.ed__puxador:hover ~ \.ed__paleta[^{]*\{[^}]*transform: none/,
-    "a pílula na beira é o que traz o painel de volta")
-  assert.match(css, /\.ed__corpo--solto \.ed__paleta:hover \{[^}]*transform: none/,
-    "com o mouse dentro do painel ele não pode fugir")
+  assert.match(css, /\.ed__corpo--espiando \.ed__paleta \{[^}]*transform: none/,
+    "sem isto o painel sai e não volta mais")
+  assert.match(css, /\.ed__corpo--solto \.ed__puxador \{[^}]*pointer-events: none/,
+    "faixa que recebe mouse rouba os cliques do quadro embaixo dela")
   assert.match(css, /\.ed__puxador \{[^}]*display: none/,
     "preso, a pílula não tem o que fazer na tela")
   assert.match(css, /\.ed__paleta \{[^}]*transition: transform/,

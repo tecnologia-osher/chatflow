@@ -1045,14 +1045,24 @@ beira com o mouse a traz de volta, e ela só vai embora de novo quando o mouse
 sai do painel. É o gesto do Typebot, e quem trabalha num fluxo largo ganha a
 tela inteira.
 
-O movimento é CSS puro — `transform` com transição, `:hover` na pílula e no
-próprio painel. O JavaScript só põe a classe no corpo e lembra a escolha
-(`chatflow:lado-preso`). A pílula **some enquanto o painel está na tela**, em
-vez de ficar como um risco por cima da borda dele.
+O movimento é CSS (`transform` com transição); **quem decide é a distância do
+mouse até a beira**, não o `:hover` da pílula. Encostar nela é mira demais
+para um gesto que se faz o tempo todo, e a faixa invisível que desse conta
+roubaria os cliques do quadro embaixo dela — a pílula não recebe mouse nenhum,
+é só o sinal de que há algo ali. O limite é 80px enquanto ele está recolhido;
+aberto, ele só se recolhe quando o mouse passa 24px da borda direita dele.
+A pílula **some enquanto o painel está na tela**, em vez de ficar como um
+risco por cima da borda dele.
+
+Soltar o cadeado deixa o painel aberto até o mouse sair: quem acabou de clicar
+está com a mão em cima dele, e fugir de baixo da mão seria um susto. Trocar de
+aba o recolhe — esse clique foi no header, longe da beira.
 
 Medido no Chrome com mouse de verdade: preso, o painel em x=11; solto e com o
-mouse longe, x=−282 (fora da tela) e a pílula em x=4; mouse na beira, x=11 de
-volta; mouse dentro do painel, continua em 11; mouse longe, −282 outra vez.
+mouse longe, x=−282 (fora da tela) e a pílula em x=4; mouse a 90px da beira,
+ainda recolhido; a 70px, x=11 de volta; dentro do painel, continua em 11;
+longe, −282 outra vez. E um clique a 20px da beira chega no quadro, em vez de
+morrer na faixa.
 
 Na aba Resultados não existe painel, então ele não fica nem preso nem solto:
 pílula na beira de uma tela sem painel só faria perguntar o que é aquilo.

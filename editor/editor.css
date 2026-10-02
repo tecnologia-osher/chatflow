@@ -56,26 +56,26 @@ html, body { margin: 0; height: 100%; }
   transition: transform 0.18s ease; }
 
 /* --- painel solto: recolhe para a esquerda e volta pela beira --- */
-/* Com o cadeado aberto, o painel sai da tela e deixa a pílula na borda. O
-   alvo do mouse é uma faixa estreita colada na esquerda: "chegar perto da
-   beira" traz o painel de volta, que é o gesto do Typebot. */
+/* Com o cadeado aberto, o painel sai da tela e deixa a pílula na borda. Quem
+   decide se ele volta é a distância do mouse até a beira (no app.js), e não o
+   :hover da pílula: encostar nela é mira demais, e a faixa que desse conta
+   roubaria os cliques do quadro embaixo dela. */
 .ed__corpo--solto .ed__paleta {
   transform: translateX(calc(-100% - var(--ed-flutua) - 8px)); }
-.ed__corpo--solto .ed__puxador:hover ~ .ed__paleta,
-.ed__corpo--solto .ed__paleta:hover { transform: none; }
+.ed__corpo--espiando .ed__paleta { transform: none; }
 
+/* A pílula é só o sinal de que há algo ali: não recebe mouse nenhum. */
 .ed__puxador { display: none; }
 .ed__corpo--solto .ed__puxador {
-  display: block; position: absolute; z-index: 4;
-  left: 0; top: 0; bottom: 0; width: 1.1rem; cursor: pointer; }
+  display: block; position: absolute; z-index: 4; pointer-events: none;
+  left: 0; top: 0; bottom: 0; width: 1.1rem; }
 /* A faixa é invisível; o que se vê é a pílula no meio dela. */
 .ed__puxador-marca { position: absolute; left: 0.25rem; top: 50%; transform: translateY(-50%);
   width: 0.32rem; height: 3.2rem; border-radius: 999px; background: var(--ed-seta);
   opacity: 0.55; transition: opacity 0.15s ease, background 0.15s ease; }
 /* Com o painel na tela a pílula não tem mais o que dizer: ela some, em vez de
    ficar como um risco por cima da borda dele. */
-.ed__corpo--solto:has(.ed__puxador:hover) .ed__puxador-marca,
-.ed__corpo--solto:has(.ed__paleta:hover) .ed__puxador-marca { opacity: 0; }
+.ed__corpo--espiando .ed__puxador-marca { opacity: 0; }
 
 /* Cadeado no alto da coluna, discreto até o mouse chegar. */
 .ed__trava { position: sticky; top: 0; float: right; margin: -0.2rem -0.2rem 0 0.4rem;

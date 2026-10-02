@@ -2150,6 +2150,8 @@ test("soltar o painel deixa ele se recolher, e prender traz de volta", () => {
   const { hospedeiro } = montar()
   clicar(trava(hospedeiro))
   assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--solto/)
+  assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--espiando/,
+    "quem soltou está com o mouse no cadeado: o painel não pode fugir de baixo da mão")
   assert.equal(trava(hospedeiro).atributos["aria-pressed"], "false")
   assert.match(trava(hospedeiro).atributos.title, /Prender o painel/)
 
@@ -2184,4 +2186,99 @@ test("o cadeado tambem esta no alto da aba Tema, e segue o mesmo estado", async 
   clicar(trava(hospedeiro))
   assert.match(corpoDoEditor(hospedeiro).className, /ed__corpo--solto/)
   assert.equal(trava(hospedeiro).atributos["aria-pressed"], "false")
+})
+
+test("com o painel solto, o mouse perto da beira o traz de volta", () => {
+  const { hospedeiro } = montar()
+  clicar(trava(hospedeiro))
+  // O dublê mede tudo igual; aqui a paleta tem a largura que tem na tela.
+  porClasse(hospedeiro, "ed__paleta")[0].clientWidth = 274
+  const classe = () => corpoDoEditor(hospedeiro).className
+
+  document.disparar("mousemove", { clientX: 600, clientY: 400 })
+  assert.doesNotMatch(classe(), /espiando/, "o mouse saiu de perto: ele se recolhe")
+
+  // Nem precisa encostar na pílula: chegar perto basta.
+  document.disparar("mousemove", { clientX: 40, clientY: 400 })
+  assert.match(classe(), /ed__corpo--espiando/)
+})
+
+test("o painel aberto so se recolhe quando o mouse se afasta dele", () => {
+  const { hospedeiro } = montar()
+  clicar(trava(hospedeiro))
+  const paleta = porClasse(hospedeiro, "ed__paleta")[0]
+  // O dublê mede tudo igual; aqui a paleta tem a largura que tem na tela.
+  paleta.clientWidth = 274
+  const classe = () => corpoDoEditor(hospedeiro).className
+
+  document.disparar("mousemove", { clientX: 40, clientY: 400 })
+  assert.match(classe(), /espiando/)
+
+  document.disparar("mousemove", { clientX: 200, clientY: 400 })
+  assert.match(classe(), /espiando/, "o mouse está dentro do painel: ele não pode fugir")
+
+  document.disparar("mousemove", { clientX: 500, clientY: 400 })
+  assert.doesNotMatch(classe(), /espiando/)
+})
+
+test("com o painel preso, mexer o mouse nao muda nada", () => {
+  const { hospedeiro } = montar()
+  document.disparar("mousemove", { clientX: 10, clientY: 400 })
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo")
+})
+
+test("prender o painel de volta o deixa parado, e o mouse passa a nao contar", () => {
+  const { hospedeiro } = montar()
+  clicar(trava(hospedeiro))
+  document.disparar("mousemove", { clientX: 10, clientY: 400 })
+  assert.match(corpoDoEditor(hospedeiro).className, /espiando/)
+
+  clicar(trava(hospedeiro))
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo")
+  document.disparar("mousemove", { clientX: 900, clientY: 400 })
+  document.disparar("mousemove", { clientX: 10, clientY: 400 })
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo", "preso é preso")
+})
+
+test("na aba Resultados o mouse na beira nao chama painel nenhum", () => {
+  const { hospedeiro } = montarComLeads([])
+  clicar(trava(hospedeiro))
+  document.disparar("mousemove", { clientX: 900, clientY: 400 })
+  abrirResultados(hospedeiro)
+  document.disparar("mousemove", { clientX: 10, clientY: 400 })
+  assert.equal(corpoDoEditor(hospedeiro).className, "ed__corpo")
+
+  // O clique na aba foi no header, longe da beira: o fluxo abre recolhido,
+  // não com um espiar que sobrou de um mouse que passou em outra aba.
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  assert.doesNotMatch(corpoDoEditor(hospedeiro).className, /espiando/)
+})
+
+test("trocar de aba com o painel aberto o recolhe: o clique foi no header", () => {
+  const { hospedeiro } = montar()
+  clicar(trava(hospedeiro))
+  assert.match(corpoDoEditor(hospedeiro).className, /espiando/)
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Tema").disparar("click")
+  assert.doesNotMatch(corpoDoEditor(hospedeiro).className, /espiando/)
+})
+
+test("com o painel preso, ou sem painel, o mouse nao custa medicao nenhuma", () => {
+  // O caminho do mouse é percorrido centenas de vezes por minuto. Medir o
+  // painel a cada mexida, com ele preso na tela, é trabalho jogado fora.
+  const { hospedeiro } = montarComLeads([])
+  const paleta = porClasse(hospedeiro, "ed__paleta")[0]
+  let medidas = 0
+  const medirDeVerdade = paleta.getBoundingClientRect.bind(paleta)
+  paleta.getBoundingClientRect = () => { medidas++; return medirDeVerdade() }
+
+  const mexer = () => {
+    for (let i = 0; i < 5; i++) document.disparar("mousemove", { clientX: 10 + i, clientY: 400 })
+  }
+  mexer()
+  assert.equal(medidas, 0, "o painel está preso: não há o que medir")
+
+  clicar(trava(hospedeiro))
+  abrirResultados(hospedeiro)
+  mexer()
+  assert.equal(medidas, 0, "nesta aba não existe painel para chamar de volta")
 })
