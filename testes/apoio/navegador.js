@@ -110,14 +110,30 @@ class Elemento {
       type: evento, preventDefault() {}, stopPropagation() { parado = true },
       target: this, ...detalhe
     }
+    // Descida: os ouvintes de captura do documento correm antes de tudo.
+    const documento = globalThis.document
+    for (const fn of [...(documento?.captura?.[evento] || [])]) {
+      e.currentTarget = documento
+      fn(e)
+    }
+    if (parado) return e
+
     let no = this
     while (no) {
       for (const fn of [...(no.ouvintes?.[evento] || [])]) {
         e.currentTarget = no
         fn(e)
       }
-      if (parado || NAO_SOBEM.has(evento)) break
+      if (parado || NAO_SOBEM.has(evento)) return e
       no = no.pai
+    }
+    // Acabou a árvore: no navegador o evento ainda chega ao documento, e é lá
+    // que moram os ouvintes de "clicou fora". Sem esta última parada, um
+    // desses nunca seria chamado num teste — e a tela, no navegador, faria
+    // algo que o teste jurava que ela não fazia.
+    for (const fn of [...(documento?.ouvintes?.[evento] || [])]) {
+      e.currentTarget = documento
+      fn(e)
     }
     return e
   }
@@ -157,16 +173,30 @@ const avisosCapturados = []
 
 export function instalarNavegador() {
   const ouvintesDoDocumento = {}
+  // Ouvintes de captura: no navegador eles correm na descida, antes de
+  // qualquer elemento, e por isso um stopPropagation lá embaixo não os cala.
+  // É o único jeito de ouvir "clicou em algum lugar" num canvas que para a
+  // propagação em tudo.
+  const ouvintesDeCaptura = {}
   globalThis.document = {
+    // Os ouvintes ficam à vista para o `disparar` de um elemento alcançá-los
+    // no fim da subida, como o evento alcança o documento no navegador.
+    ouvintes: ouvintesDoDocumento,
+    captura: ouvintesDeCaptura,
     createElement: (tag) => new Elemento(tag),
     createElementNS: (_ns, tag) => new Elemento(tag, true),
-    addEventListener(evento, fn) { (ouvintesDoDocumento[evento] ||= []).push(fn) },
-    removeEventListener(evento, fn) {
-      ouvintesDoDocumento[evento] = (ouvintesDoDocumento[evento] || []).filter((x) => x !== fn)
+    addEventListener(evento, fn, captura) {
+      const onde = captura ? ouvintesDeCaptura : ouvintesDoDocumento
+      ;(onde[evento] ||= []).push(fn)
+    },
+    removeEventListener(evento, fn, captura) {
+      const onde = captura ? ouvintesDeCaptura : ouvintesDoDocumento
+      onde[evento] = (onde[evento] || []).filter((x) => x !== fn)
     },
     // Só para os testes: dispara no documento o que o navegador dispararia.
     disparar(evento, detalhe = {}) {
       const e = { type: evento, preventDefault() {}, stopPropagation() {}, ...detalhe }
+      for (const fn of [...(ouvintesDeCaptura[evento] || [])]) fn(e)
       for (const fn of [...(ouvintesDoDocumento[evento] || [])]) fn(e)
       return e
     }

@@ -7,7 +7,7 @@ import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo, duplicarGrupo
+  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo, duplicarGrupo, nomeDoFluxo, definirNomeDoFluxo
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -436,4 +436,30 @@ test("o fluxo com a copia continua valido", () => {
   // A cópia não é alcançável até ser ligada — isso é esperado e aparece no
   // aviso. O que não pode é id duplicado ou destino quebrado.
   assert.equal(r.erros.some((e) => /duplicad|não existe/.test(e)), false, r.erros.join(" | "))
+})
+
+// --- nome do projeto -------------------------------------------------------
+
+test("fluxo sem nome se chama My Chatflow", () => {
+  assert.equal(nomeDoFluxo({ versao: 2, grupos: [] }), "My Chatflow")
+  assert.equal(nomeDoFluxo({ versao: 2, nome: "   ", grupos: [] }), "My Chatflow",
+    "nome só de espaço é o mesmo que nome nenhum")
+  assert.equal(nomeDoFluxo(null), "My Chatflow")
+})
+
+test("definir o nome guarda no fluxo, e apagar tira o campo", () => {
+  const f = definirNomeDoFluxo({ versao: 2, grupos: [] }, "Osher 01")
+  assert.equal(f.nome, "Osher 01")
+  assert.equal(nomeDoFluxo(f), "Osher 01")
+  assert.equal("nome" in definirNomeDoFluxo(f, ""), false,
+    "nome vazio sai do arquivo em vez de virar string vazia")
+})
+
+test("definir o nome nao mexe no resto", () => {
+  const antes = { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }], grupos: [
+    { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, blocos: [] }] }
+  const copia = JSON.parse(JSON.stringify(antes))
+  const f = definirNomeDoFluxo(antes, "Novo")
+  assert.deepEqual(antes, copia)
+  assert.deepEqual(f.grupos, copia.grupos)
 })

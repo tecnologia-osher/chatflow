@@ -225,6 +225,19 @@ export function duplicarGrupo(fluxo, { grupo }) {
   return { ...fluxo, grupos: [...(fluxo.grupos || []), copia] }
 }
 
+// O nome do projeto. Vive no próprio fluxo: é o arquivo que viaja, e um nome
+// guardado em outro lugar se perderia na primeira cópia.
+export const NOME_PADRAO = "My Chatflow"
+
+export function nomeDoFluxo(fluxo) {
+  const nome = (fluxo?.nome || "").trim()
+  return nome || NOME_PADRAO
+}
+
+export function definirNomeDoFluxo(fluxo, valor) {
+  return comCampo(fluxo, "nome", valor)
+}
+
 export function proximoNomeDeGrupo(fluxo) {
   const usados = new Set((fluxo.grupos || []).filter(Boolean).map((g) => g.titulo))
   let n = (fluxo.grupos || []).filter(Boolean).length + 1

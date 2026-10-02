@@ -48,7 +48,9 @@
     if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
     const editor = criarEditor({
       elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo",
-      aoBaixar: baixar, aoSalvar: salvar
+      aoBaixar: baixar, aoSalvar: salvar,
+      // A página de projetos ainda não existe; quando existir, é só apontar.
+      aoVoltar: () => alert("A lista de projetos ainda não existe.")
     })
 
     // Fechar a aba com trabalho não salvo é a maneira mais boba de perder uma

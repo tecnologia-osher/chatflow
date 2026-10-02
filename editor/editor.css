@@ -58,9 +58,64 @@ html, body { margin: 0; height: 100%; }
 
 /* --- centro --- */
 .ed__centro { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
-.ed__barra { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem;
+.ed__barra { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 0.6rem; padding: 0.55rem 1rem;
   background: var(--ed-superficie); border-bottom: 1px solid var(--ed-linha); }
-.ed__marca { font-weight: 600; margin-right: auto; }
+.ed__barra-lado { display: flex; align-items: center; gap: 0.4rem; }
+.ed__barra-lado:last-child { justify-content: flex-end; }
+
+/* Voltar, desfazer e refazer: ícone só, do tamanho do toque, sem moldura até
+   o mouse chegar. Moldura em tudo deixa o header parecendo um painel de
+   avião. */
+.ed__barra button.ed__voltar, .ed__barra button.ed__passo,
+.ed__barra button.ed__engrenagem {
+  width: 2rem; height: 2rem; display: grid; place-items: center; padding: 0;
+  border-color: transparent; background: transparent; color: var(--ed-suave);
+  font-size: 1rem; line-height: 1; }
+.ed__barra button.ed__voltar:hover, .ed__barra button.ed__passo:hover:not(:disabled),
+.ed__barra button.ed__engrenagem:hover {
+  background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__barra button.ed__passo:disabled { color: var(--ed-linha); cursor: default; }
+
+.ed__nome { display: flex; align-items: center; min-width: 0; margin-right: 0.3rem; }
+.ed__barra button.ed__nome-texto { max-width: 16rem; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; border-color: transparent; background: transparent;
+  font-weight: 600; padding: 0.3rem 0.45rem; }
+.ed__barra button.ed__nome-texto:hover { background: var(--ed-fundo); }
+.ed__nome-campo { width: 14rem; padding: 0.3rem 0.45rem; border: 1px solid var(--ed-acento);
+  border-radius: 8px; font: inherit; font-weight: 600; background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.ed__nome-campo:focus { outline: none; }
+
+.ed__abas { display: flex; align-items: center; gap: 0.15rem; }
+.ed__barra button.ed__aba { border-color: transparent; background: transparent;
+  color: var(--ed-suave); font-weight: 600; padding: 0.4rem 0.8rem; }
+.ed__barra button.ed__aba:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__barra button.ed__aba--ativa { background: var(--ed-superficie); color: var(--ed-texto);
+  border-color: var(--ed-linha); box-shadow: 0 1px 2px rgba(20,25,40,0.06); }
+
+/* Tema e Resultados ainda não existem: a tela diz isso em vez de ficar vazia. */
+.ed__em-breve { display: grid; place-content: center; gap: 0.4rem; text-align: center;
+  padding: 3rem 2rem; }
+.ed__em-breve-titulo { margin: 0; font-size: 1.1rem; }
+.ed__em-breve-texto { margin: 0; max-width: 30rem; color: var(--ed-suave); font-size: 0.86rem; }
+
+.ed__area-config { position: fixed; top: 0; left: 0; width: 0; height: 0; }
+.ed__config { position: fixed; top: 4rem; right: 1rem; width: 19rem; z-index: 16;
+  display: grid; gap: 0.55rem; padding: 0.9rem 1rem 1.1rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
+.ed__config-topo { display: flex; align-items: center; justify-content: space-between; }
+.ed__config-titulo { margin: 0; font-size: 0.92rem; }
+.ed__config-fechar { border: none; border-radius: 50%; width: 1.7rem; height: 1.7rem;
+  background: transparent; color: var(--ed-suave); font: inherit; cursor: pointer; }
+.ed__config-fechar:hover { background: var(--ed-fundo); }
+.ed__config-ajuda { margin: 0; font-size: 0.76rem; color: var(--ed-suave); line-height: 1.4; }
+.ed__config-linha { display: grid; grid-template-columns: 1fr 5.5rem; align-items: center;
+  gap: 0.5rem; font-size: 0.82rem; }
+.ed__config-campo { padding: 0.35rem 0.5rem; border: 1px solid var(--ed-linha);
+  border-radius: 7px; font: inherit; font-size: 0.82rem; background: var(--ed-superficie);
+  color: var(--ed-texto); }
 .ed__barra button { padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--ed-linha);
   background: var(--ed-superficie); font: inherit; cursor: pointer; }
 /* Sempre com o seletor do pai junto: `.ed__salvar` sozinho perde para

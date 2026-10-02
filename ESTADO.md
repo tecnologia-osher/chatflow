@@ -647,3 +647,35 @@ distância, que é o que faz a linha nascer dentro delas.
 A distância vive em dois lugares: `--ed-conector-fora` no CSS põe a bolinha,
 `CARTAO_CONECTOR` no modelo faz a linha nascer nela. Mudar um e esquecer o
 outro reabre o vão — então um teste lê o CSS e compara os dois números.
+
+### O header novo, com desfazer de verdade
+
+561 testes. O header passou a ter três zonas, no espírito do Typebot:
+
+- **Esquerda:** `‹` para a lista de projetos (a página ainda não existe — o
+  botão avisa, em vez de não fazer nada em silêncio), o **nome do projeto**
+  editável no lugar, e **desfazer/refazer**.
+- **Meio:** as abas **Fluxo · Tema · Resultados**. Tema e Resultados ainda não
+  existem e dizem isso na tela, em vez de abrirem um branco que parece defeito.
+- **Direita:** **▶ Testar**, **Centralizar**, **Salvar** e a **engrenagem**,
+  que abre as configurações — por ora o compasso da digitação, que é do fluxo.
+
+O nome vive no próprio fluxo (`nome`), com `My Chatflow` como padrão: é o
+arquivo que viaja, e um nome guardado em outro lugar se perderia na primeira
+cópia.
+
+**Desfazer e refazer** guardam o fluxo inteiro a cada mudança — alguns kB, e
+muito mais confiável que uma lista de operações inversas, que erra justamente
+nas que mexem em várias coisas (apagar um grupo mexe em todos os que apontavam
+para ele). Todas as dezesseis edições passam por um funil, `trocarFluxo`, com
+uma **assinatura**: edições seguidas no mesmo campo viram um passo só, porque
+desfazer letra por letra o que se digitou seria um castigo. Arrastar um tipo
+para o quadro são duas edições — criar o grupo e pôr o bloco — e uma assinatura
+só, senão o primeiro desfazer deixaria um grupo vazio. Ctrl+Z e Ctrl+Shift+Z
+funcionam, menos dentro de uma caixa de texto, onde o desfazer do próprio campo
+é o que a mão espera.
+
+**O dublê aprendeu duas coisas, as duas por defeito real:** eventos sobem até o
+documento, e existe fase de **captura**. Foi assim que o "clicar fora fecha a
+caixa do nome" passou a ser testável — na borbulha ele nunca chegaria, porque
+o canvas para a propagação de tudo o que acontece dentro dele.

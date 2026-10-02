@@ -807,3 +807,269 @@ test("enquanto salva, o botao avisa e nao manda duas vezes", async () => {
   await assentar()
   assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
 })
+
+// --- o header --------------------------------------------------------------
+
+test("o header tem voltar, nome, desfazer, refazer, abas e engrenagem", () => {
+  const { hospedeiro } = montar()
+  for (const classe of ["ed__voltar", "ed__nome", "ed__passo--desfazer", "ed__passo--refazer",
+    "ed__engrenagem", "ed__testar", "ed__ajustar", "ed__salvar"]) {
+    assert.equal(porClasse(hospedeiro, classe).length, 1, `faltou ${classe}`)
+  }
+  assert.deepEqual(porClasse(hospedeiro, "ed__aba").map((b) => b.textContent),
+    ["Fluxo", "Tema", "Resultados"])
+  assert.equal(porClasse(hospedeiro, "ed__aba--ativa")[0].textContent, "Fluxo")
+})
+
+test("o voltar avisa quem abriu o editor, para levar aos projetos", () => {
+  const hospedeiro = new Elemento("div")
+  const voltas = []
+  criarEditor({ elemento: hospedeiro, fluxo: fluxoBase(), aoVoltar: () => voltas.push(1) })
+  porClasse(hospedeiro, "ed__voltar")[0].disparar("click")
+  assert.equal(voltas.length, 1)
+})
+
+test("fluxo sem nome aparece como My Chatflow, e o nome se edita ali mesmo", () => {
+  const { hospedeiro, editor } = montar()
+  assert.equal(porClasse(hospedeiro, "ed__nome-texto")[0].textContent, "My Chatflow")
+
+  porClasse(hospedeiro, "ed__nome-texto")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
+  assert.equal(document.focado, campo, "a caixa nasce com o cursor")
+  campo.value = "Osher 01"
+  campo.disparar("input")
+  assert.equal(editor.fluxo().nome, "Osher 01")
+
+  campo.disparar("blur")
+  assert.equal(porClasse(hospedeiro, "ed__nome-texto")[0].textContent, "Osher 01")
+})
+
+test("renomear o projeto conta como mudanca a salvar", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__nome-texto")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
+  campo.value = "Osher 01"
+  campo.disparar("input")
+  assert.equal(editor.temMudancas(), true)
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvar")
+})
+
+test("as abas trocam o que aparece, e dizem o que ainda nao existe", () => {
+  const { hospedeiro } = montar()
+  const aba = (rotulo) => porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === rotulo)
+  assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), false)
+
+  aba("Tema").disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), true,
+    "o canvas sai da frente")
+  assert.equal(porClasse(hospedeiro, "ed__em-breve-titulo")[0].textContent, "Tema")
+  assert.match(porClasse(hospedeiro, "ed__em-breve-texto")[0].textContent, /tema\.json/)
+  assert.equal(porClasse(hospedeiro, "ed__aba--ativa")[0].textContent, "Tema")
+
+  aba("Fluxo").disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), false)
+  assert.equal(porClasse(hospedeiro, "ed__em-breve")[0].className.includes("ed__oculto"), true)
+})
+
+test("a engrenagem abre e fecha as configuracoes, com o ritmo da digitacao", () => {
+  const { hospedeiro, editor } = montar()
+  assert.equal(porClasse(hospedeiro, "ed__config").length, 0, "não aparece sozinha")
+
+  porClasse(hospedeiro, "ed__engrenagem")[0].disparar("click")
+  const campos = porClasse(hospedeiro, "ed__config-campo")
+  assert.equal(campos.length, 3)
+  campos[0].value = "800"
+  campos[0].disparar("input")
+  assert.equal(editor.fluxo().ritmo.piso, 800)
+  assert.equal(typeof editor.fluxo().ritmo.piso, "number", "em texto, o motor soma errado")
+
+  porClasse(hospedeiro, "ed__config-fechar")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__config").length, 0)
+})
+
+test("limpar um campo do ritmo tira ele do fluxo, nao grava vazio", () => {
+  const f = fluxoBase()
+  f.ritmo = { piso: 1000, porCaractere: 0, teto: 1000 }
+  const { hospedeiro, editor } = montar(f)
+  porClasse(hospedeiro, "ed__engrenagem")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__config-campo")[0]
+  campo.value = ""
+  campo.disparar("input")
+  assert.equal("piso" in editor.fluxo().ritmo, false)
+})
+
+// --- desfazer e refazer ----------------------------------------------------
+
+test("desfazer volta a ultima mudanca, refazer traz de volta", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = JSON.stringify(editor.fluxo())
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  assert.equal(editor.fluxo().grupos.length, 3)
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.fluxo().grupos.length, 2)
+  assert.equal(JSON.stringify(editor.fluxo()), antes, "voltou exatamente ao que era")
+  assert.equal(porClasse(hospedeiro, "ed__cartao").length, 2, "e o canvas acompanhou")
+
+  porClasse(hospedeiro, "ed__passo--refazer")[0].disparar("click")
+  assert.equal(editor.fluxo().grupos.length, 3)
+})
+
+test("os botoes ficam apagados quando nao ha o que desfazer ou refazer", () => {
+  const { hospedeiro } = montar()
+  const desfazer = () => porClasse(hospedeiro, "ed__passo--desfazer")[0]
+  const refazer = () => porClasse(hospedeiro, "ed__passo--refazer")[0]
+  assert.equal(desfazer().disabled, true, "nada aconteceu ainda")
+  assert.equal(refazer().disabled, true)
+
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  assert.equal(desfazer().disabled, false)
+  assert.equal(refazer().disabled, true, "ainda não se desfez nada")
+
+  desfazer().disparar("click")
+  assert.equal(refazer().disabled, false)
+})
+
+test("digitar seguido vira um passo so, nao um por letra", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  for (const texto of ["B", "Bo", "Bom", "Bom d", "Bom dia"]) {
+    campo.value = texto
+    campo.disparar("input")
+  }
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Bom dia")
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Olá",
+    "desfazer letra por letra o que se digitou seria um castigo")
+})
+
+test("edicoes em campos diferentes sao passos diferentes", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const texto = porClasse(hospedeiro, "ed__bloco-campo")[0]
+  texto.value = "Bom dia"
+  texto.disparar("input")
+
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
+  const titulo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  titulo.value = "Boas-vindas"
+  titulo.disparar("input")
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.fluxo().grupos[0].titulo, "Abertura", "o título voltou")
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.texto, "Bom dia", "o texto ficou")
+})
+
+test("uma mudanca nova apaga o caminho de volta do refazer", () => {
+  const { hospedeiro, editor } = montar()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(porClasse(hospedeiro, "ed__passo--refazer")[0].disabled, false)
+
+  arrastar(hospedeiro, "Botões", naJanela(hospedeiro, { x: 600, y: 300 }))
+  assert.equal(porClasse(hospedeiro, "ed__passo--refazer")[0].disabled, true,
+    "o futuro que havia deixou de existir quando o caminho mudou")
+  assert.equal(editor.fluxo().grupos.at(-1).blocos[0].tipo, "entrada_botoes")
+})
+
+test("desfazer apagar um grupo traz o grupo e quem apontava para ele", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__cartao")[1].disparar("contextmenu", { clientX: 0, clientY: 0 })
+  porClasse(hospedeiro, "ed__menu-excluir")[0].disparar("click")
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g1"])
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g1", "g2"])
+  assert.equal(editor.fluxo().grupos[0].proximo, "g2", "a ligação voltou junto")
+})
+
+test("desfazer solta a selecao de um grupo que deixou de existir", () => {
+  const { hospedeiro, editor } = montar()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  const novo = editor.fluxo().grupos.at(-1).id
+  assert.equal(editor.selecao().grupo, novo, "o grupo novo nasce selecionado")
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.selecao().grupo, null,
+    "seleção num grupo que sumiu faz a paleta acrescentar bloco no nada")
+})
+
+test("desfazer depois de salvar volta a pedir para salvar", async () => {
+  const { hospedeiro, editor } = montarComServidor()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+  assert.equal(editor.temMudancas(), false)
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.temMudancas(), true, "o arquivo tem o grupo que a tela já não tem")
+})
+
+test("Ctrl+Z desfaz e Ctrl+Shift+Z refaz, sem precisar do botao", () => {
+  const { hospedeiro, editor } = montar()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  assert.equal(editor.fluxo().grupos.length, 3)
+
+  document.disparar("keydown", { key: "z", ctrlKey: true })
+  assert.equal(editor.fluxo().grupos.length, 2)
+  document.disparar("keydown", { key: "Z", ctrlKey: true, shiftKey: true })
+  assert.equal(editor.fluxo().grupos.length, 3)
+})
+
+test("Ctrl+Z dentro de uma caixa de texto e do campo, nao do editor", () => {
+  const { hospedeiro, editor } = montar()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__bloco-campo")[0]
+
+  document.disparar("keydown", { key: "z", ctrlKey: true, target: campo })
+  assert.equal(editor.fluxo().grupos.length, 3, "quem digita espera desfazer a letra, não o grupo")
+})
+
+test("Ctrl+Z sem nada para desfazer nao quebra o editor", () => {
+  const { hospedeiro, editor } = montar()
+  document.disparar("keydown", { key: "z", ctrlKey: true })
+  document.disparar("keydown", { key: "Z", ctrlKey: true, shiftKey: true })
+  assert.equal(editor.fluxo().grupos.length, 2)
+  assert.equal(porClasse(hospedeiro, "ed__cartao").length, 2)
+})
+
+test("desfazer o nome do projeto volta o nome no header", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__nome-texto")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
+  campo.value = "Osher 01"
+  campo.disparar("input")
+  campo.disparar("blur")
+  assert.equal(porClasse(hospedeiro, "ed__nome-texto")[0].textContent, "Osher 01")
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.fluxo().nome, undefined)
+  assert.equal(porClasse(hospedeiro, "ed__nome-texto")[0].textContent, "My Chatflow",
+    "o fluxo voltou e o header continuou mostrando o nome antigo")
+})
+
+test("clicar no quadro fecha a caixa do nome do projeto", () => {
+  const { hospedeiro, editor } = montar()
+  porClasse(hospedeiro, "ed__nome-texto")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
+  campo.value = "Osher 01"
+  campo.disparar("input")
+
+  // O arrasto do quadro chama preventDefault e segura o foco: sem fechar na
+  // mão, a caixa ficaria aberta atrás do resto.
+  porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  assert.equal(porClasse(hospedeiro, "ed__nome-campo").length, 0)
+  assert.equal(porClasse(hospedeiro, "ed__nome-texto")[0].textContent, "Osher 01")
+  assert.equal(editor.fluxo().nome, "Osher 01", "o que foi digitado fica")
+})
+
+test("clicar dentro da caixa do nome nao a fecha", () => {
+  const { hospedeiro } = montar()
+  porClasse(hospedeiro, "ed__nome-texto")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
+  campo.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  assert.equal(porClasse(hospedeiro, "ed__nome-campo").length, 1)
+})
