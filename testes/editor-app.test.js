@@ -1282,8 +1282,10 @@ test("com a chave colada, busca e monta a tabela com as colunas do fluxo", async
   await assentar()
 
   assert.deepEqual(pedidos, ["segredo"])
+  // A coluna leva o nome do grupo, não o da pergunta: é assim que a pessoa
+  // lê o fluxo.
   assert.deepEqual(porClasse(hospedeiro, "ed__tabela-cabecalho").map((c) => c.textContent),
-    ["Quando", "Situação", "Seu nome"])
+    ["Quando", "Situação", "Abertura"])
   assert.deepEqual(porClasse(hospedeiro, "ed__tabela-celula").map((c) => c.textContent),
     ["02/10 11:05", "concluído", "Ana"])
 })
@@ -1301,7 +1303,7 @@ test("sem ninguem ainda, a tabela ja mostra as colunas do fluxo", async () => {
   // A tabela fica pronta: quando o primeiro lead cair, ele entra como linha
   // embaixo do cabeçalho, sem nada mudar de lugar.
   assert.deepEqual(porClasse(hospedeiro, "ed__tabela-cabecalho").map((c) => c.textContent),
-    ["Quando", "Situação", "Seu nome"])
+    ["Quando", "Situação", "Abertura"])
   const vazia = porClasse(hospedeiro, "ed__tabela-celula--vazia")[0]
   assert.ok(vazia, "a tabela precisa dizer que ainda não há ninguém")
   assert.match(vazia.textContent, /ninguém entrou/i)

@@ -6,8 +6,6 @@
 // estiver no fluxo entra no fim — esconder dado que existe seria pior do que
 // uma coluna a mais.
 
-import { obter } from "./catalogo.js"
-
 const CONTROLE = ["sessaoId", "situacao", "atualizadoEm", "ultimoGrupo", "ultimoBloco"]
 
 export const COLUNAS_FIXAS = [
@@ -15,19 +13,28 @@ export const COLUNAS_FIXAS = [
   { chave: "situacao", rotulo: "Situação" }
 ]
 
-// As variáveis que o fluxo guarda, na ordem em que o chat as pergunta.
+// As variáveis que o fluxo guarda, na ordem em que o chat as pergunta — cada
+// uma com o nome do **grupo** onde a pergunta mora.
+//
+// A coluna é o grupo porque é assim que a pessoa pensa o fluxo: "o que o lead
+// respondeu na Idade". Quando um grupo pergunta duas coisas, a segunda vira
+// "Contato (1)", a terceira "Contato (2)" — o nome do grupo continua à vista
+// e a ordem diz qual pergunta é.
+//
+// Grupo que não pergunta nada não vira coluna: não há o que mostrar ali.
 export function variaveisDoFluxo(fluxo) {
   const vistas = new Set()
   const lista = []
   for (const grupo of fluxo?.grupos || []) {
-    for (const bloco of grupo?.blocos || []) {
+    if (!grupo) continue
+    const titulo = grupo.titulo || grupo.id
+    let quantas = 0
+    for (const bloco of grupo.blocos || []) {
       if (!bloco?.salvar_em || vistas.has(bloco.salvar_em)) continue
       vistas.add(bloco.salvar_em)
-      let rotulo = bloco.salvar_em
-      try {
-        rotulo = bloco.conteudo?.rotulo || bloco.conteudo?.texto || obter(bloco.tipo).rotulo
-      } catch { /* tipo fora do catálogo: fica o nome da variável */ }
-      lista.push({ chave: bloco.salvar_em, rotulo: String(rotulo).slice(0, 40) })
+      const rotulo = quantas === 0 ? titulo : `${titulo} (${quantas})`
+      quantas += 1
+      lista.push({ chave: bloco.salvar_em, rotulo })
     }
   }
   return lista

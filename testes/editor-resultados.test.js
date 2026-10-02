@@ -23,10 +23,30 @@ test("as variaveis saem na ordem em que o chat pergunta", () => {
   assert.deepEqual(variaveisDoFluxo(fluxo).map((v) => v.chave), ["nome", "telefone", "idade"])
 })
 
-test("a coluna se chama como a pergunta, nao como a variavel", () => {
-  const [nome, telefone] = variaveisDoFluxo(fluxo)
-  assert.equal(nome.rotulo, "Seu nome")
-  assert.equal(telefone.rotulo, "Seu WhatsApp")
+test("a coluna se chama como o grupo, que e como se pensa o fluxo", () => {
+  assert.deepEqual(variaveisDoFluxo(fluxo).map((v) => v.rotulo),
+    ["Contato", "Contato (1)", "Idade"])
+})
+
+test("grupo que pergunta duas coisas vira duas colunas, numeradas", () => {
+  const [primeira, segunda] = variaveisDoFluxo(fluxo)
+  assert.equal(primeira.rotulo, "Contato", "a primeira fica com o nome limpo")
+  assert.equal(segunda.rotulo, "Contato (1)")
+  assert.deepEqual([primeira.chave, segunda.chave], ["nome", "telefone"],
+    "a ordem é a das perguntas")
+})
+
+test("grupo que nao pergunta nada nao vira coluna", () => {
+  const comFim = JSON.parse(JSON.stringify(fluxo))
+  comFim.grupos.push({ id: "g3", titulo: "Fim", blocos: [
+    { id: "b9", tipo: "texto", conteudo: { texto: "Obrigado" } }] })
+  assert.equal(variaveisDoFluxo(comFim).some((v) => /Fim/.test(v.rotulo)), false)
+})
+
+test("grupo sem titulo usa o id, em vez de coluna sem nome", () => {
+  const semTitulo = { versao: 2, grupos: [
+    { id: "g_solto", blocos: [{ id: "b", tipo: "entrada_texto", salvar_em: "x", conteudo: {} }] }] }
+  assert.equal(variaveisDoFluxo(semTitulo)[0].rotulo, "g_solto")
 })
 
 test("bloco sem salvar_em nao vira coluna", () => {
