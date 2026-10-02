@@ -29,3 +29,37 @@ export function iconeDoTipo(tipo, classe = "ed__tipo-icone") {
   desenho.append(traco)
   return desenho
 }
+
+// Ícones da barra. Mesmo traço dos tipos, nomes de ação em vez de tipo.
+export const ICONE_DA_ACAO = {
+  // Quatro cantos apontando para dentro: pôr tudo na tela.
+  centralizar: "M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3",
+  // Disquete, que ainda é o que todo mundo lê como "guardar".
+  salvar: "M3 2.5h8.5L13.5 4.5v9h-11zM5 2.5v4h6v-4M5 9.5h6v4h-6z",
+  // Visto: já está guardado.
+  salvo: "M3 8.5l3.5 3.5 6.5-7.5",
+  // Engrenagem de verdade: os dentes encostados no corpo. Com os traços
+  // soltos em volta do círculo, como estava, o desenho virava um sol.
+  configuracoes: {
+    viewBox: "0 0 24 24",
+    d: "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" +
+      "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+  }
+}
+
+export function iconeDaAcao(nome, classe = "ed__barra-icone") {
+  const definicao = ICONE_DA_ACAO[nome]
+  if (!definicao) return null
+  // Um ícone pode trazer a própria moldura: desenhos emprestados costumam vir
+  // em 24, e redesenhá-los em 16 à mão só introduz erro.
+  const caminho = typeof definicao === "string" ? definicao : definicao.d
+  const moldura = typeof definicao === "string" ? "0 0 16 16" : definicao.viewBox
+  const SVG = "http://www.w3.org/2000/svg"
+  const desenho = document.createElementNS(SVG, "svg")
+  desenho.setAttribute("class", classe)
+  desenho.setAttribute("viewBox", moldura)
+  const traco = document.createElementNS(SVG, "path")
+  traco.setAttribute("d", caminho)
+  desenho.append(traco)
+  return desenho
+}

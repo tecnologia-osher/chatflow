@@ -15,7 +15,7 @@ import {
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
-import { iconeDoTipo } from "./icones.js"
+import { iconeDoTipo, iconeDaAcao } from "./icones.js"
 
 
 const NOME_DA_CATEGORIA = {
@@ -236,9 +236,12 @@ export function criarEditor({
   })
 
   // --- barra -----------------------------------------------------------
-  const ajustar = el("button", "ed__ajustar", "Centralizar")
+  const ajustar = el("button", "ed__ajustar")
   ajustar.setAttribute("type", "button")
   ajustar.setAttribute("title", "Põe o fluxo inteiro na tela")
+  const icArruma = iconeDaAcao("centralizar")
+  if (icArruma) ajustar.append(icArruma)
+  ajustar.append(el("span", null, "Centralizar"))
   ajustar.addEventListener("click", () => canvas.enquadrar())
 
   const testar = el("button", "ed__testar", "▶ Testar")
@@ -251,8 +254,9 @@ export function criarEditor({
     testar.className = preview.aberto() ? "ed__testar ed__oculto" : "ed__testar"
   }
 
-  const salvar = el("button", "ed__salvar", "Salvar")
+  const salvar = el("button", "ed__salvar")
   salvar.setAttribute("type", "button")
+  const palavraDoSalvar = el("span", null, "Salvar")
   salvar.addEventListener("click", () => guardar())
 
   function temMudancas() {
@@ -263,7 +267,13 @@ export function criarEditor({
   // guardado. Botão que diz sempre a mesma coisa não avisa nada.
   function sincronizarSalvar() {
     const mudou = temMudancas()
-    salvar.textContent = salvando ? "Salvando…" : mudou ? "Salvar" : "Salvo"
+    // O ícone conta o mesmo que a palavra: disquete enquanto há o que
+    // guardar, visto quando está tudo guardado.
+    palavraDoSalvar.textContent = salvando ? "Salvando…" : mudou ? "Salvar" : "Salvo"
+    salvar.replaceChildren()
+    const icone = iconeDaAcao(mudou || salvando ? "salvar" : "salvo")
+    if (icone) salvar.append(icone)
+    salvar.append(palavraDoSalvar)
     salvar.className = `ed__salvar${mudou && !salvando ? " ed__salvar--pendente" : ""}`
     salvar.disabled = salvando || !mudou
   }
@@ -388,8 +398,11 @@ export function criarEditor({
     }
   }
 
-  const engrenagem = el("button", "ed__engrenagem", "⚙")
+  const engrenagem = el("button", "ed__engrenagem")
   engrenagem.setAttribute("type", "button")
+  const icEngrenagem = iconeDaAcao("configuracoes", "ed__barra-icone ed__barra-icone--grande")
+  if (icEngrenagem) engrenagem.append(icEngrenagem)
+  else engrenagem.textContent = "⚙"
   engrenagem.setAttribute("title", "Configurações")
   engrenagem.setAttribute("aria-label", "Configurações")
   engrenagem.addEventListener("click", () => {

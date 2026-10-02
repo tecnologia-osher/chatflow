@@ -1216,3 +1216,27 @@ test("sem saber o tamanho da caixa, o fantasma ainda aparece", () => {
   assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 1)
   document.disparar("mouseup", { clientX: 300, clientY: 200 })
 })
+
+test("os botoes da barra tem icone, e o do salvar conta o estado", () => {
+  const { hospedeiro, editor } = montar()
+  const icones = (classe) => porClasse(hospedeiro, classe)[0].porClasse("ed__barra-icone").length
+  assert.equal(icones("ed__ajustar"), 1, "Centralizar sem ícone")
+  assert.equal(icones("ed__salvar"), 1, "Salvar sem ícone")
+  assert.equal(icones("ed__engrenagem"), 1, "engrenagem sem ícone")
+
+  const desenhoDoSalvar = () =>
+    porClasse(hospedeiro, "ed__salvar")[0].porClasse("ed__barra-icone")[0].filhos[0].atributos.d
+  const guardado = desenhoDoSalvar()
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
+
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvar")
+  assert.notEqual(desenhoDoSalvar(), guardado, "o ícone precisa mudar junto com a palavra")
+  assert.equal(editor.temMudancas(), true)
+})
+
+test("a engrenagem tem o icone maior que os outros da barra", () => {
+  const { hospedeiro } = montar()
+  const daEngrenagem = porClasse(hospedeiro, "ed__engrenagem")[0].porClasse("ed__barra-icone")[0]
+  assert.ok(daEngrenagem.className.includes("ed__barra-icone--grande"))
+})
