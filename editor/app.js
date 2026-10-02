@@ -26,11 +26,22 @@ function el(tag, classe, texto) {
   return e
 }
 
-export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = () => {} }) {
+export function criarEditor({
+  elemento, fluxo, cliente = "exemplo",
+  aoBaixar = () => {},
+  // Grava o fluxo onde ele mora. No desenvolvimento é o servidor local; no
+  // dia em que houver conta e banco (sub-projeto 3), é a mesma porta.
+  aoSalvar = null
+}) {
   let atual = fluxo
   let selecao = { grupo: null, bloco: null }
   let recado = ""
   let detalhesAbertos = false
+  // O retrato do fluxo como ele está gravado. Comparar com o de agora é o que
+  // diz se há algo a salvar — mais honesto que marcar "sujo" em cada edição e
+  // esquecer de marcar numa delas.
+  let gravado = JSON.stringify(fluxo)
+  let salvando = false
 
   const raiz = el("div", "ed")
   const paleta = el("aside", "ed__paleta")
@@ -162,11 +173,52 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
     testar.className = preview.aberto() ? "ed__testar ed__oculto" : "ed__testar"
   }
 
-  const baixar = el("button", "ed__baixar", "Baixar fluxo.json")
-  baixar.setAttribute("type", "button")
-  baixar.addEventListener("click", () => aoBaixar(JSON.stringify(atual, null, 2), "fluxo.json"))
+  const salvar = el("button", "ed__salvar", "Salvar")
+  salvar.setAttribute("type", "button")
+  salvar.addEventListener("click", () => guardar())
 
-  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), testar, ajustar, baixar)
+  function temMudancas() {
+    return JSON.stringify(atual) !== gravado
+  }
+
+  // O botão conta três coisas: há o que salvar, está salvando, ou está tudo
+  // guardado. Botão que diz sempre a mesma coisa não avisa nada.
+  function sincronizarSalvar() {
+    const mudou = temMudancas()
+    salvar.textContent = salvando ? "Salvando…" : mudou ? "Salvar" : "Salvo"
+    salvar.className = `ed__salvar${mudou && !salvando ? " ed__salvar--pendente" : ""}`
+    salvar.disabled = salvando || !mudou
+  }
+
+  async function guardar() {
+    if (salvando || !temMudancas()) return
+    const texto = JSON.stringify(atual, null, 2)
+    if (!aoSalvar) return cair(texto, "Este editor está aberto sem servidor para gravar.")
+
+    salvando = true
+    sincronizarSalvar()
+    try {
+      await aoSalvar(texto)
+      gravado = JSON.stringify(atual)
+      recado = ""
+    } catch (falha) {
+      cair(texto, falha?.message || String(falha))
+    } finally {
+      salvando = false
+      sincronizarSalvar()
+      desenharPaleta()
+    }
+  }
+
+  // Não deu para gravar: o arquivo desce para a pasta de downloads. Trabalho
+  // perdido por um servidor fora do ar seria o pior resultado possível.
+  function cair(texto, motivo) {
+    aoBaixar(texto, "fluxo.json")
+    recado = `Não consegui salvar (${motivo}). Baixei o fluxo.json para não perder o trabalho.`
+    desenharPaleta()
+  }
+
+  barra.append(el("span", "ed__marca", `chatflow · ${cliente}`), testar, ajustar, salvar)
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
@@ -255,6 +307,7 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
   }
 
   function desenharProblemas() {
+    sincronizarSalvar()
     const relatorio = validarFluxo(atual, { destinos: {} })
     problemas.textContent = relatorio.valido ? "" : relatorio.erros.join(" · ")
   }
@@ -312,6 +365,8 @@ export function criarEditor({ elemento, fluxo, cliente = "exemplo", aoBaixar = (
 
   return {
     fluxo: () => atual,
+    temMudancas,
+    salvar: guardar,
     selecao: () => ({ ...selecao }),
     vista: () => canvas.vista()
   }

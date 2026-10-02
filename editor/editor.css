@@ -61,11 +61,13 @@ html, body { margin: 0; height: 100%; }
 .ed__marca { font-weight: 600; margin-right: auto; }
 .ed__barra button { padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--ed-linha);
   background: var(--ed-superficie); font: inherit; cursor: pointer; }
-/* Com `.ed__baixar` sozinho a regra perdia para `.ed__barra button`, que tem
-   especificidade maior: o fundo voltava a branco e sobrava texto branco em
-   fundo branco — o botão existia e não se via. */
-.ed__barra button.ed__baixar { background: var(--ed-acento); color: #fff;
+/* Sempre com o seletor do pai junto: `.ed__salvar` sozinho perde para
+   `.ed__barra button`, que tem especificidade maior, e o fundo volta a
+   branco — foi assim que o botão de baixar ficou invisível, branco no
+   branco. */
+.ed__barra button.ed__salvar--pendente { background: var(--ed-acento); color: #fff;
   border-color: var(--ed-acento); }
+.ed__barra button.ed__salvar:disabled { color: var(--ed-suave); cursor: default; }
 .ed__testar { font-weight: 600; }
 .ed__oculto { display: none; }
 .ed__testar:hover { border-color: var(--ed-acento); }

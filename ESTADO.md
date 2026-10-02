@@ -609,3 +609,30 @@ botão da barra que perca para a regra geral.
 
 **O padrão novo:** medir pega geometria; olhar pega cor. Uma captura por
 mudança visual.
+
+### O editor salva no arquivo
+
+536 testes. O botão "Baixar fluxo.json" virou **"Salvar"**. O `servir.py`
+passou a aceitar `PUT` e grava o que o editor manda em
+`clientes/<nome>/fluxo.json` — formatado como está no git, para o diff mostrar
+o que mudou no fluxo e não a linha inteira reescrita.
+
+O `PUT` só aceita `clientes/<nome>/fluxo.json` e `exemplos/<nome>.json`, com o
+nome sem barra nem ponto-ponto, e só se o corpo for JSON válido. Conferido na
+mão: caminho fora da lista → 403, corpo que não é JSON → 400, subir de pasta →
+403, cliente que não existe → 404, gravação de verdade → 200 e o arquivo muda.
+
+O botão conta três estados — **Salvar** (destacado, há o que gravar),
+**Salvando…**, **Salvo** (apagado e sem clique). Dois cliques seguidos mandam
+um envio só. Se a gravação falhar — servidor fora, editor aberto do GitHub
+Pages — ele **baixa o arquivo** e diz o motivo: perder uma tarde de trabalho
+porque o servidor caiu seria o pior resultado possível. E fechar a aba com
+coisa não salva pede confirmação do navegador.
+
+Saber se há o que salvar é comparar o JSON de agora com o retrato do último
+gravado, em vez de marcar "sujo" em cada edição — são dezesseis lugares que
+mexem no fluxo, e esquecer de marcar num deles perde trabalho em silêncio.
+
+**O que isto não é:** salvar de qualquer lugar. Grava no arquivo desta
+máquina; publicar segue sendo commit e push, e o cliente editando sozinho da
+casa dele continua sendo o sub-projeto 3.

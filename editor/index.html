@@ -28,10 +28,36 @@
     URL.revokeObjectURL(url)
   }
 
+  // Grava no mesmo endereço de onde o fluxo veio. Quem atende é o servir.py;
+  // aberto de outro jeito (GitHub Pages, arquivo local), o PUT falha e o
+  // editor baixa o arquivo em vez de perder o trabalho.
+  async function salvar(texto) {
+    const resposta = await fetch(arquivo, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: texto
+    })
+    if (!resposta.ok) {
+      const corpo = await resposta.json().catch(() => ({}))
+      throw new Error(corpo.recado || `o servidor respondeu ${resposta.status}`)
+    }
+  }
+
   try {
     const resposta = await fetch(arquivo)
     if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
-    criarEditor({ elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo", aoBaixar: baixar })
+    const editor = criarEditor({
+      elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo",
+      aoBaixar: baixar, aoSalvar: salvar
+    })
+
+    // Fechar a aba com trabalho não salvo é a maneira mais boba de perder uma
+    // tarde. O navegador só deixa avisar, não deixa escrever a frase.
+    addEventListener("beforeunload", (evento) => {
+      if (!editor.temMudancas()) return
+      evento.preventDefault()
+      evento.returnValue = ""
+    })
   } catch (falha) {
     alvo.textContent = `Não consegui abrir ${arquivo}. ${falha.message}`
   }

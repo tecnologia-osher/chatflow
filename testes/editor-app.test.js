@@ -131,13 +131,15 @@ test("o preview nao envia nada a lugar nenhum", async () => {
   assert.deepEqual(chamadas, [], "preview que dispara webhook suja a planilha do cliente a cada tecla")
 })
 
-test("baixar entrega o json do fluxo atual", () => {
+test("sem servidor para gravar, salvar baixa o arquivo e explica", async () => {
   const { hospedeiro, editor, baixados } = montar()
   arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
-  porClasse(hospedeiro, "ed__baixar")[0].disparar("click")
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
   const { t, n } = baixados.at(-1)
   assert.match(n, /\.json$/)
   assert.deepEqual(JSON.parse(t), editor.fluxo())
+  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /não consegui salvar/i)
 })
 
 test("o aviso de validacao aparece quando o fluxo quebra", () => {
@@ -705,4 +707,103 @@ test("ligar logo depois de digitar usa o tamanho novo do cartao", async () => {
 
   assert.equal(editor.fluxo().grupos[1].proximo, "g1",
     "com as caixas do desenho anterior, o ponto cairia fora do cartão e nada ligaria")
+})
+
+// --- salvar ----------------------------------------------------------------
+
+function montarComServidor(fluxo = fluxoBase(), responder = async () => {}) {
+  const hospedeiro = new Elemento("div")
+  const salvos = []
+  const baixados = []
+  const editor = criarEditor({
+    elemento: hospedeiro, fluxo,
+    aoBaixar: (t, n) => baixados.push({ t, n }),
+    aoSalvar: async (texto) => { salvos.push(texto); return responder(texto) }
+  })
+  return { hospedeiro, editor, salvos, baixados }
+}
+
+test("a barra tem Salvar, e nao tem mais Baixar", () => {
+  const { hospedeiro } = montarComServidor()
+  assert.equal(porClasse(hospedeiro, "ed__baixar").length, 0)
+  assert.equal(porClasse(hospedeiro, "ed__salvar").length, 1)
+})
+
+test("sem mudanca, o botao diz Salvo e nao manda nada", async () => {
+  const { hospedeiro, salvos } = montarComServidor()
+  const botao = porClasse(hospedeiro, "ed__salvar")[0]
+  assert.equal(botao.textContent, "Salvo")
+  assert.equal(botao.disabled, true)
+  botao.disparar("click")
+  await assentar()
+  assert.deepEqual(salvos, [], "salvar o que não mudou só gasta disco")
+})
+
+test("depois de editar, o botao pede para salvar e manda o fluxo inteiro", async () => {
+  const { hospedeiro, editor, salvos } = montarComServidor()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  const botao = porClasse(hospedeiro, "ed__salvar")[0]
+  assert.equal(botao.textContent, "Salvar")
+  assert.equal(botao.className.includes("ed__salvar--pendente"), true, "precisa chamar atenção")
+
+  botao.disparar("click")
+  await assentar()
+  assert.equal(salvos.length, 1)
+  assert.deepEqual(JSON.parse(salvos[0]), editor.fluxo())
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
+  assert.equal(editor.temMudancas(), false)
+})
+
+test("editar de novo volta a pedir para salvar", async () => {
+  const { hospedeiro, editor } = montarComServidor()
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+  assert.equal(editor.temMudancas(), false)
+
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  campo.value = "Outro nome"
+  campo.disparar("input")
+  assert.equal(editor.temMudancas(), true)
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvar")
+})
+
+test("mexer sem editar nao faz o botao pedir para salvar", () => {
+  const { hospedeiro, editor } = montarComServidor()
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  porClasse(hospedeiro, "ed__palco")[0].disparar("mousedown", { clientX: 5, clientY: 5, button: 0 })
+  assert.equal(editor.temMudancas(), false, "selecionar e clicar no fundo não mudam o fluxo")
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
+})
+
+test("servidor fora do ar: baixa o arquivo e diz o motivo", async () => {
+  const { hospedeiro, baixados, editor } = montarComServidor(fluxoBase(), async () => {
+    throw new Error("o servidor respondeu 403")
+  })
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+
+  assert.equal(baixados.length, 1, "trabalho perdido por servidor fora seria o pior resultado")
+  assert.deepEqual(JSON.parse(baixados[0].t), editor.fluxo())
+  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /403/)
+  assert.equal(editor.temMudancas(), true, "não gravou: continua pendente")
+})
+
+test("enquanto salva, o botao avisa e nao manda duas vezes", async () => {
+  let soltar
+  const { hospedeiro, salvos } = montarComServidor(fluxoBase(), () => new Promise((r) => { soltar = r }))
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  const botao = porClasse(hospedeiro, "ed__salvar")[0]
+  botao.disparar("click")
+  await assentar()
+
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvando…")
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+  assert.equal(salvos.length, 1, "dois cliques, um envio")
+  soltar()
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
 })
