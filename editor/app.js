@@ -24,6 +24,7 @@ import {
 } from "./tema.js"
 import { FONTES, fonteDoTema, definirFonte, urlDaAmostra } from "./fontes.js"
 import { criarChat, aplicarTema } from "../motor/motor.js"
+import { criarTradutor, idiomaValido, IDIOMAS, PADRAO as IDIOMA_PADRAO } from "./idioma.js"
 
 
 const NOME_DA_CATEGORIA = {
@@ -66,6 +67,23 @@ export function criarEditor({
 }) {
   let atual = fluxo
   let temaAtual = tema
+
+  // O idioma desta tela. É da pessoa, não do projeto: fica neste navegador e
+  // vale para qualquer cliente que ela abrir. O que o lead lê é outra coisa —
+  // está escrito no fluxo, e não se traduz sozinho.
+  // Começa em português, que é o idioma em que o editor é escrito; seguir o
+  // navegador abriria em inglês para quem só tem o sistema em inglês.
+  const NOME_DO_IDIOMA = "chatflow:idioma"
+  let idioma = IDIOMA_PADRAO
+  try {
+    const guardado = armazenamento?.getItem(NOME_DO_IDIOMA)
+    if (idiomaValido(guardado)) idioma = guardado
+  } catch { /* sem armazenamento: vale o idioma do navegador */ }
+
+  let traduzir = criarTradutor(idioma)
+  // Indireto de propósito: canvas, painel e preview recebem esta função uma
+  // vez e seguem traduzindo certo depois que o idioma muda.
+  const t = (frase, valores) => traduzir(frase, valores)
   let selecao = { grupo: null, bloco: null }
   let recado = ""
   let detalhesAbertos = false
@@ -167,7 +185,7 @@ export function criarEditor({
   elemento.replaceChildren(raiz)
 
   const canvas = criarCanvas({
-    elemento: palcoCanvas,
+    elemento: palcoCanvas, t,
     aoSelecionar: (nova) => {
       selecao = nova
       recado = ""
@@ -278,23 +296,23 @@ export function criarEditor({
   })
   const preview = criarPreview({
     tema: () => temaParaOChat(),
-    elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste
+    elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste, t
   })
   const painel = criarPainel({
-    elemento: areaPainel,
+    elemento: areaPainel, t,
     aoEditar: (novo) => { trocarFluxo(novo); redesenhar() }
   })
 
   // --- barra -----------------------------------------------------------
   const ajustar = el("button", "ed__ajustar")
   ajustar.setAttribute("type", "button")
-  ajustar.setAttribute("title", "Põe o fluxo inteiro na tela")
   const icArruma = iconeDaAcao("centralizar")
   if (icArruma) ajustar.append(icArruma)
-  ajustar.append(el("span", null, "Centralizar"))
+  const palavraDoAjustar = el("span", null)
+  ajustar.append(palavraDoAjustar)
   ajustar.addEventListener("click", () => canvas.enquadrar())
 
-  const testar = el("button", "ed__testar", "▶ Testar")
+  const testar = el("button", "ed__testar")
   testar.setAttribute("type", "button")
   testar.addEventListener("click", () => { preview.abrir(atual, null); sincronizarTestar() })
 
@@ -306,7 +324,7 @@ export function criarEditor({
 
   const salvar = el("button", "ed__salvar")
   salvar.setAttribute("type", "button")
-  const palavraDoSalvar = el("span", null, "Salvar")
+  const palavraDoSalvar = el("span", null)
   salvar.addEventListener("click", () => guardar())
 
   function temMudancas() {
@@ -322,7 +340,7 @@ export function criarEditor({
     const mudou = temMudancas()
     // O ícone conta o mesmo que a palavra: disquete enquanto há o que
     // guardar, visto quando está tudo guardado.
-    palavraDoSalvar.textContent = salvando ? "Salvando…" : mudou ? "Salvar" : "Salvo"
+    palavraDoSalvar.textContent = t(salvando ? "Salvando…" : mudou ? "Salvar" : "Salvo")
     salvar.replaceChildren()
     const icone = iconeDaAcao(mudou || salvando ? "salvar" : "salvo")
     if (icone) salvar.append(icone)
@@ -335,7 +353,7 @@ export function criarEditor({
     if (salvando || !temMudancas()) return
     const texto = JSON.stringify(atual, null, 2)
     const textoDoTema = JSON.stringify(temaAtual, null, 2)
-    if (!aoSalvar) return cair(texto, "Este editor está aberto sem servidor para gravar.")
+    if (!aoSalvar) return cair(texto, t("Este editor está aberto sem servidor para gravar."))
 
     salvando = true
     sincronizarSalvar()
@@ -347,7 +365,7 @@ export function criarEditor({
         gravado = JSON.stringify(atual)
       }
       if (temaMudou()) {
-        if (!aoSalvarTema) throw new Error("este editor não sabe gravar o tema")
+        if (!aoSalvarTema) throw new Error(t("este editor não sabe gravar o tema"))
         await aoSalvarTema(textoDoTema)
         temaGravado = JSON.stringify(temaAtual)
       }
@@ -368,7 +386,8 @@ export function criarEditor({
   // perdido por um servidor fora do ar seria o pior resultado possível.
   function cair(texto, motivo, nomeDoArquivo = "fluxo.json") {
     aoBaixar(texto, nomeDoArquivo)
-    recado = `Não consegui salvar (${motivo}). Baixei o ${nomeDoArquivo} para não perder o trabalho.`
+    recado = t("Não consegui salvar ({motivo}). Baixei o {arquivo} para não perder o trabalho.",
+      { motivo, arquivo: nomeDoArquivo })
     desenharLado()
   }
 
@@ -381,8 +400,6 @@ export function criarEditor({
 
   const voltar = el("button", "ed__voltar", "‹")
   voltar.setAttribute("type", "button")
-  voltar.setAttribute("title", "Voltar aos projetos")
-  voltar.setAttribute("aria-label", "Voltar aos projetos")
   voltar.addEventListener("click", () => aoVoltar())
 
   const nome = el("div", "ed__nome")
@@ -422,7 +439,7 @@ export function criarEditor({
     }
     const texto = el("button", "ed__nome-texto", nomeDoFluxo(atual))
     texto.setAttribute("type", "button")
-    texto.setAttribute("title", "Clique para renomear o projeto")
+    texto.setAttribute("title", t("Clique para renomear o projeto"))
     texto.addEventListener("click", () => { editandoNome = true; desenharNome() })
     nome.append(texto)
   }
@@ -432,8 +449,6 @@ export function criarEditor({
   const icDesfazer = iconeDaAcao("desfazer", "ed__barra-icone ed__barra-icone--passo")
   if (icDesfazer) voltarPasso.append(icDesfazer)
   else voltarPasso.textContent = "↶"
-  voltarPasso.setAttribute("title", "Desfazer")
-  voltarPasso.setAttribute("aria-label", "Desfazer")
   voltarPasso.addEventListener("click", () => desfazer())
 
   const refazerPasso = el("button", "ed__passo ed__passo--refazer")
@@ -441,8 +456,6 @@ export function criarEditor({
   const icRefazer = iconeDaAcao("refazer", "ed__barra-icone ed__barra-icone--passo")
   if (icRefazer) refazerPasso.append(icRefazer)
   else refazerPasso.textContent = "↷"
-  refazerPasso.setAttribute("title", "Refazer")
-  refazerPasso.setAttribute("aria-label", "Refazer")
   refazerPasso.addEventListener("click", () => refazer())
 
   function sincronizarPassos() {
@@ -453,7 +466,7 @@ export function criarEditor({
   const ABAS = [["fluxo", "Fluxo"], ["tema", "Tema"], ["resultados", "Resultados"]]
   const botoesDeAba = new Map()
   for (const [chave, rotulo] of ABAS) {
-    const botao = el("button", "ed__aba", rotulo)
+    const botao = el("button", "ed__aba", t(rotulo))
     botao.setAttribute("type", "button")
     botao.addEventListener("click", () => {
       aba = chave
@@ -476,8 +489,7 @@ export function criarEditor({
   const icEngrenagem = iconeDaAcao("configuracoes", "ed__barra-icone ed__barra-icone--grande")
   if (icEngrenagem) engrenagem.append(icEngrenagem)
   else engrenagem.textContent = "⚙"
-  engrenagem.setAttribute("title", "Configurações")
-  engrenagem.setAttribute("aria-label", "Configurações")
+
   engrenagem.addEventListener("click", () => {
     configuracoesAbertas = !configuracoesAbertas
     desenharConfiguracoes()
@@ -496,9 +508,28 @@ export function criarEditor({
     else desfazer()
   })
 
+  // Toda palavra fixa da barra num lugar só: trocar de idioma é chamar isto
+  // de novo, em vez de caçar elemento por elemento pela tela.
+  function aplicarIdiomaNaBarra() {
+    ajustar.setAttribute("title", t("Põe o fluxo inteiro na tela"))
+    palavraDoAjustar.textContent = t("Centralizar")
+    testar.textContent = t("▶ Testar")
+    voltar.setAttribute("title", t("Voltar aos projetos"))
+    voltar.setAttribute("aria-label", t("Voltar aos projetos"))
+    voltarPasso.setAttribute("title", t("Desfazer"))
+    voltarPasso.setAttribute("aria-label", t("Desfazer"))
+    refazerPasso.setAttribute("title", t("Refazer"))
+    refazerPasso.setAttribute("aria-label", t("Refazer"))
+    engrenagem.setAttribute("title", t("Configurações"))
+    engrenagem.setAttribute("aria-label", t("Configurações"))
+    for (const [chave, rotulo] of ABAS) botoesDeAba.get(chave).textContent = t(rotulo)
+    sincronizarSalvar()
+  }
+
   esquerda.append(voltar, nome, voltarPasso, refazerPasso)
   direita.append(testar, ajustar, salvar, engrenagem)
   barra.append(esquerda, meio, direita)
+  aplicarIdiomaNaBarra()
   desenharNome()
   sincronizarAbas()
 
@@ -523,7 +554,8 @@ export function criarEditor({
     caixa.append(el("div", "ed__recado", recado))
     // O gesto não se descobre sozinho: sem o botão "Novo grupo", alguém tem
     // de dizer que é arrastando daqui que um grupo nasce.
-    caixa.append(el("p", "ed__dica", "Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele."))
+    caixa.append(el("p", "ed__dica",
+      t("Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele.")))
 
     const porCategoria = new Map()
     for (const definicao of todos()) {
@@ -532,20 +564,20 @@ export function criarEditor({
     }
 
     for (const [categoria, lista] of porCategoria) {
-      caixa.append(el("h3", "ed__categoria", NOME_DA_CATEGORIA[categoria] || categoria))
+      caixa.append(el("h3", "ed__categoria", t(NOME_DA_CATEGORIA[categoria] || categoria)))
       const grade = el("div", "ed__grade")
       for (const definicao of lista) {
         const botao = el("button", `ed__tipo ed__tipo--${categoria}`)
         botao.setAttribute("type", "button")
         const icone = iconeDoTipo(definicao.tipo)
         if (icone) botao.append(icone)
-        botao.append(el("span", "ed__tipo-rotulo", definicao.rotulo))
+        botao.append(el("span", "ed__tipo-rotulo", t(definicao.rotulo)))
         botao.addEventListener("mousedown", (ev) => arrastarTipo(ev, definicao))
         botao.addEventListener("click", () => {
           if (!selecao.grupo) {
             // Sem grupo escolhido não há onde pôr o bloco — e agora há um
             // gesto melhor que escolher: arrastar até o quadro.
-            recado = "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar."
+            recado = t("Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.")
             desenharPaleta()
             return
           }
@@ -590,7 +622,7 @@ export function criarEditor({
     const fantasma = el("div", `ed__fantasma ed__fantasma--tipo ed__tipo--${definicao.categoria}`)
     const icone = iconeDoTipo(definicao.tipo)
     if (icone) fantasma.append(icone)
-    fantasma.append(el("span", "ed__tipo-rotulo", definicao.rotulo))
+    fantasma.append(el("span", "ed__tipo-rotulo", t(definicao.rotulo)))
     if (caixa) {
       fantasma.style.setProperty("width", `${Math.round(caixa.width)}px`)
       fantasma.style.setProperty("height", `${Math.round(caixa.height)}px`)
@@ -681,8 +713,8 @@ export function criarEditor({
   function desenharTema() {
     areaTema.replaceChildren()
     const topo = el("div", "ed__tema-topo")
-    topo.append(el("h2", "ed__tema-titulo", "A conversa do seu jeito"))
-    const reiniciar = el("button", "ed__tema-reiniciar", "Reiniciar a conversa")
+    topo.append(el("h2", "ed__tema-titulo", t("A conversa do seu jeito")))
+    const reiniciar = el("button", "ed__tema-reiniciar", t("Reiniciar a conversa"))
     reiniciar.setAttribute("type", "button")
     reiniciar.addEventListener("click", () => montarChatDoTema())
     topo.append(reiniciar)
@@ -754,12 +786,12 @@ export function criarEditor({
     const caixa = el("div", "ed__paleta-corpo")
     caixa.append(el("div", "ed__recado", recado))
     caixa.append(el("p", "ed__dica",
-      "O que mudar aqui vale para a conversa de todos os leads deste projeto."))
+      t("O que mudar aqui vale para a conversa de todos os leads deste projeto.")))
 
     for (const secao of SECOES_DO_TEMA) {
       const bloco = el("section", `ed__tema-secao ed__tema-secao--${secao.chave}`)
-      bloco.append(el("h3", "ed__categoria", secao.titulo))
-      if (secao.nota) bloco.append(el("p", "ed__tema-nota", secao.nota))
+      bloco.append(el("h3", "ed__categoria", t(secao.titulo)))
+      if (secao.nota) bloco.append(el("p", "ed__tema-nota", t(secao.nota)))
       for (const controle of secao.controles) {
         // O caminho da imagem só aparece com o retrato ligado: campo vazio
         // embaixo de um interruptor desligado só faz perguntar para quê.
@@ -774,7 +806,7 @@ export function criarEditor({
 
   function linhaDoTema(controle) {
     const linha = el("div", `ed__tema-linha ed__tema-linha--${controle.tipo}`)
-    linha.append(el("span", "ed__tema-rotulo", controle.rotulo))
+    linha.append(el("span", "ed__tema-rotulo", t(controle.rotulo)))
     const direita = el("span", "ed__tema-controle")
 
     if (controle.tipo === "cor") direita.append(...controleDeCor(controle))
@@ -790,7 +822,7 @@ export function criarEditor({
   function controleDeCor(controle) {
     const campo = el("input", "ed__tema-cor")
     campo.setAttribute("type", "color")
-    campo.setAttribute("aria-label", controle.rotulo)
+    campo.setAttribute("aria-label", t(controle.rotulo))
     campo.value = corDoTema(temaAtual, controle.chave)
     campo.setAttribute("value", campo.value)
 
@@ -798,8 +830,8 @@ export function criarEditor({
     // herança. Sem o botão, escolher uma cor por engano seria definitivo.
     const soltar = el("button", "ed__tema-soltar", "↺")
     soltar.setAttribute("type", "button")
-    soltar.setAttribute("title", "Voltar ao padrão")
-    soltar.setAttribute("aria-label", `${controle.rotulo}: voltar ao padrão`)
+    soltar.setAttribute("title", t("Voltar ao padrão"))
+    soltar.setAttribute("aria-label", `${t(controle.rotulo)}: ${t("Voltar ao padrão")}`)
     soltar.disabled = corHerdada(temaAtual, controle.chave)
 
     campo.addEventListener("input", () => {
@@ -822,11 +854,11 @@ export function criarEditor({
 
   function controleDeFonte() {
     const lista = el("select", "ed__tema-lista")
-    lista.setAttribute("aria-label", "Fonte")
+    lista.setAttribute("aria-label", t("Fonte"))
     const escolhida = fonteDoTema(temaAtual)
 
     for (const fonte of FONTES) {
-      const opcao = el("option", "ed__tema-opcao", fonte.nome)
+      const opcao = el("option", "ed__tema-opcao", t(fonte.nome))
       opcao.setAttribute("value", fonte.nome)
       opcao.style.setProperty("font-family", fonte.familia)
       lista.append(opcao)
@@ -834,7 +866,7 @@ export function criarEditor({
     // Fonte escrita à mão no tema.json não some da tela só porque não está na
     // lista: ela aparece como está, escolhida, e só sai se a pessoa trocar.
     if (!escolhida) {
-      const opcao = el("option", "ed__tema-opcao", `Personalizada: ${temaAtual.fonte}`)
+      const opcao = el("option", "ed__tema-opcao", t("Personalizada: {fonte}", { fonte: temaAtual.fonte }))
       opcao.setAttribute("value", PERSONALIZADA)
       lista.append(opcao)
     }
@@ -869,7 +901,7 @@ export function criarEditor({
     campo.setAttribute("min", String(LARGURA_MINIMA))
     campo.setAttribute("max", String(LARGURA_MAXIMA))
     campo.setAttribute("step", "1")
-    campo.setAttribute("aria-label", "Largura máxima da conversa")
+    campo.setAttribute("aria-label", t("Largura máxima da conversa"))
     campo.value = String(larguraEmRem(temaAtual))
     const medida = el("span", "ed__tema-medida", `${larguraEmRem(temaAtual)}rem`)
     campo.addEventListener("input", () => {
@@ -883,7 +915,7 @@ export function criarEditor({
   function controleDeTexto(controle) {
     const campo = el("input", "ed__tema-texto")
     campo.setAttribute("type", "text")
-    campo.setAttribute("aria-label", controle.rotulo)
+    campo.setAttribute("aria-label", t(controle.rotulo))
     if (controle.dica) campo.setAttribute("placeholder", controle.dica)
     campo.value = temaAtual[controle.chave] || ""
 
@@ -906,7 +938,7 @@ export function criarEditor({
     const botao = el("button", `ed__tema-chave${ligado ? " ed__tema-chave--ligado" : ""}`)
     botao.setAttribute("type", "button")
     botao.setAttribute("aria-pressed", ligado ? "true" : "false")
-    botao.setAttribute("aria-label", "Mostrar retrato")
+    botao.setAttribute("aria-label", t("Mostrar retrato"))
     botao.append(el("span", "ed__tema-chave-bola"))
     botao.addEventListener("click", () => {
       retratoAberto = !ligado
@@ -999,9 +1031,9 @@ export function criarEditor({
     areaResultados.replaceChildren()
 
     const topo = el("div", "ed__resultados-topo")
-    topo.append(el("h2", "ed__resultados-titulo", "Resultados"))
+    topo.append(el("h2", "ed__resultados-titulo", t("Resultados")))
     if (chaveDosResultados() && !erroDosLeads) {
-      const trocar = el("button", "ed__resultados-trocar", "Trocar chave")
+      const trocar = el("button", "ed__resultados-trocar", t("Trocar chave"))
       trocar.setAttribute("type", "button")
       trocar.addEventListener("click", () => {
         // Trocar a chave é dizer que este navegador não deveria mais estar
@@ -1014,7 +1046,7 @@ export function criarEditor({
       topo.append(trocar)
     }
 
-    const atualizar = el("button", "ed__resultados-atualizar", buscandoLeads ? "Buscando…" : "Atualizar")
+    const atualizar = el("button", "ed__resultados-atualizar", t(buscandoLeads ? "Buscando…" : "Atualizar"))
     atualizar.setAttribute("type", "button")
     atualizar.disabled = buscandoLeads
     atualizar.addEventListener("click", () => buscarLeads())
@@ -1034,7 +1066,7 @@ export function criarEditor({
 
     if (leads === null) {
       areaResultados.append(el("p", "ed__resultados-vazio",
-        buscandoLeads ? "Buscando os leads na planilha…" : "Clique em Atualizar para buscar os leads."))
+        t(buscandoLeads ? "Buscando os leads na planilha…" : "Clique em Atualizar para buscar os leads.")))
       return
     }
 
@@ -1046,8 +1078,8 @@ export function criarEditor({
     const cabecalho = el("tr", "ed__tabela-linha")
     for (const coluna of colunas) {
       const celula = el("th", `ed__tabela-cabecalho${coluna.extra ? " ed__tabela-cabecalho--extra" : ""}`,
-        coluna.rotulo)
-      if (coluna.extra) celula.setAttribute("title", "Veio da planilha e não está no fluxo")
+        t(coluna.rotulo))
+      if (coluna.extra) celula.setAttribute("title", t("Veio da planilha e não está no fluxo"))
       cabecalho.append(celula)
     }
     tabela.append(cabecalho)
@@ -1063,7 +1095,7 @@ export function criarEditor({
     if (!leads.length) {
       const no = el("tr", "ed__tabela-linha")
       const celula = el("td", "ed__tabela-celula ed__tabela-celula--vazia",
-        "Ninguém entrou no chat ainda. Quando alguém entrar, aparece aqui.")
+        t("Ninguém entrou no chat ainda. Quando alguém entrar, aparece aqui."))
       celula.setAttribute("colspan", String(colunas.length))
       no.append(celula)
       tabela.append(no)
@@ -1072,26 +1104,26 @@ export function criarEditor({
     rolagem.append(tabela)
     areaResultados.append(rolagem)
     const pessoas = leads.length
-      ? `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`
+      ? `${t(leads.length === 1 ? "{n} pessoa" : "{n} pessoas", { n: leads.length })} · ${t("a mais recente primeiro")}`
       : ""
     // Dizer quando foi lido é o que separa "a planilha está assim" de "esta é
     // uma cópia de antes": sem a hora, dado velho passa por dado de agora.
     const leitura = buscandoLeads
-      ? "buscando na planilha…"
-      : lidoEm ? `lido em ${quando(lidoEm)}` : ""
+      ? t("buscando na planilha…")
+      : lidoEm ? t("lido em {quando}", { quando: quando(lidoEm) }) : ""
     const rodape = [pessoas, leitura].filter(Boolean).join(" · ")
     if (rodape) areaResultados.append(el("p", "ed__resultados-conta", rodape))
   }
 
   function formularioDaChave() {
     const caixa = el("form", "ed__chave")
-    caixa.append(el("p", "ed__chave-texto", erroDosLeads
+    caixa.append(el("p", "ed__chave-texto", t(erroDosLeads
       ? "Cole a chave de leitura da planilha — a que está nas propriedades do script, em CHAVE_LEITURA."
-      : "Para ver os leads, cole a chave de leitura da planilha. Ela fica guardada só neste navegador."))
+      : "Para ver os leads, cole a chave de leitura da planilha. Ela fica guardada só neste navegador.")))
     const campo = el("input", "ed__chave-campo")
     campo.setAttribute("type", "password")
-    campo.setAttribute("placeholder", "chave de leitura")
-    const botao = el("button", "ed__chave-botao", "Ver os leads")
+    campo.setAttribute("placeholder", t("chave de leitura"))
+    const botao = el("button", "ed__chave-botao", t("Ver os leads"))
     botao.setAttribute("type", "submit")
     caixa.addEventListener("submit", (ev) => {
       ev.preventDefault?.()
@@ -1129,7 +1161,7 @@ export function criarEditor({
   async function buscarLeads() {
     if (buscandoLeads) return
     if (!aoBuscarLeads) {
-      erroDosLeads = "Este editor está aberto sem de onde buscar os leads."
+      erroDosLeads = t("Este editor está aberto sem de onde buscar os leads.")
       return desenharResultados()
     }
 
@@ -1160,23 +1192,41 @@ export function criarEditor({
 
     const caixa = el("div", "ed__config")
     const topo = el("div", "ed__config-topo")
-    topo.append(el("h2", "ed__config-titulo", "Configurações"))
+    topo.append(el("h2", "ed__config-titulo", t("Configurações")))
     const fechar = el("button", "ed__config-fechar", "✕")
     fechar.setAttribute("type", "button")
-    fechar.setAttribute("aria-label", "Fechar")
+    fechar.setAttribute("aria-label", t("Fechar"))
     fechar.addEventListener("click", () => { configuracoesAbertas = false; desenharConfiguracoes() })
     topo.append(fechar)
     caixa.append(topo)
 
+    // O idioma vem primeiro: quem abriu a engrenagem sem entender a tela é
+    // quem mais precisa dele.
+    const linhaIdioma = el("label", "ed__config-linha ed__config-linha--idioma")
+    linhaIdioma.append(el("span", "ed__config-rotulo", t("Idioma do editor")))
+    const listaIdioma = el("select", "ed__tema-lista")
+    for (const { chave, nome } of IDIOMAS) {
+      const opcao = el("option", "ed__tema-opcao", nome)
+      opcao.setAttribute("value", chave)
+      listaIdioma.append(opcao)
+    }
+    listaIdioma.value = idioma
+    listaIdioma.addEventListener("change", () => trocarIdioma(listaIdioma.value))
+    linhaIdioma.append(listaIdioma)
+    caixa.append(linhaIdioma)
     caixa.append(el("p", "ed__config-ajuda",
-      "Quanto tempo o chat mostra os três pontinhos antes de cada fala."))
+      t("Vale só para esta tela: a conversa do lead segue no idioma em que você a escreveu.")))
+
+    caixa.append(el("h3", "ed__config-secao", t("Digitação")))
+    caixa.append(el("p", "ed__config-ajuda",
+      t("Quanto tempo o chat mostra os três pontinhos antes de cada fala.")))
 
     const ritmo = atual.ritmo || {}
     for (const [campo, rotulo] of [
       ["piso", "Mínimo (ms)"], ["porCaractere", "Por caractere (ms)"], ["teto", "Máximo (ms)"]
     ]) {
       const linha = el("label", "ed__config-linha")
-      linha.append(el("span", "ed__config-rotulo", rotulo))
+      linha.append(el("span", "ed__config-rotulo", t(rotulo)))
       const campoNumero = el("input", "ed__config-campo")
       campoNumero.setAttribute("type", "number")
       campoNumero.setAttribute("min", "0")
@@ -1195,6 +1245,20 @@ export function criarEditor({
       caixa.append(linha)
     }
     areaConfiguracoes.append(caixa)
+  }
+
+  // Trocar de idioma redesenha tudo: as palavras fixas da barra, o lado, o
+  // conteúdo da aba aberta e o painel. Nada guarda texto traduzido, então
+  // redesenhar é o bastante.
+  function trocarIdioma(novo) {
+    if (!idiomaValido(novo) || novo === idioma) return
+    idioma = novo
+    traduzir = criarTradutor(idioma)
+    try { armazenamento?.setItem(NOME_DO_IDIOMA, idioma) } catch { /* vale esta sessão */ }
+    aplicarIdiomaNaBarra()
+    desenharTudo()
+    desenharConteudo()
+    desenharConfiguracoes()
   }
 
   function desenharProblemas() {

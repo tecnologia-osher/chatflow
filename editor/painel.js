@@ -4,6 +4,7 @@
 
 import { obter } from "./catalogo.js"
 import { montarDestino } from "../motor/destino.js"
+import { preencher } from "./idioma.js"
 import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   definirOpcao, acrescentarOpcao, removerOpcao
@@ -49,9 +50,9 @@ function nomeDoBloco(bloco) {
   }
 }
 
-function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar) {
+function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar, t) {
   const sel = el("select", classe)
-  const vazio = el("option", null, "— não liga —")
+  const vazio = el("option", null, t("— não liga —"))
   vazio.value = ""
   sel.append(vazio)
   for (const g of fluxo.grupos || []) {
@@ -72,7 +73,7 @@ function seletorDeGrupo(fluxo, exceto, valor, classe, aoMudar) {
   return sel
 }
 
-export function criarPainel({ elemento, aoEditar = () => {} }) {
+export function criarPainel({ elemento, aoEditar = () => {}, t = preencher }) {
   function mostrar({ fluxo, selecao, aoFechar }) {
     const corpo = el("div", "ed__painel")
     if (aoFechar) {
@@ -84,7 +85,7 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
     const emitir = (novo) => aoEditar(novo)
 
     if (!selecao || !selecao.grupo) {
-      corpo.append(el("p", "ed__vazio", "Selecione um bloco ou um grupo no canvas para editar."))
+      corpo.append(el("p", "ed__vazio", t("Selecione um bloco ou um grupo no canvas para editar.")))
       elemento.replaceChildren(corpo)
       return
     }
@@ -93,11 +94,11 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
     if (!grupo) { elemento.replaceChildren(corpo); return }
 
     if (!selecao.bloco) {
-      corpo.append(el("h2", "ed__titulo-painel", "Grupo"))
-      corpo.append(linha("Título", entrada("texto", grupo.titulo || "", (v) =>
+      corpo.append(el("h2", "ed__titulo-painel", t("Grupo")))
+      corpo.append(linha(t("Título"), entrada("texto", grupo.titulo || "", (v) =>
         emitir(definirTitulo(fluxo, { grupo: grupo.id, valor: v })))))
-      corpo.append(linha("Próximo grupo", seletorDeGrupo(fluxo, grupo.id, grupo.proximo, "ed__proximo", (v) =>
-        emitir(definirProximo(fluxo, { grupo: grupo.id, valor: v })))))
+      corpo.append(linha(t("Próximo grupo"), seletorDeGrupo(fluxo, grupo.id, grupo.proximo, "ed__proximo", (v) =>
+        emitir(definirProximo(fluxo, { grupo: grupo.id, valor: v })), t)))
       elemento.replaceChildren(corpo)
       return
     }
@@ -106,7 +107,7 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
     if (!bloco) { elemento.replaceChildren(corpo); return }
 
     const definicao = obter(bloco.tipo)
-    corpo.append(el("h2", "ed__titulo-painel", definicao ? definicao.rotulo : bloco.tipo))
+    corpo.append(el("h2", "ed__titulo-painel", definicao ? t(definicao.rotulo) : bloco.tipo))
 
     if (!definicao) {
       // Fluxo que cita tipo não registrado é exatamente o arquivo que precisa
@@ -124,15 +125,16 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
       }
       if (campo.tipo === "lista") {
         corpo.append(el("p", "ed__aviso",
-          `"${campo.rotulo}" ainda se edita no arquivo. O editor visual chega numa próxima fatia.`))
+          t('"{campo}" ainda se edita no arquivo. O editor visual chega numa próxima fatia.',
+            { campo: t(campo.rotulo) })))
         continue
       }
-      corpo.append(linha(campo.rotulo, entrada(campo.tipo, (bloco.conteudo || {})[campo.nome], (v) =>
+      corpo.append(linha(t(campo.rotulo), entrada(campo.tipo, (bloco.conteudo || {})[campo.nome], (v) =>
         emitir(definirCampo(fluxo, { grupo: grupo.id, bloco: bloco.id, campo: campo.nome, valor: v })))))
     }
 
     if (definicao.salva_variavel) {
-      corpo.append(linha("Salvar na variável", entrada("texto", bloco.salvar_em, (v) =>
+      corpo.append(linha(t("Salvar na variável"), entrada("texto", bloco.salvar_em, (v) =>
         emitir(definirSalvarEm(fluxo, { grupo: grupo.id, bloco: bloco.id, valor: v })))))
     }
 
@@ -141,7 +143,7 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
 
   function listaDeOpcoes(fluxo, grupo, bloco, emitir) {
     const caixa = el("div", "ed__opcoes")
-    caixa.append(el("span", "ed__rotulo", "Opções"))
+    caixa.append(el("span", "ed__rotulo", t("Opções")))
 
     for (const opcao of (bloco.conteudo?.opcoes || []).filter(Boolean)) {
       const linhaOpcao = el("div", "ed__opcao")
@@ -150,7 +152,7 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
 
       linhaOpcao.append(entrada("texto", opcao.label, editar("label")))
       linhaOpcao.append(entrada("numero", opcao.pontos, editar("pontos")))
-      linhaOpcao.append(seletorDeGrupo(fluxo, null, opcao.proximo, "ed__opcao-destino", editar("proximo")))
+      linhaOpcao.append(seletorDeGrupo(fluxo, null, opcao.proximo, "ed__opcao-destino", editar("proximo"), t))
 
       const apagar = el("button", "ed__remover-opcao", "×")
       apagar.setAttribute("type", "button")
@@ -161,7 +163,7 @@ export function criarPainel({ elemento, aoEditar = () => {} }) {
       caixa.append(linhaOpcao)
     }
 
-    const mais = el("button", "ed__acrescentar-opcao", "Acrescentar opção")
+    const mais = el("button", "ed__acrescentar-opcao", t("Acrescentar opção"))
     mais.setAttribute("type", "button")
     mais.addEventListener("click", () =>
       emitir(acrescentarOpcao(fluxo, { grupo: grupo.id, bloco: bloco.id })))

@@ -9,6 +9,7 @@ import {
 } from "./modelo.js"
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
 import { iconeDoTipo } from "./icones.js"
+import { preencher } from "./idioma.js"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
 } from "./vista.js"
@@ -37,7 +38,10 @@ export function criarCanvas({
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
-  aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {}
+  aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
+  // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
+  // assim quem monta um canvas sozinho não precisa passar idioma nenhum.
+  t = preencher
 }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
@@ -209,9 +213,9 @@ export function criarCanvas({
     // sem a ligação e sem como recriá-la é pior que não poder apagar.
     if (seta.origens.includes("condicao")) {
       menu.append(el("span", "ed__menu-aviso",
-        "Este caminho vem de uma regra de condição, que ainda não se edita aqui."))
+        t("Este caminho vem de uma regra de condição, que ainda não se edita aqui.")))
     } else {
-      const apagar = el("button", "ed__menu-excluir", "Excluir")
+      const apagar = el("button", "ed__menu-excluir", t("Excluir"))
       apagar.setAttribute("type", "button")
       apagar.addEventListener("click", (e) => {
         e.stopPropagation?.()
@@ -263,8 +267,8 @@ export function criarCanvas({
     menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
     menu.addEventListener("contextmenu", (e) => e.preventDefault?.())
     menu.append(
-      iconeDeAcao("ed__acao--duplicar", DUPLICAR, "Duplicar", () => aoDuplicarGrupo({ grupo: cartao.id })),
-      iconeDeAcao("ed__acao--excluir", LIXEIRA, "Excluir", () => aoApagarGrupo({ grupo: cartao.id }))
+      iconeDeAcao("ed__acao--duplicar", DUPLICAR, t("Duplicar"), () => aoDuplicarGrupo({ grupo: cartao.id })),
+      iconeDeAcao("ed__acao--excluir", LIXEIRA, t("Excluir"), () => aoApagarGrupo({ grupo: cartao.id }))
     )
     palco.append(menu)
     menuAberto = menu
@@ -283,7 +287,9 @@ export function criarCanvas({
     // O número de blocos no botão é o peso do que vai embora. Sem desfazer no
     // editor, a pessoa merece saber o tamanho do estrago antes de clicar.
     const apagar = el("button", "ed__menu-excluir",
-      quantos ? `Excluir grupo (${quantos} ${quantos === 1 ? "bloco" : "blocos"})` : "Excluir grupo")
+      quantos
+        ? t(quantos === 1 ? "Excluir grupo ({n} bloco)" : "Excluir grupo ({n} blocos)", { n: quantos })
+        : t("Excluir grupo"))
     apagar.setAttribute("type", "button")
     apagar.addEventListener("click", (e) => {
       e.stopPropagation?.()
@@ -552,7 +558,7 @@ export function criarCanvas({
       if (evento.tipo === "inicio") {
         const play = el("button", "ed__play ed__play--evento", "▶")
         play.setAttribute("type", "button")
-        play.setAttribute("title", "Testar do início")
+        play.setAttribute("title", t("Testar do início"))
         play.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
         play.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
@@ -563,8 +569,8 @@ export function criarCanvas({
 
       const ponto = el("span", `ed__evento-ponto${evento.proximo ? " ed__evento-ponto--ligado" : ""}`)
       ponto.setAttribute("title", evento.proximo
-        ? `Começa em ${evento.proximo} — arraste para mudar`
-        : "Arraste até o primeiro grupo")
+        ? t("Começa em {grupo} — arraste para mudar", { grupo: evento.proximo })
+        : t("Arraste até o primeiro grupo"))
       ponto.addEventListener("mousedown", (ev) => {
         iniciarLigacao(ev, { evento: evento.tipo }, (origem, destino) => aoLigarEvento({ ...origem, destino }))
       })
@@ -603,7 +609,7 @@ export function criarCanvas({
         cabecalho.append(campo)
       } else {
         const titulo = el("span", "ed__cabecalho-titulo", cartao.titulo)
-        titulo.setAttribute("title", "Clique para renomear")
+        titulo.setAttribute("title", t("Clique para renomear"))
         // Um clique só, no próprio nome. O mousedown não é parado: arrastar
         // pelo nome continua movendo o cartão, e aí o clique não conta.
         titulo.addEventListener("click", (ev) => {
@@ -617,7 +623,7 @@ export function criarCanvas({
         // alça de arrasto. Com o nome esticado até o fim, qualquer ponto para
         // pegar o cartão era também um ponto para renomeá-lo sem querer.
         const alca = el("div", "ed__cabecalho-arrasto")
-        alca.setAttribute("title", "Arraste para mover o grupo")
+        alca.setAttribute("title", t("Arraste para mover o grupo"))
         cabecalho.append(alca)
       }
 
@@ -635,7 +641,7 @@ export function criarCanvas({
 
       const mais = el("button", "ed__cabecalho-mais", "⋯")
       mais.setAttribute("type", "button")
-      mais.setAttribute("title", "Ações do grupo")
+      mais.setAttribute("title", t("Ações do grupo"))
       mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
       mais.addEventListener("click", (ev) => {
         ev.stopPropagation?.()
@@ -693,7 +699,7 @@ export function criarCanvas({
         // ícone no lugar da palavra — a forma conta o tipo, e o nome fica no
         // title para quem passar o mouse.
         const topo = el("div", "ed__bloco-topo")
-        topo.setAttribute("title", bloco.rotulo)
+        topo.setAttribute("title", t(bloco.rotulo))
         const icone = iconeDoTipo(bloco.tipo, "ed__bloco-icone")
         if (icone) topo.append(icone)
 
@@ -716,7 +722,7 @@ export function criarCanvas({
         // enviar — continua a um clique daqui, sem aparecer sozinho.
         const mais = el("button", "ed__bloco-mais", "⋯")
         mais.setAttribute("type", "button")
-        mais.setAttribute("title", "Mais opções deste bloco")
+        mais.setAttribute("title", t("Mais opções deste bloco"))
         mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
         mais.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
@@ -749,10 +755,10 @@ export function criarCanvas({
       // não quer mandar botão nenhum para outro lugar usa só ele. Sem botões
       // não há padrão nenhum a nomear: fica a bolinha, e basta.
       const rodape = el("div", `ed__rodape${temBotoes ? "" : " ed__rodape--so-bolinha"}`)
-      rodape.setAttribute("title", temBotoes
+      rodape.setAttribute("title", t(temBotoes
         ? "Padrão: quem escolher uma opção sem destino próprio segue por aqui"
-        : "Para onde o grupo segue quando termina")
-      if (temBotoes) rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
+        : "Para onde o grupo segue quando termina"))
+      if (temBotoes) rodape.append(el("span", "ed__rodape-rotulo", t("padrão")))
       rodape.append(pontoDeSaida(cartao))
       no.append(rodape)
 
@@ -783,7 +789,7 @@ export function criarCanvas({
 
       const campo = el("input", "ed__opcao-campo")
       campo.setAttribute("type", "text")
-      campo.setAttribute("placeholder", "Escreva o botão")
+      campo.setAttribute("placeholder", t("Escreva o botão"))
       campo.value = opcao.label
       campo.dadosOpcao = opcao.id
       campo.dadosBloco = bloco.id
@@ -816,8 +822,8 @@ export function criarCanvas({
       // dele até o grupo para onde essa resposta deve levar.
       const ponto = el("span", `ed__opcao-ponto${opcao.proximo ? " ed__opcao-ponto--ligado" : ""}`)
       ponto.setAttribute("title", opcao.proximo
-        ? `Vai para ${opcao.proximo} — arraste para mudar`
-        : "Arraste até um grupo para ligar")
+        ? t("Vai para {grupo} — arraste para mudar", { grupo: opcao.proximo })
+        : t("Arraste até um grupo para ligar"))
       ponto.addEventListener("mousedown", (ev) => {
         iniciarLigacao(ev, { grupo: cartao.id, bloco: bloco.id, opcao: opcao.id })
       })
@@ -830,9 +836,9 @@ export function criarCanvas({
     // grupo mora no rodapé do cartão — juntar as duas coisas numa linha fazia
     // o clique criar botão e a bolinha mandar o fluxo, e ninguém adivinha isso.
     const linhaNova = el("div", "ed__opcao-cartao ed__opcao-cartao--nova")
-    const mais = el("button", "ed__opcao-nova", "+ botão")
+    const mais = el("button", "ed__opcao-nova", t("+ botão"))
     mais.setAttribute("type", "button")
-    mais.setAttribute("title", "Acrescenta um botão nesta lista")
+    mais.setAttribute("title", t("Acrescenta um botão nesta lista"))
     // preventDefault segura o cursor onde está. Sem isso o clique daqui tira
     // o foco da caixa vazia, ela se desfaz, o cartão é redesenhado e este
     // mesmo clique morre no caminho — a pessoa clica e nada acontece.
@@ -852,8 +858,8 @@ export function criarCanvas({
   function pontoDeSaida(cartao) {
     const saida = el("span", `ed__grupo-ponto${cartao.proximo ? " ed__grupo-ponto--ligado" : ""}`)
     saida.setAttribute("title", cartao.proximo
-      ? `Segue para ${cartao.proximo} — arraste para mudar`
-      : "Arraste até o grupo seguinte")
+      ? t("Segue para {grupo} — arraste para mudar", { grupo: cartao.proximo })
+      : t("Arraste até o grupo seguinte"))
     saida.addEventListener("mousedown", (ev) => {
       iniciarLigacao(ev, { grupo: cartao.id }, (origem, destino) => aoLigarGrupo({ ...origem, destino }))
     })

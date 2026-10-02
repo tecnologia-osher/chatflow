@@ -963,3 +963,32 @@ no meio do desenho e se redesenhava por dentro, saindo **duas tabelas**; e
 esconder a paleta na aba Resultados não bastava, porque a grade continuava com
 duas colunas e **o centro ia parar dentro das 17rem da paleta** — a tabela
 larga ficava espremida em 272px.
+
+### O editor fala inglês
+
+736 testes. A engrenagem ganhou **Idioma do editor**, com português e inglês.
+Troca a tela inteira na hora: barra, abas, paleta, nomes dos tipos de bloco,
+cartões do quadro, painel, aba Tema, aba Resultados e as próprias
+configurações. A escolha é **da pessoa, não do projeto** — fica neste
+navegador (`chatflow:idioma`), vale para qualquer cliente que ela abrir, e não
+conta como mudança a salvar.
+
+**O que não muda é a conversa do lead.** O que ele lê está escrito no fluxo,
+pelo cliente; traduzir isso sozinho seria inventar texto no lugar de quem
+vende. Os nomes dos grupos ("Abertura", "Contato") são conteúdo e continuam
+como estão, em qualquer idioma do editor.
+
+**A chave do dicionário é a própria frase em português** (`editor/idioma.js`).
+O código continua legível para quem o escreve, e frase sem tradução cai no
+original em vez de mostrar uma chave técnica na cara do cliente. Frase com
+buraco é uma frase só — `"Excluir grupo ({n} blocos)"` —, nunca três pedaços
+costurados: em outra língua a ordem das partes muda.
+
+**Dois testes seguram o resto:** um varre o código atrás de todo `t("…")` e
+exige a versão em inglês; o outro varre as posições onde texto aparece na tela
+(`el(…, "frase")`, `title`, `aria-label`, `placeholder`, `textContent =`) e
+acusa qualquer frase que tenha escapado do tradutor. Tela meio inglesa, meio
+portuguesa quebra a suíte no mesmo dia em que nasce.
+
+O editor **começa em português**, sem olhar o idioma do navegador: quem tem o
+sistema em inglês mas trabalha em português abriria numa língua que não pediu.

@@ -2,6 +2,7 @@
 // tela inteira, e abre pelo botão Testar — da origem ou de uma etapa.
 
 import { criarChat } from "../motor/motor.js"
+import { preencher } from "./idioma.js"
 
 const EVENTO_DE_ORIGEM = "origem_do_fluxo"
 
@@ -34,7 +35,7 @@ export function fluxoComecandoEm(fluxo, grupoId) {
   }
 }
 
-export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = () => ({}) } = {}) {
+export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = () => ({}), t = preencher } = {}) {
   let aberto = false
   let fluxoAtual = null
   let comecarEm = null
@@ -52,10 +53,11 @@ export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = ()
     const barra = el("header", "ed__preview-barra")
 
     const grupo = (fluxoAtual.grupos || []).find((g) => g && g.id === comecarEm)
-    barra.append(el("span", "ed__preview-titulo",
-      comecarEm ? `Teste · a partir de ${grupo?.titulo || comecarEm}` : "Teste · do início"))
+    barra.append(el("span", "ed__preview-titulo", comecarEm
+      ? t("Teste · a partir de {grupo}", { grupo: grupo?.titulo || comecarEm })
+      : t("Teste · do início")))
 
-    const reiniciar = el("button", "ed__preview-reiniciar", "Reiniciar")
+    const reiniciar = el("button", "ed__preview-reiniciar", t("Reiniciar"))
     reiniciar.setAttribute("type", "button")
     reiniciar.addEventListener("click", () => abrir(fluxoAtual, comecarEm))
 
@@ -68,7 +70,7 @@ export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = ()
 
     if (comecarEm) {
       painel.append(el("p", "ed__preview-nota",
-        "Começando do meio: as respostas anteriores não existem, então as variáveis delas aparecem vazias."))
+        t("Começando do meio: as respostas anteriores não existem, então as variáveis delas aparecem vazias.")))
     }
 
     const palco = el("div", "ed__preview-chat")

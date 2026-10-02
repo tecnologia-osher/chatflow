@@ -110,6 +110,11 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__aba:hover, .ed__barra button.ed__aba--ativa {
   background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 
+/* Uma seção dentro das configurações: separa idioma de digitação sem precisar
+   de abas dentro de um painel pequeno. */
+.ed__config-secao { margin: 1rem 0 0.1rem; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--ed-suave); }
+
 /* A aba Tema: os controles do lado esquerdo, a conversa de verdade ao lado.
    Os controles são do programa, não da conversa — azul do editor, nunca o
    laranja da paleta. Quem mostra a cor do cliente é o quadradinho do
