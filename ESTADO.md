@@ -791,3 +791,23 @@ cursor a 26,18 da borda dele depois de ter pego a 25,12 da borda do bloco.
 O dublê de DOM ganhou `cloneNode(true)`: cópia funda com marcação, atributos,
 estilo e texto, e **sem** os ouvintes — que o DOM de verdade também não copia.
 Sem isso, a cópia arrastada começaria um segundo arrasto ao ser tocada.
+
+### O cartão ficou do jeito da referência
+
+614 testes. Três mudanças no desenho do grupo, pedidas olhando o Typebot:
+
+1. **Cada bloco mostra o ícone do seu tipo**, o mesmo da paleta — e o nome do
+   tipo saiu da linha: a forma conta o que a palavra contava, e o texto do
+   bloco subiu para a primeira linha. O nome continua no `title`.
+2. **Sem as faixas coloridas** por categoria: a cor repetida em todo bloco
+   virava listra. Ficaram caixas cinzas arredondadas, com respiro entre elas.
+   O bloco de tipo desconhecido continua marcado — ali a cor é aviso.
+3. **"seguinte" saiu; "padrão" ficou só onde significa algo.** Num cartão de
+   botões, é por ali que segue quem escolheu uma opção sem destino próprio —
+   e quem não quer mandar botão nenhum para outro lugar usa só ele. Sem
+   botões não há padrão a nomear: fica a bolinha, e o rodapé encolhe.
+
+As medidas do modelo foram refeitas no navegador, de novo: bloco 28 + 16 por
+linha de texto (com a margem dentro), 27 letras por linha (o ícone e a margem
+tiraram largura do texto), bloco de botões 43 + 40 por opção, rodapé 27 com a
+palavra e 17 sem ela.

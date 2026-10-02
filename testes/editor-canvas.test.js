@@ -446,11 +446,12 @@ test("arrastar a saida nao arrasta o cartao", () => {
   assert.deepEqual(canvas.vista(), antes)
 })
 
-test("a saida do grupo tem nome, nao e uma bolinha solta", () => {
+test("sem botoes, a saida e so a bolinha: nao ha padrao a nomear", () => {
   const { hospedeiro } = montarSaida()
-  const rotulo = hospedeiro.porClasse("ed__rodape-rotulo")[0]
-  assert.ok(rotulo, "a saída sem nome não diz a quem serve")
-  assert.match(rotulo.textContent, /seguinte|padrão/i)
+  assert.equal(hospedeiro.porClasse("ed__rodape-rotulo").length, 0,
+    "palavra que não distingue nada é ruído")
+  assert.equal(hospedeiro.porClasse("ed__grupo-ponto").length,
+    hospedeiro.porClasse("ed__cartao").length, "a bolinha continua em todo cartão")
 })
 
 test("o rodape do cartao com botoes explica que opcao sem destino cai nele", () => {
@@ -502,12 +503,15 @@ test("todo cartao tem uma saida so, no rodape, com ou sem botoes", () => {
   }
 })
 
-test("a saida se chama padrao onde ha escolha, e seguinte onde nao ha", () => {
+test("padrao aparece so onde ha botoes, que e onde ele significa algo", () => {
   const hospedeiro = new Elemento("div")
   criarCanvas({ elemento: hospedeiro }).desenhar(comBotoes)
   const [comOpcoes, semOpcoes] = hospedeiro.porClasse("ed__cartao")
-  assert.match(comOpcoes.porClasse("ed__rodape-rotulo")[0].textContent, /padrão/i)
-  assert.match(semOpcoes.porClasse("ed__rodape-rotulo")[0].textContent, /seguinte/i)
+
+  assert.match(comOpcoes.porClasse("ed__rodape-rotulo")[0].textContent, /padrão/i,
+    "com botões, é por ali que segue quem não tem destino próprio")
+  assert.equal(semOpcoes.porClasse("ed__rodape-rotulo").length, 0)
+  assert.equal(semOpcoes.porClasse("ed__grupo-ponto").length, 1, "a bolinha fica")
 })
 
 test("cada bloco de botoes tem o seu + botao, e a saida do cartao segue uma", () => {

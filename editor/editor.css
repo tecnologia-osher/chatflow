@@ -213,20 +213,24 @@ html, body { margin: 0; height: 100%; }
    apontando. A mão de arrastar fica para o cartão em volta delas — arrastar
    dali continua funcionando, mas o que o cursor anuncia é o clique, que é o
    que a pessoa faz nove em cada dez vezes. */
-.ed__bloco { display: grid; gap: 0.1rem; padding: 0.5rem 0.85rem; cursor: pointer;
-  border-left: 3px solid transparent; }
-.ed__bloco:hover { background: var(--ed-fundo); }
-.ed__bloco--ativo { background: var(--ed-selecionado); }
-.ed__bloco--fala { border-left-color: var(--ed-fala); }
-.ed__bloco--entrada { border-left-color: var(--ed-entrada); }
-.ed__bloco--logica { border-left-color: var(--ed-logica); }
-.ed__bloco--conexao { border-left-color: var(--ed-conexao); }
-.ed__bloco--desconhecido { border-left-color: var(--ed-erro); }
-.ed__bloco-rotulo { font-size: 0.72rem; color: var(--ed-suave); }
+.ed__bloco { display: grid; gap: 0.25rem; cursor: pointer;
+  margin: 0.3rem 0.6rem; padding: 0.5rem 0.6rem; border-radius: 9px;
+  background: var(--ed-fundo); }
+.ed__bloco:hover { background: var(--ed-selecionado); }
+.ed__bloco--ativo { background: var(--ed-selecionado);
+  box-shadow: inset 0 0 0 1px var(--ed-linha); }
+/* Sem faixa colorida por categoria: quem diz o tipo é o ícone, e a cor
+   repetida em todo bloco virava listra. O desconhecido continua marcado,
+   porque ali a cor é aviso, não enfeite. */
+.ed__bloco--desconhecido { box-shadow: inset 0 0 0 1px var(--ed-erro); }
+.ed__bloco-icone { flex: none; width: 0.95rem; height: 0.95rem; fill: none;
+  stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+  color: var(--ed-suave); }
 /* Link não tem espaço onde quebrar: sem isto, a URL do WhatsApp saía pela
    direita do cartão e ficava escrita por cima do fundo. Quebra em qualquer
    letra — o cartão fica mais alto, mas a informação fica toda dentro dele. */
-.ed__bloco-resumo { font-size: 0.84rem; overflow-wrap: anywhere; }
+.ed__bloco-resumo { flex: 1; min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
+  line-height: 1.3; }
 /* A caixa de edição ocupa o lugar do resumo, sem mudar a altura do cartão
    mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
 .ed__bloco-campo { width: 100%; min-height: 3.2rem; resize: vertical; box-sizing: border-box;
@@ -241,6 +245,8 @@ html, body { margin: 0; height: 100%; }
    baixo para não disputar espaço com as bolinhas das opções. */
 .ed__rodape { position: relative; display: flex; align-items: center; justify-content: flex-end;
   height: 1.7rem; padding: 0 0.85rem; }
+/* Sem a palavra, o rodapé é só o lugar da bolinha: pode ser mais baixo. */
+.ed__rodape--so-bolinha { height: 1.1rem; }
 .ed__rodape-rotulo { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--ed-suave); }
 
@@ -274,8 +280,7 @@ html, body { margin: 0; height: 100%; }
 
 /* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
    é o destino daquela opção: cheio quando leva a algum grupo. */
-.ed__bloco-topo { display: flex; align-items: center; gap: 0.4rem; }
-.ed__bloco-topo .ed__bloco-rotulo { flex: 1; }
+.ed__bloco-topo { display: flex; align-items: flex-start; gap: 0.45rem; }
 .ed__bloco-mais { flex: none; width: 1.3rem; height: 1.3rem; display: grid; place-items: center;
   border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);
   font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; opacity: 0; }

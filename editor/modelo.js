@@ -184,16 +184,22 @@ const CARTAO_LARGURA = 260
 const CARTAO_CABECALHO = 44
 // O bloco sem o texto: rótulo, respiros e borda. Cada linha de resumo
 // acrescenta uma linha de altura, e o resumo quebra perto dos 36 caracteres.
-const CARTAO_BLOCO = 38
+// A medida inclui a margem entre blocos: o cartão desenha cada bloco como uma
+// caixinha com respiro, e quem soma a altura precisa somar o respiro junto.
+const CARTAO_BLOCO = 28
 const CARTAO_LINHA = 16
-const CARTAO_CARACTERES_POR_LINHA = 36
+// O texto do bloco perdeu largura para o ícone e para a margem: cabem menos
+// letras por linha do que cabiam.
+const CARTAO_CARACTERES_POR_LINHA = 27
 // Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais a
 // linha do "+ botão", que fecha a lista e ocupa altura como as outras.
-const CARTAO_OPCOES_TOPO = 33
+const CARTAO_OPCOES_TOPO = 43
 const CARTAO_OPCAO = 40
 // O rodapé é a faixa onde mora a saída do grupo, em todo cartão: é a única
 // saída que existe, com botões ou sem.
 const CARTAO_RODAPE = 27
+// Sem botões o rodapé não tem palavra nenhuma, só a bolinha: é mais baixo.
+const CARTAO_RODAPE_SO_BOLINHA = 17
 // Onde fica o centro da bolinha, medido da borda direita do cartão. A linha
 // nasce nela, não na borda — nascendo na borda, ficava um vão entre a bolinha
 // e o começo do traço, e a linha parecia sair do cartão.
@@ -213,8 +219,9 @@ function alturaDoBloco(bloco) {
 }
 
 export function alturaDoCartao(cartao) {
+  const temBotoes = cartao.blocos.some((b) => b.opcoes)
   const blocos = cartao.blocos.reduce((total, b) => total + alturaDoBloco(b), 0)
-  return CARTAO_CABECALHO + blocos + CARTAO_RODAPE
+  return CARTAO_CABECALHO + blocos + (temBotoes ? CARTAO_RODAPE : CARTAO_RODAPE_SO_BOLINHA)
 }
 
 export function caixas(listaDeCartoes) {
@@ -243,7 +250,10 @@ export function caixas(listaDeCartoes) {
       largura: CARTAO_LARGURA,
       altura: alturaDoCartao(cartao),
       blocos: linhas,
-      rodape: { y: topo, altura: CARTAO_RODAPE }
+      rodape: {
+        y: topo,
+        altura: cartao.blocos.some((b) => b.opcoes) ? CARTAO_RODAPE : CARTAO_RODAPE_SO_BOLINHA
+      }
     })
   }
   return mapa
@@ -291,8 +301,8 @@ export function blocoEmCaixa(caixa, ponto) {
 }
 
 export const MEDIDAS = {
-  CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_LINHA,
-  CARTAO_OPCOES_TOPO, CARTAO_OPCAO, CARTAO_RODAPE, CARTAO_CONECTOR
+  CARTAO_LARGURA, CARTAO_CABECALHO, CARTAO_BLOCO, CARTAO_LINHA, CARTAO_CARACTERES_POR_LINHA,
+  CARTAO_OPCOES_TOPO, CARTAO_OPCAO, CARTAO_RODAPE, CARTAO_RODAPE_SO_BOLINHA, CARTAO_CONECTOR
 }
 
 

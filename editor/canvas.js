@@ -8,6 +8,7 @@ import {
   eventosDoCanvas, caixasDeEventos
 } from "./modelo.js"
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
+import { iconeDoTipo } from "./icones.js"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
 } from "./vista.js"
@@ -688,8 +689,28 @@ export function criarCanvas({
         noBloco.addEventListener("mousedown", (ev) => {
           iniciarArrastoDeBloco(ev, cartao.id, bloco.id)
         })
+        // A linha do bloco: ícone do tipo, o que ele diz, e o ⋯ no fim. O
+        // ícone no lugar da palavra — a forma conta o tipo, e o nome fica no
+        // title para quem passar o mouse.
         const topo = el("div", "ed__bloco-topo")
-        topo.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
+        topo.setAttribute("title", bloco.rotulo)
+        const icone = iconeDoTipo(bloco.tipo, "ed__bloco-icone")
+        if (icone) topo.append(icone)
+
+        let caixaDeTexto = null
+        if (ativoB && bloco.campoPrincipal && !bloco.opcoes) {
+          // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
+          // que a pessoa precisa, e não tira os olhos do fluxo.
+          caixaDeTexto = el("textarea", "ed__bloco-campo")
+          caixaDeTexto.value = bloco.valorPrincipal
+          caixaDeTexto.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+          caixaDeTexto.addEventListener("click", (ev) => ev.stopPropagation?.())
+          caixaDeTexto.addEventListener("input", () => aoEditarCampo({
+            grupo: cartao.id, bloco: bloco.id, campo: bloco.campoPrincipal, valor: caixaDeTexto.value
+          }))
+        } else if (!bloco.opcoes) {
+          topo.append(el("span", "ed__bloco-resumo", bloco.resumo))
+        }
 
         // O que não cabe no cartão — pontuação, destino, texto do botão de
         // enviar — continua a um clique daqui, sem aparecer sozinho.
@@ -703,23 +724,9 @@ export function criarCanvas({
         })
         topo.append(mais)
         noBloco.append(topo)
+        if (caixaDeTexto) noBloco.append(caixaDeTexto)
+        if (bloco.opcoes) noBloco.append(listaDeOpcoes(cartao, bloco))
 
-        if (bloco.opcoes) {
-          noBloco.append(listaDeOpcoes(cartao, bloco))
-        } else if (ativoB && bloco.campoPrincipal) {
-          // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
-          // que a pessoa precisa, e não tira os olhos do fluxo.
-          const campo = el("textarea", "ed__bloco-campo")
-          campo.value = bloco.valorPrincipal
-          campo.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
-          campo.addEventListener("click", (ev) => ev.stopPropagation?.())
-          campo.addEventListener("input", () => aoEditarCampo({
-            grupo: cartao.id, bloco: bloco.id, campo: bloco.campoPrincipal, valor: campo.value
-          }))
-          noBloco.append(campo)
-        } else {
-          noBloco.append(el("span", "ed__bloco-resumo", bloco.resumo))
-        }
         noBloco.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
           eventoSelecionado = null
@@ -737,11 +744,15 @@ export function criarCanvas({
       // próprio segue por aqui. Nomear o que já existe evita criar um segundo
       // controle para o mesmo valor — dois lugares para dizer a mesma coisa
       // viram dois lugares para discordar.
-      const rodape = el("div", "ed__rodape")
+      // "padrão" só faz sentido onde há escolha: num cartão de botões, é por
+      // aqui que segue quem escolheu uma opção sem destino próprio — e quem
+      // não quer mandar botão nenhum para outro lugar usa só ele. Sem botões
+      // não há padrão nenhum a nomear: fica a bolinha, e basta.
+      const rodape = el("div", `ed__rodape${temBotoes ? "" : " ed__rodape--so-bolinha"}`)
       rodape.setAttribute("title", temBotoes
         ? "Padrão: quem escolher uma opção sem destino próprio segue por aqui"
         : "Para onde o grupo segue quando termina")
-      rodape.append(el("span", "ed__rodape-rotulo", temBotoes ? "padrão" : "seguinte"))
+      if (temBotoes) rodape.append(el("span", "ed__rodape-rotulo", "padrão"))
       rodape.append(pontoDeSaida(cartao))
       no.append(rodape)
 

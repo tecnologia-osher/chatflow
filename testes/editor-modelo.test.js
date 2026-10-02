@@ -152,21 +152,23 @@ test("a caixa conta cada opcao empilhada, e o padrao que fecha a lista", () => {
 test("resumo que nao cabe numa linha deixa o bloco mais alto", () => {
   const curto = { id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
     { id: "b", tipo: "texto", resumo: "Oi" }] }
-  const longo = { ...curto, blocos: [
-    { id: "b", tipo: "texto", resumo: "Bem-vindo à Osher Capital, queremos te conhecer melhor." }] }
-  assert.equal(caixas([longo]).get("g").altura - caixas([curto]).get("g").altura,
+  const deDuas = { ...curto, blocos: [
+    { id: "b", tipo: "texto", resumo: "a".repeat(MEDIDAS.CARTAO_CARACTERES_POR_LINHA + 1) }] }
+  assert.equal(caixas([deDuas]).get("g").altura - caixas([curto]).get("g").altura,
     MEDIDAS.CARTAO_LINHA, "uma linha de texto a mais, uma linha de altura a mais")
 })
 
-test("todo cartao cobra o rodape, porque todo cartao tem uma saida", () => {
+test("todo cartao tem rodape, mais baixo quando nao ha padrao a nomear", () => {
   const base = { id: "g", titulo: "x", posicao: { x: 0, y: 0 } }
   const comBotoes = { ...base, blocos: [{ id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }] }] }
   const semBotoes = { ...base, blocos: [{ id: "b", tipo: "texto", resumo: "Oi" }] }
   assert.equal(caixas([semBotoes]).get("g").altura,
-    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_BLOCO + MEDIDAS.CARTAO_LINHA + MEDIDAS.CARTAO_RODAPE)
+    MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_BLOCO + MEDIDAS.CARTAO_LINHA +
+    MEDIDAS.CARTAO_RODAPE_SO_BOLINHA)
   assert.equal(caixas([comBotoes]).get("g").altura,
     MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_OPCOES_TOPO + 2 * MEDIDAS.CARTAO_OPCAO +
     MEDIDAS.CARTAO_RODAPE)
+  assert.ok(MEDIDAS.CARTAO_RODAPE_SO_BOLINHA < MEDIDAS.CARTAO_RODAPE)
 })
 
 test("resumo sem espaco onde quebrar conta as linhas igual, nao vira uma so", () => {
@@ -176,8 +178,10 @@ test("resumo sem espaco onde quebrar conta as linhas igual, nao vira uma so", ()
   const link = "https://wa.me/5561999699829?text=Ola,%20vim%20do%20site%20e%20quero%20falar"
   const cartao = { id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
     { id: "b", tipo: "redirecionar", resumo: link }] }
-  const esperado = MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_RODAPE +
-    MEDIDAS.CARTAO_BLOCO + 3 * MEDIDAS.CARTAO_LINHA
+  const linhas = Math.ceil(link.length / MEDIDAS.CARTAO_CARACTERES_POR_LINHA)
+  assert.ok(linhas >= 3, "o link é longo o bastante para o teste valer")
+  const esperado = MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_RODAPE_SO_BOLINHA +
+    MEDIDAS.CARTAO_BLOCO + linhas * MEDIDAS.CARTAO_LINHA
   assert.equal(caixas([cartao]).get("g").altura, esperado)
 })
 

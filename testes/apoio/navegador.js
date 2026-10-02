@@ -183,7 +183,10 @@ class Elemento {
   // copia. É o que permite arrastar uma cópia do que está na tela.
   cloneNode(fundo = false) {
     const copia = new Elemento(this.tagName, this.ehSvg === true)
-    copia.className = this.className
+    // Em SVG, className é somente leitura: a classe vai por atributo, como no
+    // DOM de verdade.
+    if (this.ehSvg) copia.setAttribute("class", this.className)
+    else copia.className = this.className
     for (const [nome, valor] of Object.entries(this.atributos)) copia.setAttribute(nome, valor)
     for (const [nome, valor] of Object.entries(this.style.propriedades)) {
       copia.style.setProperty(nome, valor)
