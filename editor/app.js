@@ -16,7 +16,7 @@ import {
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 import { iconeDoTipo, iconeDaAcao } from "./icones.js"
-import { colunasDosResultados, valorNaColuna } from "./resultados.js"
+import { colunasDosResultados, valorNaColuna, quando } from "./resultados.js"
 import {
   SECOES as SECOES_DO_TEMA, LARGURA_MINIMA, LARGURA_MAXIMA,
   corDoTema, corHerdada, definirCor, soltarCor, definirDoTema,
@@ -55,6 +55,10 @@ export function criarEditor({
   // ainda edita e mostra — só não salva, e diz isso.
   tema = {},
   aoSalvarTema = null,
+  // Onde este navegador guarda o que é dele: a chave de leitura e a última
+  // leitura dos leads. Injetável porque a suíte precisa de um de mentira — e
+  // porque em janela anônima ele simplesmente não existe.
+  armazenamento = globalThis.localStorage,
   // Onde mora a pasta do cliente, vista desta página. O tema fala em caminhos
   // relativos a ela ("avatar": "logo.svg"); quem sabe traduzir é quem abriu o
   // editor, não o tema.
@@ -502,7 +506,12 @@ export function criarEditor({
   // na do tema são as seções de cor. Paleta de blocos na aba Tema seria só
   // ruído com gesto que não leva a nada.
   function desenharLado() {
-    paleta.className = `ed__paleta${aba === "resultados" ? " ed__oculto" : ""}`
+    const semLado = aba === "resultados"
+    paleta.className = `ed__paleta${semLado ? " ed__oculto" : ""}`
+    // Esconder a coluna da esquerda não basta: a grade continua com duas
+    // colunas, e o centro vai parar dentro das 17rem da paleta. Quem não tem
+    // lado é uma coluna só.
+    raiz.className = `ed${semLado ? " ed--sem-lado" : ""}`
     if (aba === "tema") return desenharLadoDoTema()
     if (aba === "resultados") return paleta.replaceChildren()
     desenharPaleta()
@@ -921,8 +930,72 @@ export function criarEditor({
   let leads = null
   let erroDosLeads = ""
   let buscandoLeads = false
+  // Quando a cópia guardada foi lida da planilha, e se esta sessão já foi lá
+  // uma vez. A busca leva alguns segundos; sem a cópia, abrir a aba era
+  // encarar um "buscando…" toda vez, inclusive para só conferir um telefone.
+  let lidoEm = ""
+  let buscouNestaSessao = false
+
+  const NOME_DOS_LEADS = `chatflow:leads:${cliente}`
+  // Quantas linhas a cópia guarda quando a planilha não cabe inteira. O
+  // armazenamento do navegador é pequeno (alguns MB) e é compartilhado com o
+  // resto; a tabela abre pelas mais recentes, que é o que se olha.
+  const LEADS_GUARDADOS = 200
+
+  function lerLeadsGuardados() {
+    try {
+      const cru = armazenamento?.getItem(NOME_DOS_LEADS)
+      if (!cru) return null
+      const guardado = JSON.parse(cru)
+      if (!Array.isArray(guardado?.linhas)) return null
+      return guardado
+    } catch {
+      // Cópia estragada não pode impedir a aba de abrir: ela é um atalho,
+      // não a fonte.
+      return null
+    }
+  }
+
+  function guardarLeads(linhas, em) {
+    if (!armazenamento) return
+    const escrever = (lista) =>
+      armazenamento.setItem(NOME_DOS_LEADS, JSON.stringify({ em, linhas: lista }))
+    try {
+      escrever(linhas)
+    } catch {
+      // Não coube. Guarda as mais recentes; se nem isso couber, desiste em
+      // silêncio — a aba continua funcionando, só sem atalho.
+      try {
+        escrever(linhas.slice(0, LEADS_GUARDADOS))
+      } catch {
+        try { armazenamento.removeItem(NOME_DOS_LEADS) } catch { /* nada a fazer */ }
+      }
+    }
+  }
+
+  function esquecerLeads() {
+    leads = null
+    lidoEm = ""
+    buscouNestaSessao = false
+    try { armazenamento?.removeItem(NOME_DOS_LEADS) } catch { /* nada a fazer */ }
+  }
+
+  // A cópia guardada entra como se já tivesse sido lida: a tabela aparece no
+  // mesmo instante em que a aba abre, e a planilha é consultada por baixo.
+  const guardadoAoAbrir = lerLeadsGuardados()
+  if (guardadoAoAbrir) {
+    leads = guardadoAoAbrir.linhas
+    lidoEm = guardadoAoAbrir.em || ""
+  }
 
   function desenharResultados() {
+    desenharTabelaDeResultados()
+    // A busca vem depois de a tela estar montada, nunca no meio: chamada no
+    // meio do desenho, ela redesenha por dentro e a tabela sai duplicada.
+    if (!buscouNestaSessao && !buscandoLeads && !erroDosLeads && chaveDosResultados()) buscarLeads()
+  }
+
+  function desenharTabelaDeResultados() {
     areaResultados.replaceChildren()
 
     const topo = el("div", "ed__resultados-topo")
@@ -931,8 +1004,10 @@ export function criarEditor({
       const trocar = el("button", "ed__resultados-trocar", "Trocar chave")
       trocar.setAttribute("type", "button")
       trocar.addEventListener("click", () => {
+        // Trocar a chave é dizer que este navegador não deveria mais estar
+        // vendo isto: a cópia guardada vai junto.
         guardarChave("")
-        leads = null
+        esquecerLeads()
         erroDosLeads = ""
         desenharResultados()
       })
@@ -942,7 +1017,7 @@ export function criarEditor({
     const atualizar = el("button", "ed__resultados-atualizar", buscandoLeads ? "Buscando…" : "Atualizar")
     atualizar.setAttribute("type", "button")
     atualizar.disabled = buscandoLeads
-    atualizar.addEventListener("click", () => buscarLeads(true))
+    atualizar.addEventListener("click", () => buscarLeads())
     topo.append(atualizar)
     areaResultados.append(topo)
 
@@ -960,7 +1035,6 @@ export function criarEditor({
     if (leads === null) {
       areaResultados.append(el("p", "ed__resultados-vazio",
         buscandoLeads ? "Buscando os leads na planilha…" : "Clique em Atualizar para buscar os leads."))
-      if (!buscandoLeads && !erroDosLeads) buscarLeads()
       return
     }
 
@@ -997,10 +1071,16 @@ export function criarEditor({
     const rolagem = el("div", "ed__tabela-rolagem")
     rolagem.append(tabela)
     areaResultados.append(rolagem)
-    if (leads.length) {
-      areaResultados.append(el("p", "ed__resultados-conta",
-        `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`))
-    }
+    const pessoas = leads.length
+      ? `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`
+      : ""
+    // Dizer quando foi lido é o que separa "a planilha está assim" de "esta é
+    // uma cópia de antes": sem a hora, dado velho passa por dado de agora.
+    const leitura = buscandoLeads
+      ? "buscando na planilha…"
+      : lidoEm ? `lido em ${quando(lidoEm)}` : ""
+    const rodape = [pessoas, leitura].filter(Boolean).join(" · ")
+    if (rodape) areaResultados.append(el("p", "ed__resultados-conta", rodape))
   }
 
   function formularioDaChave() {
@@ -1032,7 +1112,7 @@ export function criarEditor({
   // janela anônima, que é onde muita gente abre as coisas.
   let chaveNaMemoria = ""
   try {
-    chaveNaMemoria = globalThis.localStorage?.getItem(NOME_DA_CHAVE) || ""
+    chaveNaMemoria = armazenamento?.getItem(NOME_DA_CHAVE) || ""
   } catch { /* sem armazenamento: começa sem chave e pede uma */ }
 
   function chaveDosResultados() {
@@ -1042,25 +1122,29 @@ export function criarEditor({
   function guardarChave(valor) {
     chaveNaMemoria = valor
     try {
-      globalThis.localStorage?.setItem(NOME_DA_CHAVE, valor)
+      armazenamento?.setItem(NOME_DA_CHAVE, valor)
     } catch { /* a chave vale só esta sessão */ }
   }
 
-  async function buscarLeads(forcar = false) {
+  async function buscarLeads() {
     if (buscandoLeads) return
     if (!aoBuscarLeads) {
       erroDosLeads = "Este editor está aberto sem de onde buscar os leads."
       return desenharResultados()
     }
-    if (!forcar && leads !== null) return
 
     buscandoLeads = true
+    buscouNestaSessao = true
     erroDosLeads = ""
     desenharResultados()
     try {
       leads = await aoBuscarLeads(chaveDosResultados())
+      lidoEm = new Date().toISOString()
+      guardarLeads(leads, lidoEm)
     } catch (falha) {
-      leads = null
+      // A cópia guardada fica na tela: ela é velha, mas é verdade — e some
+      // junto com a chave quando a pessoa troca a chave. Apagá-la aqui
+      // deixaria quem perdeu a rede sem nada.
       erroDosLeads = falha?.message || String(falha)
     } finally {
       buscandoLeads = false

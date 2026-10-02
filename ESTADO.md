@@ -935,3 +935,31 @@ navegador baixaria uma fonte que ninguém mais usa.
 Conferido no Chrome: a folha das quinze famílias entra uma vez quando a aba
 abre, a seta é a mesma do resto do editor (a do navegador muda de cara em cada
 sistema), e escolher Poppins troca a letra da conversa sem reiniciá-la.
+
+### A última leitura fica no navegador
+
+718 testes. Abrir a aba Resultados para conferir um telefone custava uma viagem
+à planilha de alguns segundos, toda vez. Agora a última leitura fica guardada
+neste navegador (`chatflow:leads:<cliente>`) e a tabela aparece **no instante
+em que a aba abre** — conferido no Chrome: 15 ms. A planilha é consultada por
+baixo, uma vez por sessão, e corrige a tabela quando responde.
+
+**A hora da leitura entrou no rodapé** ("2 pessoas · lido em 02/10 14:05"), e é
+ela que mantém a coisa honesta: sem a hora, dado de antes passa por dado de
+agora. Enquanto a busca corre, o rodapé diz "buscando na planilha…".
+
+**Erro deixou de apagar a tabela.** A regra anterior era não mostrar dado velho
+ao lado de um aviso; com a cópia guardada, essa regra deixaria quem perdeu a
+rede sem nada. A tabela fica, datada, com o erro em cima.
+
+**A cópia some junto com a chave:** "Trocar chave" apaga as duas. A chave sair
+e o telefone de todo mundo continuar guardado seria o pior dos dois mundos.
+Cópia estragada ou armazenamento bloqueado (janela anônima) não impedem nada —
+a aba funciona, só sem atalho. Planilha grande demais para caber guarda as 200
+mais recentes.
+
+**Dois defeitos achados no caminho**, os dois por medição: a busca era disparada
+no meio do desenho e se redesenhava por dentro, saindo **duas tabelas**; e
+esconder a paleta na aba Resultados não bastava, porque a grade continuava com
+duas colunas e **o centro ia parar dentro das 17rem da paleta** — a tabela
+larga ficava espremida em 272px.

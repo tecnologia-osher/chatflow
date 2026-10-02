@@ -2,7 +2,7 @@
 
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { instalarNavegador, Elemento, assentar } from "./apoio/navegador.js"
+import { instalarNavegador, Elemento, assentar, criarArmazenamento } from "./apoio/navegador.js"
 instalarNavegador()
 
 const { criarEditor } = await import("../editor/app.js")
@@ -1243,18 +1243,18 @@ test("a engrenagem tem o icone maior que os outros da barra", () => {
 
 // --- a aba Resultados ------------------------------------------------------
 
-function montarComLeads(linhas, fluxo = fluxoBase()) {
+function montarComLeads(linhas, fluxo = fluxoBase(), armazenamento = criarArmazenamento()) {
   const hospedeiro = new Elemento("div")
   const pedidos = []
   const editor = criarEditor({
-    elemento: hospedeiro, fluxo, esperarNoTeste: async () => {},
+    elemento: hospedeiro, fluxo, esperarNoTeste: async () => {}, armazenamento,
     aoBuscarLeads: async (chave) => {
       pedidos.push(chave)
       if (typeof linhas === "function") return linhas(chave)
       return linhas
     }
   })
-  return { hospedeiro, editor, pedidos }
+  return { hospedeiro, editor, pedidos, armazenamento }
 }
 
 const abrirResultados = (h) =>
@@ -1308,7 +1308,8 @@ test("sem ninguem ainda, a tabela ja mostra as colunas do fluxo", async () => {
   assert.ok(vazia, "a tabela precisa dizer que ainda não há ninguém")
   assert.match(vazia.textContent, /ninguém entrou/i)
   assert.equal(vazia.atributos.colspan, "3", "a frase atravessa a tabela inteira")
-  assert.equal(porClasse(hospedeiro, "ed__resultados-conta").length, 0, "zero pessoas não se conta")
+  assert.doesNotMatch(porClasse(hospedeiro, "ed__resultados-conta")[0].textContent, /pessoa/,
+    "zero pessoas não se conta")
 })
 
 test("chave recusada aparece na tela, e a tabela nao mente", async () => {
@@ -1354,7 +1355,10 @@ test("sem de onde buscar, a aba diz isso em vez de ficar rodando", () => {
   assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /sem de onde buscar/i)
 })
 
-test("falhar ao atualizar tira a tabela velha, em vez de mostrar dado de antes", async () => {
+test("falhar ao atualizar mantem a tabela, mas datada e com o erro em cima", async () => {
+  // A tabela velha fica porque ela é verdade — era assim às tantas horas. O
+  // que não pode é passar por dado de agora, e é a hora da leitura que separa
+  // uma coisa da outra.
   let vez = 0
   const { hospedeiro } = montarComLeads(async () => {
     vez += 1
@@ -1369,8 +1373,9 @@ test("falhar ao atualizar tira a tabela velha, em vez de mostrar dado de antes",
 
   porClasse(hospedeiro, "ed__resultados-atualizar")[0].disparar("click")
   await assentar()
-  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0,
-    "tabela velha ao lado de um aviso de erro é mentira com cara de dado")
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 1)
+  assert.match(porClasse(hospedeiro, "ed__resultados-conta")[0].textContent, /lido em \d\d\/\d\d/,
+    "tabela sem hora de leitura ao lado de um erro passa por dado de agora")
   assert.match(porClasse(hospedeiro, "ed__resultados-aviso")[0].textContent, /500/)
 })
 
@@ -1854,4 +1859,126 @@ test("desfazer devolve a fonte de antes, na lista e na conversa", async () => {
   await assentar()
   assert.equal("fonte" in editor.tema(), false)
   assert.equal(listaDeFontes(hospedeiro).value, "Padrão do sistema")
+})
+
+// --- a última leitura fica no navegador ------------------------------------
+// Abrir a aba para conferir um telefone não deveria custar uma viagem à
+// planilha de alguns segundos. A cópia guardada aparece na hora; a planilha é
+// consultada por baixo e corrige a tabela quando responde.
+
+const UMA_PESSOA = [{ atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "concluído", nome: "Ana" }]
+
+async function comChave(hospedeiro, chave = "segredo") {
+  abrirResultados(hospedeiro)
+  porClasse(hospedeiro, "ed__chave-campo")[0].value = chave
+  porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
+  await assentar()
+}
+
+test("a leitura fica guardada no navegador, com a hora", async () => {
+  const { hospedeiro, armazenamento } = montarComLeads(UMA_PESSOA)
+  await comChave(hospedeiro)
+  const guardado = JSON.parse(armazenamento.getItem("chatflow:leads:exemplo"))
+  assert.deepEqual(guardado.linhas, UMA_PESSOA)
+  assert.match(guardado.em, /^\d{4}-\d\d-\d\dT/)
+  assert.match(porClasse(hospedeiro, "ed__resultados-conta")[0].textContent,
+    /1 pessoa .* lido em \d\d\/\d\d \d\d:\d\d/)
+})
+
+test("a copia guardada enche a tabela no instante em que a aba abre", async () => {
+  const guardado = criarArmazenamento()
+  const primeiro = montarComLeads(UMA_PESSOA, fluxoBase(), guardado)
+  await comChave(primeiro.hospedeiro)
+
+  // Segunda abertura, com a planilha lenta: a tabela não espera por ela.
+  let soltar
+  const segundo = montarComLeads(() => new Promise((r) => { soltar = r }), fluxoBase(), guardado)
+  abrirResultados(segundo.hospedeiro)
+  assert.equal(porClasse(segundo.hospedeiro, "ed__chave").length, 0, "a chave também ficou guardada")
+  assert.equal(porClasse(segundo.hospedeiro, "ed__tabela").length, 1,
+    "a cópia guardada existe: ninguém devia esperar a planilha para ver a tabela")
+  assert.match(porClasse(segundo.hospedeiro, "ed__tabela")[0].textContent, /Ana/)
+  assert.match(porClasse(segundo.hospedeiro, "ed__resultados-conta")[0].textContent, /buscando na planilha/)
+
+  soltar([...UMA_PESSOA, { atualizadoEm: "2026-10-02T15:00:00.000Z", situacao: "em andamento", nome: "Bruno" }])
+  await assentar()
+  assert.match(porClasse(segundo.hospedeiro, "ed__tabela")[0].textContent, /Bruno/,
+    "a resposta da planilha tem de corrigir a tabela")
+  assert.equal(segundo.pedidos.length, 1, "uma viagem por sessão, não uma por desenho")
+})
+
+test("com a copia na tela, a planilha fora do ar nao apaga o que ja se sabia", async () => {
+  const guardado = criarArmazenamento()
+  await comChave(montarComLeads(UMA_PESSOA, fluxoBase(), guardado).hospedeiro)
+
+  const segundo = montarComLeads(async () => { throw new Error("rede fora") }, fluxoBase(), guardado)
+  abrirResultados(segundo.hospedeiro)
+  await assentar()
+  assert.match(porClasse(segundo.hospedeiro, "ed__tabela")[0].textContent, /Ana/)
+  assert.match(porClasse(segundo.hospedeiro, "ed__resultados-conta")[0].textContent, /lido em /)
+  assert.match(porClasse(segundo.hospedeiro, "ed__resultados-aviso")[0].textContent, /rede fora/)
+})
+
+test("trocar a chave esquece a copia guardada", async () => {
+  const guardado = criarArmazenamento()
+  const { hospedeiro, armazenamento } = montarComLeads(UMA_PESSOA, fluxoBase(), guardado)
+  await comChave(hospedeiro)
+  porClasse(hospedeiro, "ed__resultados-trocar")[0].disparar("click")
+  assert.equal(armazenamento.getItem("chatflow:leads:exemplo"), null,
+    "a chave saiu mas o telefone de todo mundo continuaria guardado neste navegador")
+  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
+})
+
+test("copia estragada nao impede a aba de abrir", async () => {
+  const guardado = criarArmazenamento()
+  guardado.setItem("chatflow:leads:exemplo", "{isto não é json")
+  const { hospedeiro } = montarComLeads(UMA_PESSOA, fluxoBase(), guardado)
+  await comChave(hospedeiro)
+  assert.match(porClasse(hospedeiro, "ed__tabela")[0].textContent, /Ana/)
+})
+
+test("navegador sem armazenamento: a aba funciona, so nao guarda", async () => {
+  const semNada = {
+    getItem() { throw new Error("armazenamento bloqueado") },
+    setItem() { throw new Error("armazenamento bloqueado") },
+    removeItem() { throw new Error("armazenamento bloqueado") }
+  }
+  const { hospedeiro } = montarComLeads(UMA_PESSOA, fluxoBase(), semNada)
+  await comChave(hospedeiro)
+  assert.match(porClasse(hospedeiro, "ed__tabela")[0].textContent, /Ana/)
+})
+
+test("planilha grande demais para caber guarda as mais recentes", async () => {
+  const muitas = Array.from({ length: 500 }, (_, i) => ({
+    atualizadoEm: "2026-10-02T14:05:00.000Z", situacao: "concluído", nome: `Pessoa ${i}`
+  }))
+  const dados = new Map()
+  const apertado = {
+    getItem: (c) => (dados.has(c) ? dados.get(c) : null),
+    setItem: (c, v) => {
+      if (String(v).length > 20000) throw new Error("QuotaExceededError")
+      dados.set(c, String(v))
+    },
+    removeItem: (c) => dados.delete(c)
+  }
+  const { hospedeiro } = montarComLeads(muitas, fluxoBase(), apertado)
+  await comChave(hospedeiro)
+  const guardado = JSON.parse(apertado.getItem("chatflow:leads:exemplo"))
+  assert.equal(guardado.linhas.length, 200)
+  assert.equal(guardado.linhas[0].nome, "Pessoa 0", "guardou as mais antigas; a tabela abre pelas recentes")
+  assert.equal(porClasse(hospedeiro, "ed__tabela-linha").length, 501, "a tabela desta sessão mostra todas")
+})
+
+test("sem a coluna da esquerda, a grade vira uma coluna so", () => {
+  const { hospedeiro } = montarComLeads([])
+  const raiz = porClasse(hospedeiro, "ed")[0]
+  assert.equal(raiz.className, "ed")
+
+  abrirResultados(hospedeiro)
+  assert.equal(porClasse(hospedeiro, "ed__paleta")[0].className.includes("ed__oculto"), true)
+  assert.equal(raiz.className, "ed ed--sem-lado",
+    "esconder a paleta sem mexer na grade joga a tabela para dentro das 17rem dela")
+
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  assert.equal(raiz.className, "ed")
 })

@@ -38,6 +38,10 @@
   font-size: 0.9rem;
 }
 
+/* A aba Resultados não tem coluna da esquerda: a tabela é larga e quer a tela
+   inteira. Sem isto, o centro ficaria espremido nas 17rem da paleta. */
+.ed--sem-lado { grid-template-columns: 1fr; }
+
 html, body { margin: 0; height: 100%; }
 
 /* --- paleta --- */
@@ -190,11 +194,11 @@ html, body { margin: 0; height: 100%; }
 .ed__resultados-topo { display: flex; align-items: center; gap: 0.4rem; }
 .ed__resultados-topo > :nth-child(2) { margin-left: auto; }
 .ed__resultados-titulo { margin: 0; font-size: 1rem; }
-.ed__resultados-trocar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+.ed__resultados-trocar { padding: 0.35rem 0.8rem; border-radius: 8px;
   border: 1px solid transparent; background: transparent; color: var(--ed-suave);
   font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 .ed__resultados-trocar:hover { background: var(--ed-fundo); color: var(--ed-texto); }
-.ed__resultados-atualizar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+.ed__resultados-atualizar { padding: 0.35rem 0.8rem; border-radius: 8px;
   border: 1px solid var(--ed-linha); background: var(--ed-superficie); font: inherit;
   font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 .ed__resultados-atualizar:hover:not(:disabled) { background: var(--ed-acento); color: #fff;
