@@ -180,12 +180,19 @@ export function criarEditor({
   const emBreve = el("div", "ed__em-breve ed__oculto")
   const areaResultados = el("section", "ed__resultados ed__oculto")
   const areaTema = el("section", "ed__tema ed__oculto")
-  centro.append(barra, palcoCanvas, emBreve, areaResultados, areaTema, problemas)
-  raiz.append(paleta, centro, areaPainel, areaPreview, areaConfiguracoes)
+  centro.append(palcoCanvas, emBreve, areaResultados, areaTema, problemas)
+  // O header é irmão do corpo, não mora dentro da coluna do meio: era isso
+  // que fazia as abas deslizarem quando a coluna da esquerda sumia na aba
+  // Resultados. E a paleta flutua por cima do quadro, sem empurrar nada.
+  const corpo = el("div", "ed__corpo")
+  corpo.append(paleta, centro)
+  raiz.append(barra, corpo, areaPainel, areaPreview, areaConfiguracoes)
   elemento.replaceChildren(raiz)
 
   const canvas = criarCanvas({
     elemento: palcoCanvas, t,
+    // O quadro ocupa a tela inteira; a paleta flutua sobre a esquerda dele.
+    tapado: () => (paleta.className.includes("ed__oculto") ? null : paleta.getBoundingClientRect?.()),
     aoSelecionar: (nova) => {
       selecao = nova
       recado = ""
@@ -539,10 +546,6 @@ export function criarEditor({
   function desenharLado() {
     const semLado = aba === "resultados"
     paleta.className = `ed__paleta${semLado ? " ed__oculto" : ""}`
-    // Esconder a coluna da esquerda não basta: a grade continua com duas
-    // colunas, e o centro vai parar dentro das 17rem da paleta. Quem não tem
-    // lado é uma coluna só.
-    raiz.className = `ed${semLado ? " ed--sem-lado" : ""}`
     if (aba === "tema") return desenharLadoDoTema()
     if (aba === "resultados") return paleta.replaceChildren()
     desenharPaleta()

@@ -992,3 +992,29 @@ portuguesa quebra a suíte no mesmo dia em que nasce.
 
 O editor **começa em português**, sem olhar o idioma do navegador: quem tem o
 sistema em inglês mas trabalha em português abriria numa língua que não pediu.
+
+### A coluna da esquerda passou a flutuar
+
+742 testes. O header estava **dentro** da coluna do meio, e a coluna da
+esquerda era uma coluna da grade: quando ela sumia na aba Resultados, tudo o
+que estava no header deslizava — as abas Fluxo · Tema · Resultados mudavam de
+lugar ao trocar de aba. Agora o header é irmão do corpo e ocupa a largura da
+janela; a paleta flutua por cima do quadro, com folga do header e das bordas,
+como no Typebot. Medido no Chrome: as abas ficam em x=601, 668 e 735 nas três
+abas.
+
+**O quadro passou a ocupar a tela inteira**, e isso trouxe duas contas novas:
+
+- **Centralizar** desconta o que o painel tapa (`recuoEsquerda` em
+  `enquadrar`), senão metade do fluxo ia parar atrás dele.
+- **Soltar em cima do painel não é soltar no quadro.** Quem decide é o
+  elemento sob o cursor, não a conta de coordenadas: o painel muda de tamanho
+  e de lugar, e o que vale é onde a pessoa largou. Sem isso, largar de volta
+  na paleta criaria um grupo escondido atrás dela — e pareceria que o editor
+  engoliu o arrasto. Conferido no Chrome com mouse de verdade: soltar no
+  quadro cria o cartão, soltar no painel não cria nada.
+
+A aba Tema recua o conteúdo para depois do painel (ela é uma tela, não um
+quadro infinito); o quadro do fluxo passa por baixo mesmo, que é o que dá
+espaço. E o dublê de DOM aprendeu `parentNode`: quem sobe a árvore a partir do
+alvo de um evento usa esse nome, não o `pai` que ele tinha inventado.

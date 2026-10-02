@@ -314,3 +314,28 @@ test("linha reta nao tem canto: nada a arredondar", () => {
   assert.equal(a.pontos.length, 2, `canto onde não há virada: ${JSON.stringify(a.pontos)}`)
   assert.equal(/Q/.test(a.caminho), false, a.caminho)
 })
+
+test("enquadrar desconta o que a paleta tapa, em vez de centralizar atras dela", () => {
+  const caixa = [{ x: 0, y: 0, largura: 200, altura: 100 }]
+  const semPainel = enquadrar(caixa, { largura: 1000, altura: 600 })
+  const comPainel = enquadrar(caixa, { largura: 1000, altura: 600, recuoEsquerda: 300 })
+  assert.equal(comPainel.x, semPainel.x + 150,
+    "a área útil começa depois do painel: o meio dela anda metade do recuo")
+  assert.equal(comPainel.y, semPainel.y, "o painel não muda nada na vertical")
+})
+
+test("recuo maior que a tela nao vira escala negativa nem fluxo fora da vista", () => {
+  const vista = enquadrar([{ x: 0, y: 0, largura: 200, altura: 100 }],
+    { largura: 300, altura: 600, recuoEsquerda: 900 })
+  assert.ok(vista.escala > 0)
+  assert.ok(Number.isFinite(vista.x) && Number.isFinite(vista.y))
+})
+
+test("sem recuo, enquadrar nao muda de comportamento", () => {
+  const caixa = [{ x: 10, y: 20, largura: 300, altura: 200 }]
+  assert.deepEqual(enquadrar(caixa, { largura: 800, altura: 600, recuoEsquerda: 0 }),
+    enquadrar(caixa, { largura: 800, altura: 600 }))
+  assert.deepEqual(enquadrar(caixa, { largura: 800, altura: 600, recuoEsquerda: -50 }),
+    enquadrar(caixa, { largura: 800, altura: 600 }),
+    "recuo negativo é medida que não existe: vale como nenhum")
+})

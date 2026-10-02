@@ -183,7 +183,10 @@ export function ancoras(a, b) {
 // de y=40 a y=1020 numa área de 843px.
 const MARGEM = 48
 
-export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
+// `recuoEsquerda` é o pedaço do quadro que está tapado por algo flutuando por
+// cima — a paleta. Enquadrar sem ele centraliza o fluxo na tela inteira e põe
+// a metade esquerda embaixo do painel.
+export function enquadrar(caixas, { largura, altura, margem = MARGEM, recuoEsquerda = 0 } = {}) {
   const lista = (caixas || []).filter(Boolean)
   if (lista.length === 0) return criarVista()
 
@@ -192,8 +195,10 @@ export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
   const maxX = Math.max(...lista.map((c) => c.x + c.largura))
   const maxY = Math.max(...lista.map((c) => c.y + c.altura))
 
+  const recuo = Math.max(0, recuoEsquerda)
+  const visivel = Math.max(1, (largura || 0) - recuo)
   const util = {
-    largura: Math.max(1, (largura || 0) - margem * 2),
+    largura: Math.max(1, visivel - margem * 2),
     altura: Math.max(1, (altura || 0) - margem * 2)
   }
   const conteudo = { largura: Math.max(1, maxX - minX), altura: Math.max(1, maxY - minY) }
@@ -205,7 +210,7 @@ export function enquadrar(caixas, { largura, altura, margem = MARGEM } = {}) {
 
   return {
     escala,
-    x: (largura || 0) / 2 - (minX + conteudo.largura / 2) * escala,
+    x: recuo + visivel / 2 - (minX + conteudo.largura / 2) * escala,
     y: (altura || 0) / 2 - (minY + conteudo.altura / 2) * escala
   }
 }

@@ -1969,16 +1969,69 @@ test("planilha grande demais para caber guarda as mais recentes", async () => {
   assert.equal(porClasse(hospedeiro, "ed__tabela-linha").length, 501, "a tabela desta sessão mostra todas")
 })
 
-test("sem a coluna da esquerda, a grade vira uma coluna so", () => {
+test("o header nao mora na coluna do meio, e a paleta nao empurra nada", () => {
+  // Era isto que fazia as abas deslizarem ao abrir Resultados: o header
+  // estava dentro da coluna da direita, e a coluna da esquerda sumia.
   const { hospedeiro } = montarComLeads([])
   const raiz = porClasse(hospedeiro, "ed")[0]
-  assert.equal(raiz.className, "ed")
+  assert.deepEqual(raiz.filhos.map((f) => f.className).slice(0, 2), ["ed__barra", "ed__corpo"])
+
+  const corpo = porClasse(hospedeiro, "ed__corpo")[0]
+  assert.deepEqual(corpo.filhos.map((f) => f.className), ["ed__paleta", "ed__centro"],
+    "a paleta flutua sobre o corpo, do lado do centro — nunca dentro dele")
+  assert.equal(porClasse(hospedeiro, "ed__centro")[0].filhos.some((f) => f.className === "ed__barra"),
+    false)
+})
+
+test("o header fica igual quando a paleta some na aba Resultados", () => {
+  const { hospedeiro } = montarComLeads([])
+  const antes = porClasse(hospedeiro, "ed__barra")[0]
+  const posicaoDasAbas = antes.filhos.map((f) => f.className)
 
   abrirResultados(hospedeiro)
   assert.equal(porClasse(hospedeiro, "ed__paleta")[0].className.includes("ed__oculto"), true)
-  assert.equal(raiz.className, "ed ed--sem-lado",
-    "esconder a paleta sem mexer na grade joga a tabela para dentro das 17rem dela")
+  assert.equal(porClasse(hospedeiro, "ed__barra")[0], antes, "o header nem foi remontado")
+  assert.deepEqual(antes.filhos.map((f) => f.className), posicaoDasAbas)
+})
 
-  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
-  assert.equal(raiz.className, "ed")
+test("soltar um tipo em cima da paleta nao cria grupo nenhum", () => {
+  const { hospedeiro, editor } = montar()
+  const quantos = editor.fluxo().grupos.length
+  const paleta = porClasse(hospedeiro, "ed__paleta")[0]
+
+  const tipo = tipoDaPaleta(hospedeiro, "Texto")
+  tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
+  document.disparar("mousemove", { clientX: 60, clientY: 300 })
+  // Largar de volta no painel é desistir: criar um grupo ali o esconderia
+  // atrás dele, e a pessoa concluiria que o editor engoliu o arrasto. O
+  // mouseup cai num botão lá dentro, não no painel em si — é onde o cursor
+  // está de verdade.
+  const dentroDaPaleta = paleta.porClasse("ed__tipo")[1]
+  dentroDaPaleta.disparar("mouseup", { clientX: 60, clientY: 300 })
+  assert.equal(editor.fluxo().grupos.length, quantos)
+})
+
+test("centralizar poe o fluxo ao lado da paleta, nao atras dela", () => {
+  const { hospedeiro, editor } = montar()
+  const paleta = porClasse(hospedeiro, "ed__paleta")[0]
+  const centralizar = () => porClasse(hospedeiro, "ed__ajustar")[0].disparar("click")
+
+  // O navegador de mentira mede todo elemento igual; aqui a paleta ganha o
+  // tamanho que tem de verdade na tela.
+  paleta.clientWidth = 272
+  centralizar()
+  const comPaleta = editor.vista().x
+
+  paleta.clientWidth = 0
+  centralizar()
+  const semPaleta = editor.vista().x
+  assert.ok(comPaleta > semPaleta,
+    "com o painel por cima, o fluxo tem de andar para a direita dele")
+
+  // Na aba Resultados a paleta some, e painel escondido não tapa nada: o
+  // fluxo volta ao meio da tela inteira.
+  paleta.clientWidth = 272
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Resultados").disparar("click")
+  centralizar()
+  assert.equal(editor.vista().x, semPaleta)
 })

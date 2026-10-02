@@ -41,7 +41,11 @@ export function criarCanvas({
   aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
   // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
   // assim quem monta um canvas sozinho não precisa passar idioma nenhum.
-  t = preencher
+  t = preencher,
+  // O retângulo que flutua por cima do quadro (a paleta). O quadro ocupa a
+  // tela toda, então sem isto um bloco solto em cima do painel nasceria
+  // escondido atrás dele, e enquadrar centralizaria o fluxo pela metade.
+  tapado = () => null
 }) {
   const palco = el("div", "ed__palco")
   const mundo = el("div", "ed__mundo")
@@ -51,6 +55,27 @@ export function criarCanvas({
   mundo.append(tela, camadaEventos, camadaCartoes)
   palco.append(mundo)
   elemento.replaceChildren(palco)
+
+  // Quanto do quadro está escondido atrás do painel que flutua à esquerda.
+  // Painel tão largo quanto o quadro inteiro não é painel: é medida que não
+  // existe (o navegador de mentira devolve o mesmo tamanho para tudo), e aí
+  // ninguém está tapando nada.
+  function larguraTapada() {
+    const r = tapado()
+    const area = palco.getBoundingClientRect?.()
+    if (!r || !(r.width > 0) || (area && r.width >= area.width)) return 0
+    return Math.max(0, r.right - (area?.left ?? 0))
+  }
+
+  // Soltar em cima do painel não é soltar no quadro. Quem decide é o elemento
+  // sob o cursor, não a conta de coordenadas: o painel pode mudar de lugar e
+  // de tamanho, e o que a pessoa vê é onde ela largou.
+  function soltouNoPainel(ev) {
+    for (let no = ev?.target; no; no = no.parentNode) {
+      if (String(no.className || "").includes("ed__paleta")) return true
+    }
+    return false
+  }
 
   let vista = criarVista()
   let fluxoAtual = null
@@ -907,7 +932,8 @@ export function criarCanvas({
         ...caixasDeEventos(eventosDoCanvas(fluxoAtual)).values()
       ], {
         largura: palco.clientWidth || elemento.clientWidth || 0,
-        altura: palco.clientHeight || elemento.clientHeight || 0
+        altura: palco.clientHeight || elemento.clientHeight || 0,
+        recuoEsquerda: larguraTapada()
       })
       aplicarVista()
     },
@@ -922,6 +948,7 @@ export function criarCanvas({
     // precisa saber se soltou no palco, em que ponto do fluxo foi, e se havia
     // um cartão ali — a paleta não conhece zoom nem deslocamento.
     alvoDe(ev) {
+      if (soltouNoPainel(ev)) return { dentro: false, grupo: null, ponto: null }
       const area = palco.getBoundingClientRect?.() || { left: 0, top: 0, right: 0, bottom: 0 }
       const dentro = ev.clientX >= area.left && ev.clientX <= area.right &&
         ev.clientY >= area.top && ev.clientY <= area.bottom

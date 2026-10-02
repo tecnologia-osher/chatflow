@@ -97,6 +97,11 @@ class Elemento {
 
   #adotar(nos) { for (const no of nos) if (no) no.pai = this }
 
+  // O nome do DOM de verdade para o mesmo laço. Quem sobe a árvore a partir
+  // do alvo de um evento usa este, não `pai`.
+  get parentNode() { return this.pai }
+  get parentElement() { return this.pai }
+
   remove() {
     if (!this.pai) return
     const onde = this.pai.filhos.indexOf(this)
