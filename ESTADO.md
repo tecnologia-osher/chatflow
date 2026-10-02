@@ -655,8 +655,8 @@ outro reabre o vão — então um teste lê o CSS e compara os dois números.
 - **Esquerda:** `‹` para a lista de projetos (a página ainda não existe — o
   botão avisa, em vez de não fazer nada em silêncio), o **nome do projeto**
   editável no lugar, e **desfazer/refazer**.
-- **Meio:** as abas **Fluxo · Tema · Resultados**. Tema e Resultados ainda não
-  existem e dizem isso na tela, em vez de abrirem um branco que parece defeito.
+- **Meio:** as abas **Fluxo · Tema · Resultados** (as três existem hoje; na
+  época desta nota, Tema e Resultados ainda diziam na tela que não existiam).
 - **Direita:** **▶ Testar**, **Centralizar**, **Salvar** e a **engrenagem**,
   que abre as configurações — por ora o compasso da digitação, que é do fluxo.
 
@@ -864,3 +864,52 @@ embaixo do cabeçalho e nada muda de lugar.
 
 Erro de leitura continua sem tabela: ali não há dado nenhum para mostrar, e
 cabeçalho sozinho ao lado de "chave inválida" pareceria planilha vazia.
+
+### A aba Tema
+
+693 testes. As cores da conversa, editadas ao lado da conversa: à esquerda as
+seções, no meio o chat deste projeto rodando de verdade, com o tema do cliente.
+
+**A cascata do CSS virou dado.** `--cf-botao: var(--cf-acento)` quer dizer que
+o botão sem cor própria é da cor do acento; sem isso declarado em algum lugar,
+a aba mostraria campo vazio no botão de um chat cujo botão é claramente azul.
+Agora `editor/tema.js` guarda tanto os padrões (`COR_PADRAO`) quanto quem segue
+quem (`SEGUE`), e **três testes leem `motor/tema.css`** para garantir que os
+dois não se separem: padrão diferente, herança trocada, ou cor nova no motor
+sem controle na aba — qualquer um dos três quebra a suíte.
+
+**Botões e campo de entrada ganharam cor própria.** Antes não dava para mudar a
+cor do botão sem mudar o acento da conversa inteira. Entraram `--cf-botao`,
+`--cf-sobre-botao`, `--cf-botao-opcao`, `--cf-sobre-botao-opcao`, `--cf-campo`,
+`--cf-sobre-campo`, `--cf-placeholder` e `--cf-sobre-erro`, todos herdando o que
+já valia: quem não mexer não vê diferença. E a largura da conversa
+(`--cf-coluna`, 48rem) passou a vir do tema, em `largura`.
+
+**Mexer numa cor não reinicia a conversa.** `aplicarTema(raiz, tema)` saiu de
+dentro do `criarChat` e escreve as variáveis no elemento do chat já montado —
+remontar a cada tom do seletor jogaria a pessoa de volta para a primeira
+pergunta. Ele lembra o que escreveu em cada elemento para poder **apagar**: cor
+devolvida à herança tem de voltar a herdar, e propriedade escrita no elemento
+ganha de qualquer folha. Retrato e marca, que o chat lê ao nascer, remontam —
+mas só no `change`, não a cada tecla.
+
+**Desfazer vale para o tema também.** A pilha passou a guardar `{fluxo, tema}`:
+são duas abas do mesmo projeto, e desfazer que só valesse numa delas seria uma
+armadilha. Arrastar o seletor de cor é um passo só, pela mesma assinatura que
+junta as teclas de um campo.
+
+**O interruptor do retrato não tem beco sem saída.** Desligar esvazia `avatar`
+(chave vazia não entra no arquivo do cliente), e o caminho fica guardado para
+religar sem digitar de novo. Ligado sem imagem nenhuma, o campo aparece e
+recebe o cursor — antes o interruptor voltava sozinho para "desligado", porque
+não havia caminho para pôr, e parecia quebrado.
+
+**Salvar grava os dois arquivos, cada um só se mudou.** O `servir.py` passou a
+aceitar `PUT` em `clientes/<nome>/tema.json`. Sem gravador de tema (o editor
+aberto sem `?cliente=`), o Salvar baixa o `tema.json` em vez de perder a cor.
+
+Conferido no Chrome: trocar a fala de azul para vinho muda a bolha e o botão de
+enviar na hora, sem a conversa recomeçar; o seletor do botão, que segue o
+acento, acompanha — senão o painel diria azul enquanto a conversa já está
+vinho. O Testar também passou a abrir com o tema do cliente: testar com as
+cores do motor mostraria um chat que não existe em lugar nenhum.

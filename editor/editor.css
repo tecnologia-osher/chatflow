@@ -106,6 +106,68 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__aba:hover, .ed__barra button.ed__aba--ativa {
   background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 
+/* A aba Tema: os controles do lado esquerdo, a conversa de verdade ao lado.
+   Os controles são do programa, não da conversa — azul do editor, nunca o
+   laranja da paleta. Quem mostra a cor do cliente é o quadradinho do
+   seletor, e só ele. */
+.ed__tema { display: grid; grid-template-rows: auto 1fr; gap: 0.8rem;
+  padding: 1.2rem 1.4rem; min-height: 0; }
+.ed__tema-topo { display: flex; align-items: center; gap: 0.6rem; }
+.ed__tema-titulo { margin: 0; font-size: 1rem; }
+.ed__tema-reiniciar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie); color: var(--ed-texto);
+  font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__tema-reiniciar:hover { background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
+.ed__tema-palco { min-height: 0; overflow: hidden; border: 1px solid var(--ed-linha);
+  border-radius: 12px; background: var(--ed-superficie); }
+
+.ed__tema-secao { margin-bottom: 1rem; }
+.ed__tema-nota { margin: -0.2rem 0 0.5rem; font-size: 0.72rem; line-height: 1.3;
+  color: var(--ed-suave); }
+.ed__tema-linha { display: flex; align-items: center; gap: 0.6rem; min-height: 2rem; }
+.ed__tema-rotulo { flex: 1; font-size: 0.82rem; }
+.ed__tema-controle { flex: none; display: flex; align-items: center; gap: 0.3rem; }
+/* Campo de texto e slider não cabem na mesma linha do rótulo numa coluna de
+   17rem: nesses dois o rótulo fica em cima. */
+.ed__tema-linha--texto, .ed__tema-linha--largura { display: grid; gap: 0.25rem; }
+.ed__tema-linha--texto .ed__tema-controle,
+.ed__tema-linha--largura .ed__tema-controle { display: flex; }
+.ed__tema-linha--texto .ed__tema-rotulo,
+.ed__tema-linha--largura .ed__tema-rotulo { flex: none; }
+
+/* O seletor nativo vem com moldura própria em todo navegador; isto o deixa um
+   quadradinho de cor do tamanho do texto ao lado. */
+.ed__tema-cor { width: 1.8rem; height: 1.8rem; padding: 0; cursor: pointer;
+  border: 1px solid var(--ed-linha); border-radius: 6px; background: var(--ed-superficie); }
+.ed__tema-cor::-webkit-color-swatch-wrapper { padding: 2px; }
+.ed__tema-cor::-webkit-color-swatch { border: none; border-radius: 4px; }
+.ed__tema-cor:hover { border-color: var(--ed-acento); }
+
+/* Voltar ao padrão só aparece quando há escolha a desfazer. */
+.ed__tema-soltar { width: 1.4rem; height: 1.4rem; padding: 0; border-radius: 50%;
+  border: 1px solid transparent; background: transparent; color: var(--ed-suave);
+  font-size: 0.8rem; line-height: 1; cursor: pointer; }
+.ed__tema-soltar:hover:not(:disabled) { background: var(--ed-acento); color: #fff; }
+.ed__tema-soltar:disabled { opacity: 0; cursor: default; }
+
+.ed__tema-texto { width: 100%; box-sizing: border-box; padding: 0.4rem 0.55rem;
+  border: 1px solid var(--ed-linha); border-radius: 8px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.8rem; }
+.ed__tema-texto:focus { outline: none; border-color: var(--ed-acento); }
+
+.ed__tema-faixa { flex: 1; min-width: 0; accent-color: var(--ed-acento); cursor: pointer; }
+.ed__tema-medida { flex: none; min-width: 3.2rem; text-align: right;
+  font-size: 0.78rem; color: var(--ed-suave); font-variant-numeric: tabular-nums; }
+
+/* Interruptor: trilho que fica azul quando ligado. */
+.ed__tema-chave { width: 2.2rem; height: 1.2rem; padding: 0; border-radius: 999px;
+  border: 1px solid var(--ed-linha); background: var(--ed-fundo); cursor: pointer;
+  display: flex; align-items: center; }
+.ed__tema-chave-bola { width: 0.9rem; height: 0.9rem; margin: 0 0.1rem; border-radius: 50%;
+  background: var(--ed-seta); transition: transform 0.12s ease, background 0.12s ease; }
+.ed__tema-chave--ligado { background: var(--ed-acento); border-color: var(--ed-acento); }
+.ed__tema-chave--ligado .ed__tema-chave-bola { background: #fff; transform: translateX(1rem); }
+
 /* A aba Resultados: uma tabela de gente, larga, com rolagem própria. */
 .ed__resultados { display: grid; align-content: start; gap: 0.8rem;
   padding: 1.2rem 1.4rem; overflow: auto; }

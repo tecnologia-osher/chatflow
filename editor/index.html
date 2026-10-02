@@ -28,11 +28,11 @@
     URL.revokeObjectURL(url)
   }
 
-  // Grava no mesmo endereço de onde o fluxo veio. Quem atende é o servir.py;
+  // Grava no mesmo endereço de onde o arquivo veio. Quem atende é o servir.py;
   // aberto de outro jeito (GitHub Pages, arquivo local), o PUT falha e o
   // editor baixa o arquivo em vez de perder o trabalho.
-  async function salvar(texto) {
-    const resposta = await fetch(arquivo, {
+  async function gravar(url, texto) {
+    const resposta = await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: texto
@@ -42,6 +42,11 @@
       throw new Error(corpo.recado || `o servidor respondeu ${resposta.status}`)
     }
   }
+
+  const salvar = (texto) => gravar(arquivo, texto)
+  // O tema é do cliente, e o exemplo não tem pasta própria para ele: aberto
+  // sem `?cliente=`, a aba Tema edita e mostra, mas não tem onde gravar.
+  const salvarTema = cliente ? (texto) => gravar(`${base}/tema.json`, texto) : null
 
   // Os leads moram na planilha do cliente, e quem lê de lá é o Apps Script —
   // o mesmo endereço que recebe os leads, agora respondendo a quem tem a
@@ -64,12 +69,27 @@
     return corpo.linhas
   }
 
+  async function carregar(url, padrao) {
+    try {
+      const resposta = await fetch(url)
+      if (!resposta.ok) return padrao
+      return await resposta.json()
+    } catch {
+      return padrao
+    }
+  }
+
   try {
     const resposta = await fetch(arquivo)
     if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
     const editor = criarEditor({
       elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo",
-      aoBaixar: baixar, aoSalvar: salvar,
+      // O tema entra como está no arquivo, com os caminhos relativos ao
+      // cliente: é assim que ele tem de voltar para o disco. Quem traduz o
+      // caminho da imagem para esta página é o próprio editor.
+      tema: await carregar(`${base}/tema.json`, {}),
+      pastaDoCliente: base,
+      aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
       // A página de projetos ainda não existe; quando existir, é só apontar.
       aoVoltar: () => alert("A lista de projetos ainda não existe."),
       aoBuscarLeads: buscarLeads

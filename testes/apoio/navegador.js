@@ -64,7 +64,9 @@ class Elemento {
     }
     this.style = {
       propriedades: {},
-      setProperty(nome, valor) { this.propriedades[nome] = valor }
+      setProperty(nome, valor) { this.propriedades[nome] = valor },
+      removeProperty(nome) { delete this.propriedades[nome] },
+      getPropertyValue(nome) { return this.propriedades[nome] ?? "" }
     }
 
     // Por último, depois de toda a inicialização: em SVG de verdade

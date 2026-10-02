@@ -34,7 +34,7 @@ export function fluxoComecandoEm(fluxo, grupoId) {
   }
 }
 
-export function criarPreview({ elemento, aoFechar = () => {}, esperar } = {}) {
+export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = () => ({}) } = {}) {
   let aberto = false
   let fluxoAtual = null
   let comecarEm = null
@@ -78,6 +78,9 @@ export function criarPreview({ elemento, aoFechar = () => {}, esperar } = {}) {
     chat = criarChat({
       elemento: palco,
       fluxo: fluxoComecandoEm(fluxoAtual, comecarEm),
+      // O tema é do cliente: testar com as cores do motor mostraria um chat
+      // que não existe em lugar nenhum.
+      tema: tema(),
       modo: "teste",
       armazenamento: undefined,
       // O compasso é o do próprio fluxo, como no chat de verdade: testar é

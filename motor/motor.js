@@ -50,6 +50,37 @@ function pedirFonte(url) {
   cabeca.append(link)
 }
 
+// Põe o tema num elemento `.cf` já montado: as cores e a largura viram
+// variáveis no próprio elemento, e a fonte é pedida uma vez.
+//
+// É o mesmo caminho que o chat usa ao nascer, separado porque o editor precisa
+// trocar uma cor sem reiniciar a conversa — remontar o chat a cada arrastão no
+// seletor de cor jogaria a pessoa de volta para a primeira pergunta.
+//
+// Lembra o que escreveu em cada elemento para poder apagar: cor devolvida à
+// herança tem de voltar a herdar, e propriedade escrita no elemento ganha de
+// qualquer folha de estilo.
+const temaAplicado = new WeakMap()
+
+export function aplicarTema(raiz, tema = {}) {
+  if (!raiz) return
+  const nomes = new Map()
+  if (tema.largura) nomes.set("--cf-coluna", tema.largura)
+  for (const [nome, valor] of Object.entries(tema.cores || {})) {
+    nomes.set(`--cf-${nome}`, valor)
+  }
+
+  for (const antigo of temaAplicado.get(raiz) || []) {
+    if (!nomes.has(antigo)) raiz.style.removeProperty(antigo)
+  }
+  for (const [nome, valor] of nomes) raiz.style.setProperty(nome, valor)
+  temaAplicado.set(raiz, new Set(nomes.keys()))
+
+  // Fonte vazia não vira `font-family: ""`: ficaria pior que não mexer.
+  raiz.style.fontFamily = tema.fonte || ""
+  pedirFonte(tema.fonte_url)
+}
+
 // Filtro de digitação declarado pelo tipo, se houver. Fica no tipo e não
 // numa lista aqui dentro pelo mesmo motivo dos atributos do campo.
 function filtroDoCampo(tipo) {
@@ -97,11 +128,7 @@ export function criarChat({
   raiz.append(thread, erro)
   elemento.replaceChildren(raiz)
 
-  for (const [nome, valor] of Object.entries(tema.cores || {})) {
-    raiz.style.setProperty(`--cf-${nome}`, valor)
-  }
-  if (tema.fonte) raiz.style.fontFamily = tema.fonte
-  pedirFonte(tema.fonte_url)
+  aplicarTema(raiz, tema)
 
   // Retrato de quem fala do outro lado. O caminho já vem resolvido por quem
   // carregou o tema — o motor não sabe em que pasta o cliente mora.
@@ -113,7 +140,7 @@ export function criarChat({
     const aviso = elementoCom("div", "cf__aviso", relatorio.erros.join(" · "))
     raiz.prepend(aviso)
     console.error("chatflow: fluxo inválido.", relatorio.erros)
-    if (modo === "producao") return { reiniciar() {}, estado: () => null }
+    if (modo === "producao") return { raiz, reiniciar() {}, estado: () => null }
   }
 
   const enviador = criarEnviador({
@@ -530,6 +557,9 @@ export function criarChat({
   }
 
   return {
+    // O elemento que o chat montou. Quem muda o tema de fora escreve nele —
+    // as variáveis têm de ficar no próprio `.cf`, que declara os padrões.
+    raiz,
     reiniciar({ retomar = true } = {}) {
       // Um envio que falhou numa tentativa anterior desta sessão é
       // retentado agora. Sem esta chamada a fila de `destinos.js` nunca

@@ -12,8 +12,9 @@ Igual ao `python3 -m http.server`, com duas diferenças:
    o editor escreve no arquivo do cliente, nesta máquina. Publicar continua
    sendo commit e push.
 
-Só grava em `clientes/<nome>/fluxo.json` e `exemplos/<nome>.json`, com o nome
-sem barra nem ponto-ponto, e só se o corpo for JSON válido. É servidor de
+Só grava em `clientes/<nome>/fluxo.json`, `clientes/<nome>/tema.json` e
+`exemplos/<nome>.json`, com o nome sem barra nem ponto-ponto, e só se o corpo
+for JSON válido. É servidor de
 bancada, mas um PUT que aceita qualquer caminho é um buraco grande demais para
 deixar aberto, mesmo em casa.
 
@@ -27,7 +28,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 GRAVAVEIS = (
-    re.compile(r"^/clientes/[a-z0-9_-]+/fluxo\.json$"),
+    re.compile(r"^/clientes/[a-z0-9_-]+/(fluxo|tema)\.json$"),
     re.compile(r"^/exemplos/[a-z0-9_-]+\.json$"),
 )
 LIMITE = 2 * 1024 * 1024

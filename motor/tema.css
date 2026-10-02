@@ -15,7 +15,18 @@
      vem de currentColor, então o ícone acompanha o tema sozinho. */
   --cf-icone-enviar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/%3E%3C/svg%3E");
   --cf-borda: #d9dde3;
+  /* Botão de ação e campo de entrada têm cor própria, com o padrão igual ao
+     que o tema já usava: quem não mexer não vê diferença, e quem quiser
+     mexer não precisa trocar o acento da conversa inteira. */
+  --cf-botao: var(--cf-acento);
+  --cf-sobre-botao: var(--cf-sobre-acento);
+  --cf-botao-opcao: var(--cf-destaque);
+  --cf-sobre-botao-opcao: var(--cf-sobre-destaque);
+  --cf-campo: var(--cf-superficie);
+  --cf-sobre-campo: var(--cf-texto);
+  --cf-placeholder: var(--cf-texto);
   --cf-erro: #a6402f;
+  --cf-sobre-erro: var(--cf-superficie);
 
   display: flex;
   flex-direction: column;
@@ -133,18 +144,18 @@
   padding: 0.75rem 0.9rem;
   border-radius: 8px;
   border: 1px solid var(--cf-borda);
-  background: var(--cf-superficie);
-  color: var(--cf-texto);
+  background: var(--cf-campo);
+  color: var(--cf-sobre-campo);
   font: inherit;
 }
-.cf__campo::placeholder { color: var(--cf-texto); opacity: 0.45; }
+.cf__campo::placeholder { color: var(--cf-placeholder); opacity: 0.45; }
 
 .cf__botao {
   padding: 0.75rem 1.15rem;
   border-radius: 8px;
-  border: 1px solid var(--cf-acento);
-  background: var(--cf-acento);
-  color: var(--cf-sobre-acento);
+  border: 1px solid var(--cf-botao);
+  background: var(--cf-botao);
+  color: var(--cf-sobre-botao);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
@@ -185,9 +196,9 @@
 .cf__botao--opcao {
   position: relative;
   max-width: 100%;
-  border-color: var(--cf-acento);
-  background: var(--cf-destaque);
-  color: var(--cf-sobre-destaque);
+  border-color: var(--cf-botao-opcao);
+  background: var(--cf-botao-opcao);
+  color: var(--cf-sobre-botao-opcao);
   /* Caixa larga por dois motivos: é o alvo de um dedo no celular, e é o que
      faz quatro faixas de idade quebrarem em 3 + 1 em vez de virarem uma
      fileira só apertada. */
@@ -234,7 +245,7 @@
 }
 .cf__aviso {
   background: var(--cf-erro);
-  color: var(--cf-superficie);
+  color: var(--cf-sobre-erro);
   padding: 0.65rem 1.25rem;
   font-size: 0.88rem;
 }

@@ -934,3 +934,85 @@ test("o endereco do video aceita variavel", async () => {
   assert.equal(hospedeiro.porClasse("cf__video")[0].atributos.src,
     "https://www.youtube.com/embed/dQw4w9WgXcQ")
 })
+
+test("a largura da conversa vem do tema, nao do CSS do motor", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [{ id: "b", tipo: "texto", conteudo: { texto: "Oi" } }] }] },
+    tema: { largura: "60rem", cores: { acento: "#123456" } },
+    destinos: destinosDeTeste()
+  })
+  const raiz = hospedeiro.porClasse("cf")[0] || hospedeiro
+  assert.equal(raiz.style.propriedades["--cf-coluna"], "60rem")
+  assert.equal(raiz.style.propriedades["--cf-acento"], "#123456", "as cores seguem vindo junto")
+})
+
+test("tema sem largura nao escreve a variavel, e o padrao do CSS vale", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [{ id: "b", tipo: "texto", conteudo: { texto: "Oi" } }] }] },
+    tema: { cores: {} },
+    destinos: destinosDeTeste()
+  })
+  const raiz = hospedeiro.porClasse("cf")[0] || hospedeiro
+  assert.equal(raiz.style.propriedades["--cf-coluna"], undefined)
+})
+
+// --- aplicarTema -----------------------------------------------------------
+// O editor troca o tema de um chat já montado. O que foi escrito no elemento
+// ganha de qualquer folha de estilo, então o que sai do tema tem de sair do
+// elemento também.
+
+const { aplicarTema } = await import("../motor/motor.js")
+const { Elemento: ElementoDoTema } = await import("./apoio/navegador.js")
+
+test("aplicarTema escreve cores, largura e fonte no elemento", () => {
+  const raiz = new ElementoDoTema("div")
+  aplicarTema(raiz, { cores: { acento: "#112233" }, largura: "60rem", fonte: "Inter" })
+  assert.equal(raiz.style.propriedades["--cf-acento"], "#112233")
+  assert.equal(raiz.style.propriedades["--cf-coluna"], "60rem")
+  assert.equal(raiz.style.fontFamily, "Inter")
+})
+
+test("cor devolvida a heranca sai do elemento, nao fica grudada", () => {
+  const raiz = new ElementoDoTema("div")
+  aplicarTema(raiz, { cores: { acento: "#112233", botao: "#445566" } })
+  aplicarTema(raiz, { cores: { acento: "#112233" } })
+  assert.equal("--cf-botao" in raiz.style.propriedades, false,
+    "o botão continuaria da cor antiga, ganhando do CSS do motor")
+  assert.equal(raiz.style.propriedades["--cf-acento"], "#112233")
+})
+
+test("largura e fonte tiradas do tema tambem voltam ao padrao", () => {
+  const raiz = new ElementoDoTema("div")
+  aplicarTema(raiz, { largura: "60rem", fonte: "Inter" })
+  aplicarTema(raiz, {})
+  assert.equal("--cf-coluna" in raiz.style.propriedades, false)
+  assert.equal(raiz.style.fontFamily, "")
+})
+
+test("aplicarTema em dois elementos nao confunde um com o outro", () => {
+  const a = new ElementoDoTema("div")
+  const b = new ElementoDoTema("div")
+  aplicarTema(a, { cores: { acento: "#aaaaaa" } })
+  aplicarTema(b, { cores: { destaque: "#bbbbbb" } })
+  aplicarTema(b, { cores: {} })
+  assert.equal(a.style.propriedades["--cf-acento"], "#aaaaaa",
+    "limpar um elemento apagou a cor do outro")
+})
+
+test("aplicarTema sem elemento nao quebra", () => {
+  aplicarTema(null, { cores: { acento: "#112233" } })
+})
+
+test("o chat devolve o elemento que montou, para o tema mudar depois", async () => {
+  const { chat } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [{ id: "b", tipo: "texto", conteudo: { texto: "Oi" } }] }] },
+    tema: { cores: { acento: "#112233" } },
+    destinos: destinosDeTeste()
+  })
+  assert.equal(chat.raiz.className, "cf")
+  aplicarTema(chat.raiz, { cores: { acento: "#445566" } })
+  assert.equal(chat.raiz.style.propriedades["--cf-acento"], "#445566")
+})

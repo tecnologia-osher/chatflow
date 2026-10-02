@@ -859,7 +859,7 @@ test("renomear o projeto conta como mudanca a salvar", () => {
   assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvar")
 })
 
-test("as abas trocam o que aparece, e dizem o que ainda nao existe", () => {
+test("as abas trocam o que aparece", () => {
   const { hospedeiro } = montar()
   const aba = (rotulo) => porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === rotulo)
   assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), false)
@@ -867,12 +867,12 @@ test("as abas trocam o que aparece, e dizem o que ainda nao existe", () => {
   aba("Tema").disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), true,
     "o canvas sai da frente")
-  assert.equal(porClasse(hospedeiro, "ed__em-breve-titulo")[0].textContent, "Tema")
-  assert.match(porClasse(hospedeiro, "ed__em-breve-texto")[0].textContent, /tema\.json/)
+  assert.equal(porClasse(hospedeiro, "ed__tema")[0].className.includes("ed__oculto"), false)
   assert.equal(porClasse(hospedeiro, "ed__aba--ativa")[0].textContent, "Tema")
 
   aba("Fluxo").disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__area-canvas")[0].className.includes("ed__oculto"), false)
+  assert.equal(porClasse(hospedeiro, "ed__tema")[0].className.includes("ed__oculto"), true)
   assert.equal(porClasse(hospedeiro, "ed__em-breve")[0].className.includes("ed__oculto"), true)
 })
 
@@ -1409,4 +1409,368 @@ test("com a tabela na tela, da para trocar a chave", async () => {
   porClasse(hospedeiro, "ed__resultados-trocar")[0].disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__chave").length, 1)
   assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
+})
+
+// --- a aba Tema ------------------------------------------------------------
+// As cores da conversa, editadas ao lado da conversa. O que vale medir aqui é
+// se a mexida chega ao chat sem reiniciá-lo e se ela é salva no tema.json.
+
+const { SECOES: SECOES_DO_TEMA, COR_PADRAO } = await import("../editor/tema.js")
+
+function montarComTema({
+  tema = { cores: { acento: "#0c2340" }, avatar: "logo.svg", marca: "Osher" },
+  responder = async () => {},
+  comGravadorDeTema = true
+} = {}) {
+  const hospedeiro = new Elemento("div")
+  const salvos = []
+  const temasSalvos = []
+  const baixados = []
+  const editor = criarEditor({
+    elemento: hospedeiro, fluxo: fluxoBase(), tema,
+    pastaDoCliente: "../clientes/osher",
+    aoBaixar: (t, n) => baixados.push({ t, n }),
+    aoSalvar: async (texto) => { salvos.push(texto) },
+    aoSalvarTema: comGravadorDeTema
+      ? async (texto) => { temasSalvos.push(texto); return responder(texto) }
+      : null,
+    esperarNoTeste: async () => {}
+  })
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Tema").disparar("click")
+  return { hospedeiro, editor, salvos, temasSalvos, baixados }
+}
+
+// A aba tem três "Fundo", um por seção: achar um controle é dizer a seção e o
+// rótulo, do mesmo jeito que a pessoa lê a tela.
+const linhaDoTema = (h, secao, rotulo) =>
+  porClasse(h, `ed__tema-secao--${secao}`)[0]
+    .porClasse("ed__tema-linha").find((l) => l.textContent.startsWith(rotulo))
+const corDaLinha = (h, secao, rotulo) => linhaDoTema(h, secao, rotulo).porClasse("ed__tema-cor")[0]
+const soltarDaLinha = (h, secao, rotulo) => linhaDoTema(h, secao, rotulo).porClasse("ed__tema-soltar")[0]
+const chatDaAba = (h) => porClasse(h, "cf")[0]
+const desfazerPasso = (h) => porClasse(h, "ed__passo--desfazer")[0]
+
+test("a aba Tema mostra as secoes no lugar da paleta de blocos", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  const titulos = porClasse(hospedeiro, "ed__categoria").map((h) => h.textContent)
+  assert.deepEqual(titulos, SECOES_DO_TEMA.map((s) => s.titulo))
+  assert.equal(porClasse(hospedeiro, "ed__tipo").length, 0,
+    "arrastar bloco não leva a nada com o canvas escondido")
+})
+
+test("a aba Tema roda a conversa deste projeto do lado", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  assert.ok(chatDaAba(hospedeiro), "a aba deveria mostrar o chat")
+  assert.match(porClasse(hospedeiro, "cf__thread")[0].textContent, /Olá/)
+})
+
+test("o campo de cor comeca na cor que a conversa mostra, herdada ou nao", async () => {
+  const { hospedeiro } = montarComTema({ tema: { cores: { acento: "#112233" } } })
+  await assentar()
+  assert.equal(corDaLinha(hospedeiro, "campo", "Fundo").value, COR_PADRAO.superficie,
+    "sem valor próprio, o campo de resposta mostra a superfície padrão")
+  assert.equal(corDaLinha(hospedeiro, "falas", "Fundo").value, "#112233",
+    "a fala do chat é o acento, que o tema declarou")
+  assert.equal(corDaLinha(hospedeiro, "botoes", "Fundo").value, "#112233",
+    "o botão sem cor própria segue o acento, como no CSS do motor")
+})
+
+test("trocar a cor chega na conversa sem reinicia-la", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  const antes = chatDaAba(hospedeiro)
+  const falasAntes = porClasse(hospedeiro, "cf__bolha").length
+  assert.ok(falasAntes > 0, "sem fala nenhuma o teste não prova nada")
+
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff00ff"
+  campo.disparar("input")
+
+  assert.equal(chatDaAba(hospedeiro), antes, "a conversa foi remontada por causa de uma cor")
+  assert.equal(porClasse(hospedeiro, "cf__bolha").length, falasAntes)
+  assert.equal(antes.style.propriedades["--cf-superficie"], "#ff00ff")
+  assert.equal(editor.temMudancas(), true)
+})
+
+test("o botao de voltar ao padrao so existe depois de escolher, e desfaz a escolha", async () => {
+  const { hospedeiro } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  assert.equal(soltarDaLinha(hospedeiro, "conversa", "Fundo das caixas").disabled, true,
+    "nada a soltar enquanto a cor é herdada")
+
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff00ff"
+  campo.disparar("input")
+  const soltar = soltarDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  assert.equal(soltar.disabled, false)
+
+  soltar.disparar("click")
+  assert.equal(campo.value, COR_PADRAO.superficie, "o campo volta a mostrar o padrão")
+  assert.equal("--cf-superficie" in chatDaAba(hospedeiro).style.propriedades, false,
+    "a cor solta tem de sair do elemento, senão fica grudada")
+  assert.equal(soltar.disabled, true)
+})
+
+test("a largura sai no slider, com unidade e medida na tela", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  const linha = linhaDoTema(hospedeiro, "conversa", "Largura máxima")
+  const faixa = linha.porClasse("ed__tema-faixa")[0]
+  assert.equal(faixa.value, "48", "sem tema, começa no padrão do motor")
+  faixa.value = "60"
+  faixa.disparar("input")
+  assert.equal(linha.porClasse("ed__tema-medida")[0].textContent, "60rem")
+  assert.equal(chatDaAba(hospedeiro).style.propriedades["--cf-coluna"], "60rem")
+  assert.equal(JSON.parse(JSON.stringify(editor.tema())).largura, "60rem")
+})
+
+test("a marca e o retrato remontam a conversa, mas so quando termina de escrever", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  const antes = chatDaAba(hospedeiro)
+  const campo = linhaDoTema(hospedeiro, "retrato", "Nome da marca").porClasse("ed__tema-texto")[0]
+  campo.value = "Outra"
+  campo.disparar("input")
+  assert.equal(chatDaAba(hospedeiro), antes, "remontar a cada letra jogaria a conversa para o início")
+  assert.equal(editor.tema().marca, "Outra")
+
+  campo.disparar("change")
+  await assentar()
+  assert.notEqual(chatDaAba(hospedeiro), antes, "o chat lê a marca ao nascer: precisa renascer")
+})
+
+test("o retrato tem interruptor, e religar nao pede o caminho de novo", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  const chave = () => linhaDoTema(hospedeiro, "retrato", "Mostrar retrato").porClasse("ed__tema-chave")[0]
+  assert.equal(chave().className.includes("ed__tema-chave--ligado"), true)
+
+  chave().disparar("click")
+  await assentar()
+  assert.equal("avatar" in editor.tema(), false, "retrato desligado sai do tema.json")
+  assert.equal(porClasse(hospedeiro, "cf__avatar").length, 0)
+
+  chave().disparar("click")
+  await assentar()
+  assert.equal(editor.tema().avatar, "logo.svg", "o caminho de antes deveria voltar sozinho")
+  assert.ok(porClasse(hospedeiro, "cf__avatar").length > 0)
+})
+
+test("o retrato do tema vira o caminho que esta pagina consegue abrir", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  assert.equal(porClasse(hospedeiro, "cf__avatar")[0].src, "../clientes/osher/logo.svg")
+  assert.equal(editor.tema().avatar, "logo.svg", "o tema gravado continua relativo ao cliente")
+})
+
+test("salvar manda o tema para o gravador do tema, e so ele", async () => {
+  const { hospedeiro, editor, salvos, temasSalvos } = montarComTema()
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff00ff"
+  campo.disparar("input")
+
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+  assert.equal(salvos.length, 0, "o fluxo não mudou: não tinha o que gravar")
+  assert.equal(temasSalvos.length, 1)
+  assert.equal(JSON.parse(temasSalvos[0]).cores.superficie, "#ff00ff")
+  assert.equal(editor.temMudancas(), false)
+  assert.equal(porClasse(hospedeiro, "ed__salvar")[0].textContent, "Salvo")
+})
+
+test("sem gravador de tema, salvar baixa o tema.json em vez de perder a cor", async () => {
+  const { hospedeiro, baixados, editor } = montarComTema({ comGravadorDeTema: false })
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff00ff"
+  campo.disparar("input")
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+
+  assert.equal(baixados.length, 1)
+  assert.equal(baixados[0].n, "tema.json")
+  assert.equal(JSON.parse(baixados[0].t).cores.superficie, "#ff00ff")
+  assert.equal(editor.temMudancas(), true, "não gravou: continua pendente")
+})
+
+test("desfazer volta a cor de antes", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: { acento: "#112233" } } })
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff00ff"
+  campo.disparar("input")
+  assert.equal(editor.tema().cores.superficie, "#ff00ff")
+
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal("superficie" in editor.tema().cores, false, "desfazer deveria devolver o tema de antes")
+  assert.equal(corDaLinha(hospedeiro, "conversa", "Fundo das caixas").value, COR_PADRAO.superficie)
+  assert.equal(editor.temMudancas(), false)
+})
+
+test("arrastar o seletor de cor e um passo de desfazer, nao um por tom", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  for (const tom of ["#ff0000", "#ff3300", "#ff6600"]) {
+    campo.value = tom
+    campo.disparar("input")
+  }
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal("superficie" in editor.tema().cores, false,
+    "um desfazer deveria apagar o arrastão inteiro")
+})
+
+test("sair da aba desmonta a conversa de exemplo", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  assert.ok(chatDaAba(hospedeiro))
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  assert.equal(porClasse(hospedeiro, "cf").length, 0,
+    "chat escondido atrás de outra aba continua contando o tempo")
+})
+
+test("o Testar mostra o chat com as cores do cliente", async () => {
+  const hospedeiro = new Elemento("div")
+  criarEditor({
+    elemento: hospedeiro, fluxo: fluxoBase(),
+    tema: { cores: { acento: "#112233" }, avatar: "logo.svg" },
+    pastaDoCliente: "../clientes/osher",
+    esperarNoTeste: async () => {}
+  })
+  porClasse(hospedeiro, "ed__testar")[0].disparar("click")
+  await assentar()
+  const chat = porClasse(hospedeiro, "ed__preview")[0].porClasse("cf")[0]
+  assert.equal(chat.style.propriedades["--cf-acento"], "#112233",
+    "testar com as cores do motor mostraria um chat que não existe")
+  assert.equal(porClasse(hospedeiro, "cf__avatar")[0].src, "../clientes/osher/logo.svg")
+})
+
+test("mexer so no fluxo nao reescreve o tema.json", async () => {
+  const { hospedeiro, salvos, temasSalvos } = montarComTema()
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  campo.value = "Outro nome"
+  campo.disparar("input")
+
+  porClasse(hospedeiro, "ed__salvar")[0].disparar("click")
+  await assentar()
+  assert.equal(salvos.length, 1)
+  assert.equal(temasSalvos.length, 0,
+    "tema gravado sem ninguém ter tocado nele dá commit de tema em dia que ninguém mexeu nele")
+})
+
+test("desfazer volta um passo do tema, nao ao tema do comeco", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff0000"
+  campo.disparar("input")
+  const outro = corDaLinha(hospedeiro, "falas", "Fundo")
+  outro.value = "#00ff00"
+  outro.disparar("input")
+
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal(editor.tema().cores.superficie, "#ff0000",
+    "desfazer a segunda cor levou a primeira junto")
+  assert.equal("acento" in editor.tema().cores, false)
+})
+
+test("refazer traz a cor desfeita de volta", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  const campo = corDaLinha(hospedeiro, "conversa", "Fundo das caixas")
+  campo.value = "#ff0000"
+  campo.disparar("input")
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal("superficie" in editor.tema().cores, false)
+
+  porClasse(hospedeiro, "ed__passo--refazer")[0].disparar("click")
+  await assentar()
+  assert.equal(editor.tema().cores.superficie, "#ff0000")
+  assert.equal(chatDaAba(hospedeiro).style.propriedades["--cf-superficie"], "#ff0000",
+    "a conversa tem de voltar junto com o tema")
+})
+
+test("o interruptor religa no retrato de agora, nao no que abriu com o editor", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  const campo = linhaDoTema(hospedeiro, "retrato", "Imagem").porClasse("ed__tema-texto")[0]
+  campo.value = "outra.svg"
+  campo.disparar("input")
+  campo.disparar("change")
+  await assentar()
+
+  const chave = () => linhaDoTema(hospedeiro, "retrato", "Mostrar retrato").porClasse("ed__tema-chave")[0]
+  chave().disparar("click")
+  await assentar()
+  chave().disparar("click")
+  await assentar()
+  assert.equal(editor.tema().avatar, "outra.svg", "religou na imagem antiga")
+})
+
+test("trocar a cor que outras seguem atualiza o seletor delas", async () => {
+  const { hospedeiro } = montarComTema({ tema: { cores: { acento: "#0c2340" } } })
+  await assentar()
+  assert.equal(corDaLinha(hospedeiro, "botoes", "Fundo").value, "#0c2340")
+
+  const fala = corDaLinha(hospedeiro, "falas", "Fundo")
+  fala.value = "#7a1f3d"
+  fala.disparar("input")
+  assert.equal(corDaLinha(hospedeiro, "botoes", "Fundo").value, "#7a1f3d",
+    "o painel diria azul enquanto a conversa já está vinho")
+})
+
+test("cor propria nao e arrastada pela cor que ela so poderia seguir", async () => {
+  const { hospedeiro } = montarComTema({ tema: { cores: { acento: "#0c2340", botao: "#112233" } } })
+  await assentar()
+  const fala = corDaLinha(hospedeiro, "falas", "Fundo")
+  fala.value = "#7a1f3d"
+  fala.disparar("input")
+  assert.equal(corDaLinha(hospedeiro, "botoes", "Fundo").value, "#112233")
+})
+
+test("o campo da imagem so aparece com o retrato ligado", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  const campoDaImagem = () => linhaDoTema(hospedeiro, "retrato", "Imagem")
+  assert.ok(campoDaImagem())
+
+  linhaDoTema(hospedeiro, "retrato", "Mostrar retrato").porClasse("ed__tema-chave")[0].disparar("click")
+  await assentar()
+  assert.equal(campoDaImagem(), undefined, "campo vazio sob interruptor desligado só faz perguntar para quê")
+})
+
+test("ligar o retrato sem imagem nenhuma abre o campo em vez de nao fazer nada", async () => {
+  const { hospedeiro } = montarComTema({ tema: { cores: {} } })
+  await assentar()
+  const chave = () => linhaDoTema(hospedeiro, "retrato", "Mostrar retrato").porClasse("ed__tema-chave")[0]
+  assert.equal(chave().className.includes("--ligado"), false)
+
+  chave().disparar("click")
+  await assentar()
+  assert.equal(chave().className.includes("--ligado"), true, "o interruptor voltou sozinho para desligado")
+  assert.ok(linhaDoTema(hospedeiro, "retrato", "Imagem"), "o campo da imagem é o próximo passo")
+})
+
+test("desfazer devolve o interruptor ao que o tema diz", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  const chave = () => linhaDoTema(hospedeiro, "retrato", "Mostrar retrato").porClasse("ed__tema-chave")[0]
+  chave().disparar("click")
+  await assentar()
+  assert.equal(chave().className.includes("--ligado"), false)
+
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal(chave().className.includes("--ligado"), true,
+    "o tema voltou a ter retrato, o interruptor tem de voltar junto")
+  assert.ok(linhaDoTema(hospedeiro, "retrato", "Imagem"))
 })

@@ -17,6 +17,12 @@ import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 import { iconeDoTipo, iconeDaAcao } from "./icones.js"
 import { colunasDosResultados, valorNaColuna } from "./resultados.js"
+import {
+  SECOES as SECOES_DO_TEMA, LARGURA_MINIMA, LARGURA_MAXIMA,
+  corDoTema, corHerdada, definirCor, soltarCor, definirDoTema,
+  larguraEmRem, definirLargura
+} from "./tema.js"
+import { criarChat, aplicarTema } from "../motor/motor.js"
 
 
 const NOME_DA_CATEGORIA = {
@@ -43,9 +49,18 @@ export function criarEditor({
   // acontece de uma vez e a suíte não fica parada esperando o relógio.
   esperarNoTeste = undefined,
   // Busca os leads do cliente. Recebe a chave de leitura e devolve as linhas.
-  aoBuscarLeads = null
+  aoBuscarLeads = null,
+  // O tema do chat deste cliente, e onde gravá-lo. Sem gravador, a aba Tema
+  // ainda edita e mostra — só não salva, e diz isso.
+  tema = {},
+  aoSalvarTema = null,
+  // Onde mora a pasta do cliente, vista desta página. O tema fala em caminhos
+  // relativos a ela ("avatar": "logo.svg"); quem sabe traduzir é quem abriu o
+  // editor, não o tema.
+  pastaDoCliente = ""
 }) {
   let atual = fluxo
+  let temaAtual = tema
   let selecao = { grupo: null, bloco: null }
   let recado = ""
   let detalhesAbertos = false
@@ -53,6 +68,7 @@ export function criarEditor({
   // diz se há algo a salvar — mais honesto que marcar "sujo" em cada edição e
   // esquecer de marcar numa delas.
   let gravado = JSON.stringify(fluxo)
+  let temaGravado = JSON.stringify(tema)
   let salvando = false
   let editandoNome = false
   let aba = "fluxo"
@@ -68,35 +84,58 @@ export function criarEditor({
 
   // `assinatura` junta edições seguidas no mesmo campo num passo só: desfazer
   // letra por letra o que se digitou seria um castigo.
-  function trocarFluxo(novo, assinatura = null) {
-    if (novo === atual) return
+  // Um passo guarda o fluxo E o tema: são duas abas do mesmo projeto, e
+  // desfazer que só valesse numa delas seria uma armadilha.
+  function agora() {
+    return { fluxo: atual, tema: temaAtual }
+  }
+
+  function registrarPasso(assinatura) {
     if (!assinatura || assinatura !== ultimaAssinatura) {
-      desfazerPilha.push(atual)
+      desfazerPilha.push(agora())
       if (desfazerPilha.length > PASSOS_GUARDADOS) desfazerPilha.shift()
     }
     ultimaAssinatura = assinatura
     refazerPilha = []
+  }
+
+  function trocarFluxo(novo, assinatura = null) {
+    if (novo === atual) return
+    registrarPasso(assinatura)
     atual = novo
+  }
+
+  function trocarTema(novo, assinatura = null) {
+    if (novo === temaAtual) return
+    registrarPasso(assinatura)
+    temaAtual = novo
+  }
+
+  function voltarPara(passo) {
+    atual = passo.fluxo
+    temaAtual = passo.tema
+    depoisDeAndarNoTempo()
   }
 
   function desfazer() {
     if (!desfazerPilha.length) return
-    refazerPilha.push(atual)
-    atual = desfazerPilha.pop()
-    depoisDeAndarNoTempo()
+    refazerPilha.push(agora())
+    voltarPara(desfazerPilha.pop())
   }
 
   function refazer() {
     if (!refazerPilha.length) return
-    desfazerPilha.push(atual)
-    atual = refazerPilha.pop()
-    depoisDeAndarNoTempo()
+    desfazerPilha.push(agora())
+    voltarPara(refazerPilha.pop())
   }
 
   // Voltar no tempo pode ter apagado o que estava selecionado, e a próxima
   // edição não deve se juntar à que acabou de ser desfeita.
   function depoisDeAndarNoTempo() {
     ultimaAssinatura = null
+    // O interruptor do retrato volta a seguir o tema: depois de desfazer,
+    // quem manda é o que o tema diz, não o último clique.
+    retratoAberto = null
     if (selecao.grupo && !atual.grupos.some((g) => g && g.id === selecao.grupo)) {
       selecao = { grupo: null, bloco: null }
       detalhesAbertos = false
@@ -117,7 +156,8 @@ export function criarEditor({
   const areaConfiguracoes = el("div", "ed__area-config")
   const emBreve = el("div", "ed__em-breve ed__oculto")
   const areaResultados = el("section", "ed__resultados ed__oculto")
-  centro.append(barra, palcoCanvas, emBreve, areaResultados, problemas)
+  const areaTema = el("section", "ed__tema ed__oculto")
+  centro.append(barra, palcoCanvas, emBreve, areaResultados, areaTema, problemas)
   raiz.append(paleta, centro, areaPainel, areaPreview, areaConfiguracoes)
   elemento.replaceChildren(raiz)
 
@@ -232,6 +272,7 @@ export function criarEditor({
     aoTestar: (grupo) => { preview.abrir(atual, grupo); sincronizarTestar() }
   })
   const preview = criarPreview({
+    tema: () => temaParaOChat(),
     elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste
   })
   const painel = criarPainel({
@@ -264,8 +305,11 @@ export function criarEditor({
   salvar.addEventListener("click", () => guardar())
 
   function temMudancas() {
-    return JSON.stringify(atual) !== gravado
+    return fluxoMudou() || temaMudou()
   }
+
+  const fluxoMudou = () => JSON.stringify(atual) !== gravado
+  const temaMudou = () => JSON.stringify(temaAtual) !== temaGravado
 
   // O botão conta três coisas: há o que salvar, está salvando, ou está tudo
   // guardado. Botão que diz sempre a mesma coisa não avisa nada.
@@ -285,29 +329,42 @@ export function criarEditor({
   async function guardar() {
     if (salvando || !temMudancas()) return
     const texto = JSON.stringify(atual, null, 2)
+    const textoDoTema = JSON.stringify(temaAtual, null, 2)
     if (!aoSalvar) return cair(texto, "Este editor está aberto sem servidor para gravar.")
 
     salvando = true
     sincronizarSalvar()
     try {
-      await aoSalvar(texto)
-      gravado = JSON.stringify(atual)
+      // Cada arquivo só vai se mudou: salvar o tema a cada mexida no fluxo
+      // daria commit de tema em dia que ninguém tocou no tema.
+      if (fluxoMudou()) {
+        await aoSalvar(texto)
+        gravado = JSON.stringify(atual)
+      }
+      if (temaMudou()) {
+        if (!aoSalvarTema) throw new Error("este editor não sabe gravar o tema")
+        await aoSalvarTema(textoDoTema)
+        temaGravado = JSON.stringify(temaAtual)
+      }
       recado = ""
     } catch (falha) {
-      cair(texto, falha?.message || String(falha))
+      // O que falhou é o que ainda está diferente do gravado.
+      const doTema = temaMudou() && !fluxoMudou()
+      cair(doTema ? textoDoTema : texto, falha?.message || String(falha),
+        doTema ? "tema.json" : "fluxo.json")
     } finally {
       salvando = false
       sincronizarSalvar()
-      desenharPaleta()
+      desenharLado()
     }
   }
 
   // Não deu para gravar: o arquivo desce para a pasta de downloads. Trabalho
   // perdido por um servidor fora do ar seria o pior resultado possível.
-  function cair(texto, motivo) {
-    aoBaixar(texto, "fluxo.json")
-    recado = `Não consegui salvar (${motivo}). Baixei o fluxo.json para não perder o trabalho.`
-    desenharPaleta()
+  function cair(texto, motivo, nomeDoArquivo = "fluxo.json") {
+    aoBaixar(texto, nomeDoArquivo)
+    recado = `Não consegui salvar (${motivo}). Baixei o ${nomeDoArquivo} para não perder o trabalho.`
+    desenharLado()
   }
 
   // --- as três zonas do header -----------------------------------------
@@ -396,6 +453,7 @@ export function criarEditor({
     botao.addEventListener("click", () => {
       aba = chave
       sincronizarAbas()
+      desenharLado()
       desenharConteudo()
     })
     botoesDeAba.set(chave, botao)
@@ -438,6 +496,16 @@ export function criarEditor({
   barra.append(esquerda, meio, direita)
   desenharNome()
   sincronizarAbas()
+
+  // O lado esquerdo serve à aba aberta: na do fluxo são os tipos de bloco,
+  // na do tema são as seções de cor. Paleta de blocos na aba Tema seria só
+  // ruído com gesto que não leva a nada.
+  function desenharLado() {
+    paleta.className = `ed__paleta${aba === "resultados" ? " ed__oculto" : ""}`
+    if (aba === "tema") return desenharLadoDoTema()
+    if (aba === "resultados") return paleta.replaceChildren()
+    desenharPaleta()
+  }
 
   // --- paleta ----------------------------------------------------------
   function desenharPaleta() {
@@ -549,28 +617,251 @@ export function criarEditor({
     document.addEventListener("mouseup", soltar)
   }
 
-  // A aba escolhida manda no que aparece embaixo do header. Tema e Resultados
-  // ainda não existem: dizem isso, em vez de abrirem uma tela vazia que
-  // parece quebrada.
-  const EM_CONSTRUCAO = {
-    tema: "As cores, a fonte e o retrato do chat ainda se editam em clientes/<cliente>/tema.json."
-  }
+  // A aba escolhida manda no que aparece embaixo do header. Nenhuma está "em
+  // breve" hoje; a caixa fica porque a próxima aba vai nascer vazia e é
+  // melhor dizer isso do que abrir uma tela que parece quebrada.
+  const EM_CONSTRUCAO = {}
 
   function desenharConteudo() {
     const fora = aba !== "fluxo"
     palcoCanvas.className = `ed__area-canvas${fora ? " ed__oculto" : ""}`
     emBreve.replaceChildren()
-    emBreve.className = `ed__em-breve${fora && aba !== "resultados" ? "" : " ed__oculto"}`
+    const temRecado = fora && EM_CONSTRUCAO[aba]
+    emBreve.className = `ed__em-breve${temRecado ? "" : " ed__oculto"}`
     areaResultados.replaceChildren()
     areaResultados.className = `ed__resultados${aba === "resultados" ? "" : " ed__oculto"}`
+    areaTema.className = `ed__tema${aba === "tema" ? "" : " ed__oculto"}`
+    // Sair da aba desmonta a conversa de exemplo: chat vivo escondido atrás
+    // de outra aba continua contando o tempo e pedindo fonte.
+    if (aba !== "tema") desmontarChatDoTema()
 
     if (aba === "resultados") return desenharResultados()
-    if (fora) {
+    if (aba === "tema") return desenharTema()
+    if (temRecado) {
       emBreve.append(
         el("h2", "ed__em-breve-titulo", botoesDeAba.get(aba).textContent),
         el("p", "ed__em-breve-texto", EM_CONSTRUCAO[aba])
       )
     }
+  }
+
+  // --- a aba Tema --------------------------------------------------------
+  // À esquerda, as seções com os controles; no meio, uma conversa de verdade
+  // rodando o fluxo deste projeto. Mexer numa cor muda a conversa na hora,
+  // sem reiniciá-la: o motor escreve as cores no próprio elemento do chat.
+  let chatDoTema = null
+  let palcoDoTema = null
+
+  // Imagem do tema é relativa à pasta do cliente; o chat precisa do caminho
+  // que funciona desta página.
+  function temaParaOChat() {
+    const avatar = temaAtual.avatar
+    if (!avatar || !pastaDoCliente || /^(https?:)?\/\/|^data:|^\//.test(avatar)) return temaAtual
+    return { ...temaAtual, avatar: `${pastaDoCliente}/${avatar}` }
+  }
+
+  // Sair da aba desmonta a conversa: chat vivo escondido atrás de outra aba
+  // continua contando o tempo e desenhando falas que ninguém vê.
+  function desmontarChatDoTema() {
+    chatDoTema = null
+    palcoDoTema = null
+    areaTema.replaceChildren()
+  }
+
+  function desenharTema() {
+    areaTema.replaceChildren()
+    const topo = el("div", "ed__tema-topo")
+    topo.append(el("h2", "ed__tema-titulo", "A conversa do seu jeito"))
+    const reiniciar = el("button", "ed__tema-reiniciar", "Reiniciar a conversa")
+    reiniciar.setAttribute("type", "button")
+    reiniciar.addEventListener("click", () => montarChatDoTema())
+    topo.append(reiniciar)
+
+    palcoDoTema = el("div", "ed__tema-palco")
+    areaTema.append(topo, palcoDoTema)
+    montarChatDoTema()
+  }
+
+  function montarChatDoTema() {
+    if (!palcoDoTema) return
+    chatDoTema = criarChat({
+      elemento: palcoDoTema,
+      fluxo: atual,
+      tema: temaParaOChat(),
+      modo: "teste",
+      armazenamento: undefined,
+      ritmo: atual.ritmo,
+      esperar: esperarNoTeste,
+      buscar: async () => { throw new Error("a aba Tema não envia nada") }
+    })
+    chatDoTema.reiniciar({ retomar: false })
+  }
+
+  // Uma cor, uma largura ou uma fonte não precisam remontar nada: o motor
+  // reescreve as variáveis no elemento do chat e a conversa continua de onde
+  // estava. Retrato e marca, sim — o chat os lê ao nascer.
+  function temaMexido({ remontar = false } = {}) {
+    if (temaAtual.avatar) retratoGuardado = temaAtual.avatar
+    sincronizarCores()
+    sincronizarSalvar()
+    if (!chatDoTema) return
+    if (remontar) montarChatDoTema()
+    else aplicarTema(chatDoTema.raiz, temaParaOChat())
+  }
+
+  // O retrato tem interruptor, e desligar é esvaziar o campo. Guardar o
+  // caminho aqui deixa religar sem ter de digitar de novo — e não suja o
+  // tema.json com chave que o chat não usa.
+  let retratoGuardado = tema.avatar || ""
+  // Enquanto ninguém mexe no interruptor, ele segue o tema. Depois de mexido,
+  // manda ele: ligar sem imagem nenhuma tem de abrir o campo, senão o
+  // interruptor parece quebrado — volta sozinho para "desligado" porque não
+  // havia caminho para pôr.
+  let retratoAberto = null
+  const mostrandoRetrato = () => (retratoAberto === null ? Boolean(temaAtual.avatar) : retratoAberto)
+
+  // Cada seletor de cor da tela, pela chave que ele edita. Trocar o acento
+  // muda a cor do botão, que o segue — e o seletor do botão tem de mostrar
+  // isso na hora, senão o painel diz azul enquanto a conversa está vinho.
+  const camposDeCor = new Map()
+  const camposDeTexto = new Map()
+
+  function sincronizarCores() {
+    for (const [chave, { campo, soltar }] of camposDeCor) {
+      const cor = corDoTema(temaAtual, chave)
+      if (campo.value !== cor) {
+        campo.value = cor
+        campo.setAttribute("value", cor)
+      }
+      soltar.disabled = corHerdada(temaAtual, chave)
+    }
+  }
+
+  function desenharLadoDoTema() {
+    camposDeCor.clear()
+    camposDeTexto.clear()
+    const caixa = el("div", "ed__paleta-corpo")
+    caixa.append(el("div", "ed__recado", recado))
+    caixa.append(el("p", "ed__dica",
+      "O que mudar aqui vale para a conversa de todos os leads deste projeto."))
+
+    for (const secao of SECOES_DO_TEMA) {
+      const bloco = el("section", `ed__tema-secao ed__tema-secao--${secao.chave}`)
+      bloco.append(el("h3", "ed__categoria", secao.titulo))
+      if (secao.nota) bloco.append(el("p", "ed__tema-nota", secao.nota))
+      for (const controle of secao.controles) {
+        // O caminho da imagem só aparece com o retrato ligado: campo vazio
+        // embaixo de um interruptor desligado só faz perguntar para quê.
+        if (controle.chave === "avatar" && controle.tipo === "texto" && !mostrandoRetrato()) continue
+        bloco.append(linhaDoTema(controle))
+      }
+      caixa.append(bloco)
+    }
+
+    paleta.replaceChildren(caixa)
+  }
+
+  function linhaDoTema(controle) {
+    const linha = el("div", `ed__tema-linha ed__tema-linha--${controle.tipo}`)
+    linha.append(el("span", "ed__tema-rotulo", controle.rotulo))
+    const direita = el("span", "ed__tema-controle")
+
+    if (controle.tipo === "cor") direita.append(...controleDeCor(controle))
+    else if (controle.tipo === "largura") direita.append(...controleDeLargura())
+    else if (controle.tipo === "interruptor") direita.append(interruptorDoRetrato())
+    else direita.append(controleDeTexto(controle))
+
+    linha.append(direita)
+    return linha
+  }
+
+  function controleDeCor(controle) {
+    const campo = el("input", "ed__tema-cor")
+    campo.setAttribute("type", "color")
+    campo.setAttribute("aria-label", controle.rotulo)
+    campo.value = corDoTema(temaAtual, controle.chave)
+    campo.setAttribute("value", campo.value)
+
+    // Herdada mostra a cor que a pessoa vê e um botão para devolvê-la à
+    // herança. Sem o botão, escolher uma cor por engano seria definitivo.
+    const soltar = el("button", "ed__tema-soltar", "↺")
+    soltar.setAttribute("type", "button")
+    soltar.setAttribute("title", "Voltar ao padrão")
+    soltar.setAttribute("aria-label", `${controle.rotulo}: voltar ao padrão`)
+    soltar.disabled = corHerdada(temaAtual, controle.chave)
+
+    campo.addEventListener("input", () => {
+      // Arrastar o seletor dispara um evento por tom: a assinatura junta
+      // todos num passo de desfazer só.
+      trocarTema(definirCor(temaAtual, controle.chave, campo.value), `cor:${controle.chave}`)
+      temaMexido()
+    })
+    soltar.addEventListener("click", () => {
+      trocarTema(soltarCor(temaAtual, controle.chave))
+      temaMexido()
+    })
+    camposDeCor.set(controle.chave, { campo, soltar })
+    return [campo, soltar]
+  }
+
+  function controleDeLargura() {
+    const campo = el("input", "ed__tema-faixa")
+    campo.setAttribute("type", "range")
+    campo.setAttribute("min", String(LARGURA_MINIMA))
+    campo.setAttribute("max", String(LARGURA_MAXIMA))
+    campo.setAttribute("step", "1")
+    campo.setAttribute("aria-label", "Largura máxima da conversa")
+    campo.value = String(larguraEmRem(temaAtual))
+    const medida = el("span", "ed__tema-medida", `${larguraEmRem(temaAtual)}rem`)
+    campo.addEventListener("input", () => {
+      trocarTema(definirLargura(temaAtual, campo.value), "largura")
+      medida.textContent = `${larguraEmRem(temaAtual)}rem`
+      temaMexido()
+    })
+    return [campo, medida]
+  }
+
+  function controleDeTexto(controle) {
+    const campo = el("input", "ed__tema-texto")
+    campo.setAttribute("type", "text")
+    campo.setAttribute("aria-label", controle.rotulo)
+    if (controle.dica) campo.setAttribute("placeholder", controle.dica)
+    campo.value = temaAtual[controle.chave] || ""
+
+    // O retrato e a marca o chat lê ao nascer, então remontam — mas só quando
+    // a pessoa termina de escrever. Remontar a cada letra do caminho da
+    // imagem jogaria a conversa para a primeira pergunta em cada tecla.
+    const remontaNoFim = controle.chave === "avatar" || controle.chave === "marca"
+    campo.addEventListener("input", () => {
+      const valor = String(campo.value || "").trim()
+      trocarTema(definirDoTema(temaAtual, controle.chave, valor), `tema:${controle.chave}`)
+      temaMexido({ remontar: !remontaNoFim })
+    })
+    if (remontaNoFim) campo.addEventListener("change", () => temaMexido({ remontar: true }))
+    camposDeTexto.set(controle.chave, campo)
+    return campo
+  }
+
+  function interruptorDoRetrato() {
+    const ligado = mostrandoRetrato()
+    const botao = el("button", `ed__tema-chave${ligado ? " ed__tema-chave--ligado" : ""}`)
+    botao.setAttribute("type", "button")
+    botao.setAttribute("aria-pressed", ligado ? "true" : "false")
+    botao.setAttribute("aria-label", "Mostrar retrato")
+    botao.append(el("span", "ed__tema-chave-bola"))
+    botao.addEventListener("click", () => {
+      retratoAberto = !ligado
+      trocarTema(definirDoTema(temaAtual, "avatar", retratoAberto ? retratoGuardado : ""))
+      desenharLadoDoTema()
+      temaMexido({ remontar: true })
+      // Ligado sem imagem, o campo recém-aberto é o próximo passo: o cursor
+      // já vai para ele.
+      if (retratoAberto && !temaAtual.avatar) {
+        const campo = camposDeTexto.get("avatar")
+        campo?.focus?.()
+      }
+    })
+    return botao
   }
 
   // --- resultados --------------------------------------------------------
@@ -821,7 +1112,7 @@ export function criarEditor({
     canvas.desenhar(atual)
     canvas.selecionar(selecao)
     desenharPainel()
-    desenharPaleta()
+    desenharLado()
     desenharProblemas()
     preview.atualizar(atual)
   }
@@ -833,6 +1124,7 @@ export function criarEditor({
 
   return {
     fluxo: () => atual,
+    tema: () => temaAtual,
     temMudancas,
     salvar: guardar,
     selecao: () => ({ ...selecao }),
