@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chatflow — editor</title>
+<link rel="stylesheet" href="editor.css">
+<link rel="stylesheet" href="../motor/tema.css">
+</head>
+<body>
+<div id="editor"></div>
+<script type="module">
+  import { criarEditor } from "./app.js"
+
+  const parametros = new URLSearchParams(location.search)
+  const cliente = parametros.get("cliente")
+  const base = cliente ? `../clientes/${cliente}` : "../exemplos"
+  const arquivo = cliente ? `${base}/fluxo.json` : `${base}/captacao-simples.json`
+
+  const alvo = document.getElementById("editor")
+
+  function baixar(texto, nome) {
+    const url = URL.createObjectURL(new Blob([texto], { type: "application/json" }))
+    const a = document.createElement("a")
+    a.href = url
+    a.download = nome
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Grava no mesmo endereço de onde o arquivo veio. Quem atende é o servir.py;
+  // aberto de outro jeito (GitHub Pages, arquivo local), o PUT falha e o
+  // editor baixa o arquivo em vez de perder o trabalho.
+  async function gravar(url, texto) {
+    const resposta = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: texto
+    })
+    if (!resposta.ok) {
+      const corpo = await resposta.json().catch(() => ({}))
+      throw new Error(corpo.recado || `o servidor respondeu ${resposta.status}`)
+    }
+  }
+
+  const salvar = (texto) => gravar(arquivo, texto)
+  // O tema é do cliente, e o exemplo não tem pasta própria para ele: aberto
+  // sem `?cliente=`, a aba Tema edita e mostra, mas não tem onde gravar.
+  const salvarTema = cliente ? (texto) => gravar(`${base}/tema.json`, texto) : null
+
+  // Os leads moram na planilha do cliente, e quem lê de lá é o Apps Script —
+  // o mesmo endereço que recebe os leads, agora respondendo a quem tem a
+  // chave. A chave vem do editor, não daqui: este arquivo é público.
+  async function buscarLeads(chave) {
+    const destinos = await (await fetch(`${base}/destinos.json`)).json().catch(() => ({}))
+    const url = destinos?.destinos?.planilha?.url
+    if (!url) throw new Error("este cliente não tem planilha em destinos.json")
+
+    const resposta = await fetch(`${url}?acao=leads&chave=${encodeURIComponent(chave)}`)
+    if (!resposta.ok) throw new Error(`a planilha respondeu ${resposta.status}`)
+    const corpo = await resposta.json()
+    if (corpo.erro) throw new Error(corpo.erro)
+    // Resposta sem `linhas` é a versão antiga do Apps Script, que só sabia
+    // receber. Devolver lista vazia aqui diria "ninguém entrou no chat" para
+    // uma planilha possivelmente cheia.
+    if (!Array.isArray(corpo.linhas)) {
+      throw new Error("este Apps Script ainda não devolve leads: cole a versão nova do .gs e publique")
+    }
+    return corpo.linhas
+  }
+
+  async function carregar(url, padrao) {
+    try {
+      const resposta = await fetch(url)
+      if (!resposta.ok) return padrao
+      return await resposta.json()
+    } catch {
+      return padrao
+    }
+  }
+
+  try {
+    const resposta = await fetch(arquivo)
+    if (!resposta.ok) throw new Error(`${resposta.status} ao abrir ${arquivo}`)
+    const editor = criarEditor({
+      elemento: alvo, fluxo: await resposta.json(), cliente: cliente || "exemplo",
+      // O tema entra como está no arquivo, com os caminhos relativos ao
+      // cliente: é assim que ele tem de voltar para o disco. Quem traduz o
+      // caminho da imagem para esta página é o próprio editor.
+      tema: await carregar(`${base}/tema.json`, {}),
+      pastaDoCliente: base,
+      aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
+      // A página de projetos ainda não existe; quando existir, é só apontar.
+      aoVoltar: () => alert("A lista de projetos ainda não existe."),
+      aoBuscarLeads: buscarLeads
+    })
+
+    // Fechar a aba com trabalho não salvo é a maneira mais boba de perder uma
+    // tarde. O navegador só deixa avisar, não deixa escrever a frase.
+    addEventListener("beforeunload", (evento) => {
+      if (!editor.temMudancas()) return
+      evento.preventDefault()
+      evento.returnValue = ""
+    })
+  } catch (falha) {
+    alvo.textContent = `Não consegui abrir ${arquivo}. ${falha.message}`
+  }
+</script>
+</body>
+</html>

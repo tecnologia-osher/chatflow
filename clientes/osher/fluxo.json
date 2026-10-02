@@ -9,8 +9,8 @@
     {
       "tipo": "inicio",
       "posicao": {
-        "x": 40,
-        "y": 40
+        "x": -395,
+        "y": 149
       },
       "proximo": "g_abertura"
     }
@@ -27,8 +27,8 @@
       "id": "g_abertura",
       "titulo": "Abertura",
       "posicao": {
-        "x": 320,
-        "y": 40
+        "x": -143,
+        "y": 48
       },
       "blocos": [
         {
@@ -61,8 +61,8 @@
       "id": "g_contato",
       "titulo": "Contato",
       "posicao": {
-        "x": 320,
-        "y": 220
+        "x": 188,
+        "y": 41
       },
       "blocos": [
         {
@@ -95,8 +95,8 @@
       "id": "g_idade",
       "titulo": "Idade",
       "posicao": {
-        "x": 320,
-        "y": 420
+        "x": 504,
+        "y": 29
       },
       "blocos": [
         {
@@ -138,8 +138,8 @@
       "id": "g_objetivo",
       "titulo": "Objetivo",
       "posicao": {
-        "x": 320,
-        "y": 620
+        "x": 822,
+        "y": 25
       },
       "blocos": [
         {
@@ -175,8 +175,8 @@
       "id": "g_valor",
       "titulo": "Valor do crédito",
       "posicao": {
-        "x": 320,
-        "y": 820
+        "x": 1111,
+        "y": 24
       },
       "blocos": [
         {
@@ -217,8 +217,8 @@
       "id": "g_fim",
       "titulo": "Fim",
       "posicao": {
-        "x": 320,
-        "y": 1020
+        "x": 1111,
+        "y": 406
       },
       "blocos": [
         {

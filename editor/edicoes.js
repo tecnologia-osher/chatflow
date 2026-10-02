@@ -1,0 +1,406 @@
+// Edições do fluxo. Puras e imutáveis: recebem fluxo, devolvem fluxo novo.
+//
+// Nenhuma delas conhece tipo de bloco: o que um tipo novo traz de padrão sai
+// dos `campos` que ele mesmo declara.
+
+import { obter, todos } from "./catalogo.js"
+import { cartoes, caixas, alturaDoCartao } from "./modelo.js"
+import { partesDoDestino, montarDestino } from "../motor/destino.js"
+
+function trocarGrupo(fluxo, id, transformar) {
+  const grupos = fluxo.grupos || []
+  const indice = grupos.findIndex((g) => g && g.id === id)
+  if (indice === -1) return fluxo
+  const novo = transformar(grupos[indice])
+  if (novo === grupos[indice]) return fluxo
+  return { ...fluxo, grupos: grupos.map((g, i) => (i === indice ? novo : g)) }
+}
+
+function trocarBloco(fluxo, idGrupo, idBloco, transformar) {
+  return trocarGrupo(fluxo, idGrupo, (grupo) => {
+    const blocos = grupo.blocos || []
+    const indice = blocos.findIndex((b) => b && b.id === idBloco)
+    if (indice === -1) return grupo
+    const novo = transformar(blocos[indice])
+    if (novo === blocos[indice]) return grupo
+    return { ...grupo, blocos: blocos.map((b, i) => (i === indice ? novo : b)) }
+  })
+}
+
+// Um valor em branco some do JSON em vez de virar string vazia: campo vazio
+// gravado é ruído que depois ninguém sabe se foi intenção ou descuido.
+function comCampo(objeto, chave, valor) {
+  const limpo = typeof valor === "string" ? valor.trim() : valor
+  const copia = { ...objeto }
+  if (limpo === "" || limpo === undefined || limpo === null) delete copia[chave]
+  else copia[chave] = valor
+  return copia
+}
+
+function idsEmUso(fluxo) {
+  const usados = new Set()
+  for (const g of fluxo.grupos || []) {
+    if (!g) continue
+    usados.add(g.id)
+    for (const b of g.blocos || []) if (b) usados.add(b.id)
+  }
+  return usados
+}
+
+function idNovo(fluxo, prefixo) {
+  const usados = idsEmUso(fluxo)
+  for (let n = 1; ; n++) {
+    const tentativa = `${prefixo}${n}`
+    if (!usados.has(tentativa)) return tentativa
+  }
+}
+
+// --- campos ----------------------------------------------------------------
+
+export function definirCampo(fluxo, { grupo, bloco, campo, valor }) {
+  return trocarBloco(fluxo, grupo, bloco, (b) => ({
+    ...b, conteudo: comCampo(b.conteudo || {}, campo, valor)
+  }))
+}
+
+export function definirSalvarEm(fluxo, { grupo, bloco, valor }) {
+  return trocarBloco(fluxo, grupo, bloco, (b) => comCampo(b, "salvar_em", valor))
+}
+
+export function definirTitulo(fluxo, { grupo, valor }) {
+  return trocarGrupo(fluxo, grupo, (g) => comCampo(g, "titulo", valor))
+}
+
+export function definirProximo(fluxo, { grupo, valor }) {
+  return trocarGrupo(fluxo, grupo, (g) => comCampo(g, "proximo", valor))
+}
+
+export function moverGrupo(fluxo, { grupo, x, y }) {
+  return trocarGrupo(fluxo, grupo, (g) => ({
+    ...g, posicao: { x: Math.round(x), y: Math.round(y) }
+  }))
+}
+
+// --- blocos ----------------------------------------------------------------
+
+function blocoNovo(fluxo, tipo) {
+  const definicao = obter(tipo)
+  const conteudo = {}
+  for (const campo of definicao?.campos || []) {
+    if (campo.padrao !== undefined) conteudo[campo.nome] = campo.padrao
+  }
+  const bloco = { id: idNovo(fluxo, "b"), tipo, conteudo }
+  // Entrada sem `salvar_em` é erro de validação na hora de rodar. Nascer já
+  // com um nome evita que o fluxo fique quebrado entre um clique e outro.
+  if (definicao?.salva_variavel) bloco.salvar_em = idNovo(fluxo, "resposta")
+  return bloco
+}
+
+export function acrescentarBloco(fluxo, { grupo, tipo, apos = null }) {
+  if (!obter(tipo)) return fluxo
+  const novo = blocoNovo(fluxo, tipo)
+  return trocarGrupo(fluxo, grupo, (g) => {
+    const blocos = [...(g.blocos || [])]
+    const onde = apos ? blocos.findIndex((b) => b && b.id === apos) : -1
+    if (onde === -1) blocos.push(novo)
+    else blocos.splice(onde + 1, 0, novo)
+    return { ...g, blocos }
+  })
+}
+
+// Levar um bloco de um grupo para outro, ou mudar o lugar dele dentro do
+// mesmo grupo. `antesDe` é o bloco que vai ficar logo abaixo dele; sem isso,
+// entra no fim.
+//
+// Um grupo que fica sem nenhum bloco continua existindo: ele ainda é um ponto
+// do fluxo, com as ligações dele, e apagá-lo por conta própria levaria junto
+// caminhos que ninguém pediu para apagar.
+export function moverBlocoEntreGrupos(fluxo, { de, bloco, para, antesDe = null }) {
+  const origem = (fluxo.grupos || []).find((g) => g && g.id === de)
+  const oBloco = (origem?.blocos || []).find((b) => b && b.id === bloco)
+  if (!oBloco) return fluxo
+  if (!(fluxo.grupos || []).some((g) => g && g.id === para)) return fluxo
+  if (de === para && antesDe === bloco) return fluxo
+
+  const grupos = (fluxo.grupos || []).map((grupo) => {
+    if (!grupo) return grupo
+    let blocos = grupo.blocos || []
+    if (grupo.id === de) blocos = blocos.filter((b) => b && b.id !== bloco)
+    if (grupo.id === para) {
+      const lista = [...blocos]
+      const onde = antesDe ? lista.findIndex((b) => b && b.id === antesDe) : -1
+      if (onde === -1) lista.push(oBloco)
+      else lista.splice(onde, 0, oBloco)
+      blocos = lista
+    }
+    return blocos === grupo.blocos ? grupo : { ...grupo, blocos }
+  })
+  return { ...fluxo, grupos }
+}
+
+// Soltar o bloco no quadro: ele sai do grupo de origem e vira um grupo novo
+// naquele ponto. Devolve o fluxo e o id do grupo que nasceu, porque quem
+// chamou vai querer selecioná-lo.
+export function blocoViraGrupo(fluxo, { de, bloco, x, y }) {
+  const origem = (fluxo.grupos || []).find((g) => g && g.id === de)
+  const oBloco = (origem?.blocos || []).find((b) => b && b.id === bloco)
+  if (!oBloco) return { fluxo, grupo: null }
+
+  const comGrupo = criarGrupo(fluxo, { x, y })
+  const novo = comGrupo.grupos[comGrupo.grupos.length - 1]
+  return {
+    fluxo: moverBlocoEntreGrupos(comGrupo, { de, bloco, para: novo.id }),
+    grupo: novo.id
+  }
+}
+
+export function removerBloco(fluxo, { grupo, bloco }) {
+  return trocarGrupo(fluxo, grupo, (g) => {
+    const blocos = (g.blocos || []).filter(Boolean)
+    if (!blocos.some((b) => b.id === bloco)) return g
+    return { ...g, blocos: blocos.filter((b) => b.id !== bloco) }
+  })
+}
+
+export function moverBloco(fluxo, { grupo, bloco, direcao }) {
+  return trocarGrupo(fluxo, grupo, (g) => {
+    const blocos = [...(g.blocos || [])]
+    const de = blocos.findIndex((b) => b && b.id === bloco)
+    const para = de + direcao
+    if (de === -1 || para < 0 || para >= blocos.length) return g
+    ;[blocos[de], blocos[para]] = [blocos[para], blocos[de]]
+    return { ...g, blocos }
+  })
+}
+
+// --- grupos ----------------------------------------------------------------
+
+// Quanto um cartão respira do outro. A mesma folga usada para espalhar o
+// fluxo da Osher, para o espaçamento ser um só no produto.
+const MARGEM_ENTRE_CARTOES = 60
+
+// Cartão em cima de cartão não recebe clique: o de baixo fica inalcançável
+// sem ninguém entender por quê. Então o grupo novo desce até achar lugar.
+function lugarLivre(fluxo, x, y) {
+  const ocupadas = [...caixas(cartoes(fluxo)).values()]
+  const vazio = { largura: 260, altura: alturaDoCartao({ blocos: [] }) }
+  let lugar = { x: Math.round(x), y: Math.round(y) }
+  for (let voltas = 0; voltas <= ocupadas.length; voltas++) {
+    const choque = ocupadas.find((c) =>
+      lugar.x < c.x + c.largura && c.x < lugar.x + vazio.largura &&
+      lugar.y < c.y + c.altura && c.y < lugar.y + vazio.altura)
+    if (!choque) break
+    lugar = { x: lugar.x, y: choque.y + choque.altura + MARGEM_ENTRE_CARTOES }
+  }
+  return lugar
+}
+
+// O número é a posição do grupo no fluxo: num fluxo com seis grupos, o
+// próximo é o #7, mesmo que os seis tenham nome próprio. Contar só os que já
+// se chamam "Grupo #N" fazia o sétimo nascer como #1, e parecia que o editor
+// não tinha visto os outros. Números já usados são pulados, para dois cartões
+// nunca saírem com o mesmo nome.
+// Apagar um grupo é apagar também quem apontava para ele: destino para grupo
+// que não existe mais não é caminho, é erro espalhado pelo fluxo. Vale para as
+// duas metades do destino — "g2" e "g2#bloco" morrem junto com g2.
+export function removerGrupo(fluxo, { grupo }) {
+  const sobra = (destino) => partesDoDestino(destino).grupo !== grupo
+
+  const limparDestino = (objeto, chave) =>
+    objeto[chave] && !sobra(objeto[chave]) ? comCampo(objeto, chave, "") : objeto
+
+  const eventos = (fluxo.eventos || []).map((e) => (e ? limparDestino(e, "proximo") : e))
+
+  const grupos = (fluxo.grupos || []).filter((g) => g && g.id !== grupo).map((g) => {
+    const blocos = (g.blocos || []).map((b) => {
+      if (!b) return b
+      const conteudo = b.conteudo || {}
+      let novo = limparDestino(conteudo, "destino")
+      if (Array.isArray(conteudo.opcoes)) {
+        novo = { ...novo, opcoes: conteudo.opcoes.map((o) => (o ? limparDestino(o, "proximo") : o)) }
+      }
+      if (Array.isArray(conteudo.regras)) {
+        novo = { ...novo, regras: conteudo.regras.map((r) => (r ? limparDestino(r, "entao") : r)) }
+      }
+      return novo === conteudo ? b : { ...b, conteudo: novo }
+    })
+    return { ...limparDestino(g, "proximo"), blocos }
+  })
+
+  return { ...fluxo, eventos, grupos }
+}
+
+// Duplicar: um grupo igual, com id novo, logo abaixo do original. Os blocos
+// mantêm os ids deles — eles só precisam ser únicos dentro do grupo — e os
+// destinos são preservados, com uma exceção: o que apontava para o próprio
+// grupo passa a apontar para a cópia, senão o laço do original continuaria
+// mandando o lead de volta para o original.
+export function duplicarGrupo(fluxo, { grupo }) {
+  const original = (fluxo.grupos || []).find((g) => g && g.id === grupo)
+  if (!original) return fluxo
+
+  const id = idNovo(fluxo, "g")
+  const trocarSeForEleMesmo = (destino) => {
+    const partes = partesDoDestino(destino)
+    return partes.grupo === grupo ? montarDestino(id, partes.bloco) : destino
+  }
+
+  const blocos = (original.blocos || []).filter(Boolean).map((bloco) => {
+    const conteudo = { ...(bloco.conteudo || {}) }
+    if (conteudo.destino) conteudo.destino = trocarSeForEleMesmo(conteudo.destino)
+    if (Array.isArray(conteudo.opcoes)) {
+      conteudo.opcoes = conteudo.opcoes.map((o) =>
+        o && o.proximo ? { ...o, proximo: trocarSeForEleMesmo(o.proximo) } : { ...o })
+    }
+    if (Array.isArray(conteudo.regras)) {
+      conteudo.regras = conteudo.regras.map((r) =>
+        r && r.entao ? { ...r, entao: trocarSeForEleMesmo(r.entao) } : { ...r })
+    }
+    return { ...bloco, conteudo }
+  })
+
+  const copia = {
+    ...original,
+    id,
+    titulo: `${original.titulo || original.id} (cópia)`,
+    posicao: lugarLivre(fluxo, original.posicao?.x ?? 0, original.posicao?.y ?? 0),
+    blocos
+  }
+  if (copia.proximo) copia.proximo = trocarSeForEleMesmo(copia.proximo)
+
+  return { ...fluxo, grupos: [...(fluxo.grupos || []), copia] }
+}
+
+// O nome do projeto. Vive no próprio fluxo: é o arquivo que viaja, e um nome
+// guardado em outro lugar se perderia na primeira cópia.
+export const NOME_PADRAO = "My Chatflow"
+
+export function nomeDoFluxo(fluxo) {
+  const nome = (fluxo?.nome || "").trim()
+  return nome || NOME_PADRAO
+}
+
+export function definirNomeDoFluxo(fluxo, valor) {
+  return comCampo(fluxo, "nome", valor)
+}
+
+export function proximoNomeDeGrupo(fluxo) {
+  const usados = new Set((fluxo.grupos || []).filter(Boolean).map((g) => g.titulo))
+  let n = (fluxo.grupos || []).filter(Boolean).length + 1
+  while (usados.has(`Grupo #${n}`)) n++
+  return `Grupo #${n}`
+}
+
+export function criarGrupo(fluxo, { x = 0, y = 0, titulo } = {}) {
+  const id = idNovo(fluxo, "g")
+  return {
+    ...fluxo,
+    grupos: [...(fluxo.grupos || []), {
+      id, titulo: titulo || proximoNomeDeGrupo(fluxo), posicao: lugarLivre(fluxo, x, y), blocos: []
+    }]
+  }
+}
+
+export { todos as tiposDisponiveis }
+
+// --- opções do bloco de botões ---------------------------------------------
+
+function trocarOpcoes(fluxo, grupo, bloco, transformar) {
+  return trocarBloco(fluxo, grupo, bloco, (b) => {
+    const conteudo = b.conteudo || {}
+    const atuais = Array.isArray(conteudo.opcoes) ? conteudo.opcoes.filter(Boolean) : []
+    const novas = transformar(atuais)
+    if (novas === atuais) return b
+    return { ...b, conteudo: { ...conteudo, opcoes: novas } }
+  })
+}
+
+export function definirOpcao(fluxo, { grupo, bloco, opcao, campo, valor }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    const indice = opcoes.findIndex((o) => o.id === opcao)
+    if (indice === -1) return opcoes
+    // Pontuação precisa ser número: em texto, a soma vira concatenação e a
+    // classificação sai errada sem ninguém perceber.
+    const tratado = campo === "pontos" && String(valor).trim() !== "" ? Number(valor) : valor
+    if (campo === "pontos" && tratado !== "" && Number.isNaN(tratado)) return opcoes
+    return opcoes.map((o, i) => (i === indice ? comCampo(o, campo, tratado) : o))
+  })
+}
+
+export function acrescentarOpcao(fluxo, { grupo, bloco, apos = null, label = "" }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    const usados = new Set(opcoes.map((o) => o.id))
+    let n = 1
+    while (usados.has(`o${n}`)) n++
+    const nova = { id: `o${n}`, label }
+    const onde = apos ? opcoes.findIndex((o) => o.id === apos) : -1
+    if (onde === -1) return [...opcoes, nova]
+    const copia = [...opcoes]
+    copia.splice(onde + 1, 0, nova)
+    return copia
+  })
+}
+
+// Qual id a próxima opção vai receber. O editor precisa saber antes de
+// acrescentar, para já pôr o cursor nela.
+// Opção sem texto não é botão: é uma linha que alguém abriu e não usou.
+// Ela existe enquanto o cursor está nela; qualquer outra coisa que aconteça
+// na tela a desfaz. A última do bloco fica, porque bloco de botões sem botão
+// nenhum seria fluxo inválido.
+export function limparOpcoesVazias(fluxo) {
+  let mudou = false
+  const grupos = (fluxo.grupos || []).map((grupo) => ({
+    ...grupo,
+    blocos: (grupo.blocos || []).map((bloco) => {
+      const opcoes = bloco.conteudo?.opcoes
+      if (!Array.isArray(opcoes)) return bloco
+      const cheias = opcoes.filter((o) => String(o.label || "").trim() !== "")
+      const restam = cheias.length ? cheias : opcoes.slice(0, 1)
+      if (restam.length === opcoes.length) return bloco
+      mudou = true
+      return { ...bloco, conteudo: { ...bloco.conteudo, opcoes: restam } }
+    })
+  }))
+  return mudou ? { ...fluxo, grupos } : fluxo
+}
+
+export function proximoIdDeOpcao(fluxo, { grupo, bloco }) {
+  const g = (fluxo.grupos || []).find((x) => x && x.id === grupo)
+  const b = (g?.blocos || []).find((x) => x && x.id === bloco)
+  const usados = new Set(((b?.conteudo?.opcoes) || []).filter(Boolean).map((o) => o.id))
+  let n = 1
+  while (usados.has(`o${n}`)) n++
+  return `o${n}`
+}
+
+export function removerOpcao(fluxo, { grupo, bloco, opcao }) {
+  return trocarOpcoes(fluxo, grupo, bloco, (opcoes) => {
+    // Botões sem opção nenhuma deixam a pessoa sem saída no chat: o bloco
+    // espera resposta e não oferece nenhuma.
+    if (opcoes.length <= 1) return opcoes
+    const restantes = opcoes.filter((o) => o.id !== opcao)
+    return restantes.length === opcoes.length ? opcoes : restantes
+  })
+}
+
+
+// --- eventos ---------------------------------------------------------------
+
+function trocarEvento(fluxo, tipo, transformar) {
+  const eventos = fluxo.eventos || []
+  const indice = eventos.findIndex((e) => e && e.tipo === tipo)
+  // Fluxo começado do zero não tem evento nenhum: ligar o Start cria o que
+  // faltava, em vez de a ligação cair no vazio.
+  if (indice === -1) return { ...fluxo, eventos: [...eventos, transformar({ tipo })] }
+  return { ...fluxo, eventos: eventos.map((e, i) => (i === indice ? transformar(e) : e)) }
+}
+
+export function definirProximoDoEvento(fluxo, { tipo, destino }) {
+  return trocarEvento(fluxo, tipo, (e) => comCampo(e, "proximo", destino))
+}
+
+export function moverEvento(fluxo, { tipo, x, y }) {
+  return trocarEvento(fluxo, tipo, (e) => ({
+    ...e, posicao: { x: Math.round(x), y: Math.round(y) }
+  }))
+}

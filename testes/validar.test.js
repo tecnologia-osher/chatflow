@@ -251,3 +251,83 @@ test("evento nulo nao impede a checagem do resto do fluxo", () => {
   assert.match(erros, /Evento nulo/)
   assert.match(erros, /g_nao_existe/)
 })
+
+// --- destino com bloco -----------------------------------------------------
+
+const comDestinoDeBloco = (destino) => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "a", proximo: destino, blocos: [
+      { id: "b_fala", tipo: "texto", conteudo: { texto: "Oi" } }] },
+    { id: "g2", titulo: "b", blocos: [
+      { id: "b_um", tipo: "texto", conteudo: { texto: "Um" } },
+      { id: "b_dois", tipo: "texto", conteudo: { texto: "Dois" } }] }
+  ]
+})
+
+test("destino que nomeia um bloco existente e valido", () => {
+  const r = validarFluxo(comDestinoDeBloco("g2#b_dois"))
+  assert.deepEqual(r.erros, [])
+})
+
+test("bloco que nao existe no grupo e acusado, com o nome dos dois", () => {
+  const r = validarFluxo(comDestinoDeBloco("g2#b_sumiu"))
+  assert.equal(r.valido, false)
+  const texto = r.erros.join(" ")
+  assert.match(texto, /b_sumiu/)
+  assert.match(texto, /g2/)
+})
+
+test("grupo inexistente com bloco no destino acusa o grupo, nao o bloco", () => {
+  const r = validarFluxo(comDestinoDeBloco("g_sumiu#b_dois"))
+  assert.match(r.erros.join(" "), /g_sumiu/)
+})
+
+test("destino com bloco conta como alcancar o grupo", () => {
+  const r = validarFluxo(comDestinoDeBloco("g2#b_dois"))
+  assert.equal(r.erros.some((e) => /alcançável/.test(e)), false,
+    "g2 é alcançado pelo destino com bloco: dizer o contrário é falso alarme")
+})
+
+test("destino com bloco tambem conta como chegar ao fim", () => {
+  const r = validarFluxo(comDestinoDeBloco("g2#b_dois"))
+  assert.equal(r.erros.some((e) => /beco sem saída/.test(e)), false)
+})
+
+test("o inicio pode apontar para um bloco, e bloco errado no inicio e acusado", () => {
+  const bom = comDestinoDeBloco("g2")
+  bom.eventos = [{ tipo: "inicio", proximo: "g1#b_fala" }]
+  assert.deepEqual(validarFluxo(bom).erros, [])
+
+  const ruim = comDestinoDeBloco("g2")
+  ruim.eventos = [{ tipo: "inicio", proximo: "g1#b_nada" }]
+  assert.match(validarFluxo(ruim).erros.join(" "), /b_nada/)
+})
+
+test("opcao que aponta para um bloco e conferida igual", () => {
+  const fluxo = comDestinoDeBloco("g2")
+  fluxo.grupos[0].blocos.push({
+    id: "b_bot", tipo: "entrada_botoes", salvar_em: "v",
+    conteudo: { opcoes: [{ id: "o1", label: "Sim", proximo: "g2#b_nada" }] }
+  })
+  assert.match(validarFluxo(fluxo).erros.join(" "), /b_nada/)
+})
+
+test("inicio apontando para bloco ainda enxerga grupo orfao", () => {
+  const fluxo = comDestinoDeBloco("g2")
+  fluxo.eventos = [{ tipo: "inicio", proximo: "g1#b_fala" }]
+  fluxo.grupos.push({ id: "g3", titulo: "sozinho", blocos: [
+    { id: "b_so", tipo: "texto", conteudo: { texto: "ninguém me chama" } }] })
+  // Se a raiz da busca não resolver o grupo do destino, a lista de raízes fica
+  // vazia e o validador cala a boca sobre todos os órfãos de uma vez.
+  assert.match(validarFluxo(fluxo).erros.join(" "), /g3/)
+})
+
+test("inicio sem destino diz isso, em vez de citar um grupo vazio", () => {
+  const fluxo = comDestinoDeBloco("g2")
+  fluxo.eventos = [{ tipo: "inicio" }]
+  const texto = validarFluxo(fluxo).erros.join(" ")
+  assert.match(texto, /não aponta para nenhum grupo/i)
+  assert.equal(/grupo ""/.test(texto), false, "nome vazio manda procurar o que não existe")
+})

@@ -2,6 +2,7 @@ import { registrarTodos } from "./blocos/index.js"
 import { todos, obter } from "./blocos/_registro.js"
 import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
+import { fonteDeVideo } from "./video.js"
 import { criarEnviador } from "./destinos.js"
 import { criarSessao } from "./sessao.js"
 import {
@@ -47,6 +48,37 @@ function pedirFonte(url) {
   link.rel = "stylesheet"
   link.href = url
   cabeca.append(link)
+}
+
+// Põe o tema num elemento `.cf` já montado: as cores e a largura viram
+// variáveis no próprio elemento, e a fonte é pedida uma vez.
+//
+// É o mesmo caminho que o chat usa ao nascer, separado porque o editor precisa
+// trocar uma cor sem reiniciar a conversa — remontar o chat a cada arrastão no
+// seletor de cor jogaria a pessoa de volta para a primeira pergunta.
+//
+// Lembra o que escreveu em cada elemento para poder apagar: cor devolvida à
+// herança tem de voltar a herdar, e propriedade escrita no elemento ganha de
+// qualquer folha de estilo.
+const temaAplicado = new WeakMap()
+
+export function aplicarTema(raiz, tema = {}) {
+  if (!raiz) return
+  const nomes = new Map()
+  if (tema.largura) nomes.set("--cf-coluna", tema.largura)
+  for (const [nome, valor] of Object.entries(tema.cores || {})) {
+    nomes.set(`--cf-${nome}`, valor)
+  }
+
+  for (const antigo of temaAplicado.get(raiz) || []) {
+    if (!nomes.has(antigo)) raiz.style.removeProperty(antigo)
+  }
+  for (const [nome, valor] of nomes) raiz.style.setProperty(nome, valor)
+  temaAplicado.set(raiz, new Set(nomes.keys()))
+
+  // Fonte vazia não vira `font-family: ""`: ficaria pior que não mexer.
+  raiz.style.fontFamily = tema.fonte || ""
+  pedirFonte(tema.fonte_url)
 }
 
 // Filtro de digitação declarado pelo tipo, se houver. Fica no tipo e não
@@ -96,11 +128,7 @@ export function criarChat({
   raiz.append(thread, erro)
   elemento.replaceChildren(raiz)
 
-  for (const [nome, valor] of Object.entries(tema.cores || {})) {
-    raiz.style.setProperty(`--cf-${nome}`, valor)
-  }
-  if (tema.fonte) raiz.style.fontFamily = tema.fonte
-  pedirFonte(tema.fonte_url)
+  aplicarTema(raiz, tema)
 
   // Retrato de quem fala do outro lado. O caminho já vem resolvido por quem
   // carregou o tema — o motor não sabe em que pasta o cliente mora.
@@ -112,7 +140,7 @@ export function criarChat({
     const aviso = elementoCom("div", "cf__aviso", relatorio.erros.join(" · "))
     raiz.prepend(aviso)
     console.error("chatflow: fluxo inválido.", relatorio.erros)
-    if (modo === "producao") return { reiniciar() {}, estado: () => null }
+    if (modo === "producao") return { raiz, reiniciar() {}, estado: () => null }
   }
 
   const enviador = criarEnviador({
@@ -201,7 +229,43 @@ export function criarChat({
       const img = document.createElement("img")
       img.src = item.imagem
       img.alt = item.alternativo || ""
-      bolha.append(img)
+      if (item.link) {
+        // Imagem que leva a algum lugar: abre em outra aba, para a conversa
+        // não ser abandonada no meio. `noopener` porque a página de destino
+        // não tem nada que fazer com esta.
+        const laco = document.createElement("a")
+        laco.href = item.link
+        laco.target = "_blank"
+        laco.rel = "noopener noreferrer"
+        laco.className = "cf__imagem-link"
+        laco.append(img)
+        bolha.append(laco)
+      } else {
+        bolha.append(img)
+      }
+      linha.append(bolha)
+    } else if (item.video !== undefined) {
+      const bolha = elementoCom("div", "cf__bolha cf__bolha--video")
+      if (item.video.tipo === "incorporado") {
+        const quadro = document.createElement("iframe")
+        quadro.src = item.video.src
+        quadro.className = "cf__video"
+        quadro.setAttribute("allow", "accelerometer; autoplay; encrypted-media; picture-in-picture")
+        quadro.setAttribute("allowfullscreen", "")
+        quadro.setAttribute("title", item.alternativo || "Vídeo")
+        bolha.append(quadro)
+      } else {
+        const filme = document.createElement("video")
+        filme.src = item.video.src
+        filme.className = "cf__video"
+        filme.setAttribute("controls", "")
+        filme.setAttribute("playsinline", "")
+        if (item.video.autoplay) {
+          filme.setAttribute("autoplay", "")
+          filme.setAttribute("muted", "")
+        }
+        bolha.append(filme)
+      }
       linha.append(bolha)
     } else {
       const classe = item.lado === "pessoa" ? "cf__bolha cf__bolha--pessoa" : "cf__bolha"
@@ -412,11 +476,32 @@ export function criarChat({
 
       if (bloco.tipo === "imagem") {
         const alternativo = bloco.conteudo?.alternativo || ""
+        const link = interpolar(bloco.conteudo?.link_ao_clicar || "", contexto(fluxo, estado)).trim()
         await dizerComPausa(alternativo, {
           lado: "bot",
           imagem: interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
-          alternativo
+          alternativo,
+          ...(link ? { link } : {})
         })
+        estado = avancar(fluxo, estado)
+        continue
+      }
+
+      if (bloco.tipo === "video") {
+        const alternativo = bloco.conteudo?.alternativo || ""
+        const fonte = fonteDeVideo(
+          interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
+          { autoplay: !!bloco.conteudo?.autoplay }
+        )
+        // Endereço que ninguém sabe tocar não vira caixa preta: o bloco é
+        // pulado, e o fluxo segue. Quem acusa o endereço vazio é o validador.
+        if (fonte) {
+          await dizerComPausa(alternativo, {
+            lado: "bot",
+            video: { ...fonte, autoplay: !!bloco.conteudo?.autoplay },
+            alternativo
+          })
+        }
         estado = avancar(fluxo, estado)
         continue
       }
@@ -472,6 +557,9 @@ export function criarChat({
   }
 
   return {
+    // O elemento que o chat montou. Quem muda o tema de fora escreve nele —
+    // as variáveis têm de ficar no próprio `.cf`, que declara os padrões.
+    raiz,
     reiniciar({ retomar = true } = {}) {
       // Um envio que falhou numa tentativa anterior desta sessão é
       // retentado agora. Sem esta chamada a fila de `destinos.js` nunca

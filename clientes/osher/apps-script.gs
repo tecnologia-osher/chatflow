@@ -41,17 +41,66 @@ const CONTROLE = ["event", "sessaoId", "grupoId", "blocoId", "em"];
 // Marca da versão publicada. Serve para conferir de fora, com um GET, se o
 // que está no ar é o que está no repositório — sem depender de abrir a
 // planilha e procurar aba. Trocar quando o arquivo mudar de verdade.
-const VERSAO = "2026-09-25-parciais";
+const VERSAO = "2026-10-02-leitura";
 
-// GET devolve a versão e as abas existentes. Não escreve nada.
-function doGet() {
-  const ss = SpreadsheetApp.openById(ID_DA_PLANILHA);
+// A aba Resultados do editor lê os leads por aqui. Quem pode ler é quem tem a
+// chave — e a chave NÃO mora neste arquivo, que é público no git: mora nas
+// propriedades do script.
+//
+// Para definir, uma vez:
+//   No editor do Apps Script → Configurações do projeto (engrenagem) →
+//   Propriedades do script → Adicionar: nome CHAVE_LEITURA, valor uma frase
+//   longa qualquer. Depois é só colar essa frase no editor do chatflow.
+//
+// Sem a propriedade definida, a leitura fica fechada: é melhor a aba dizer
+// "não configurado" do que publicar telefone de cliente para quem achar o
+// endereço.
+function chaveDeLeitura() {
+  return PropertiesService.getScriptProperties().getProperty("CHAVE_LEITURA");
+}
+
+function responder(objeto) {
   return ContentService
-    .createTextOutput(JSON.stringify({
+    .createTextOutput(JSON.stringify(objeto))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// GET sem parâmetro devolve a versão e as abas existentes — serve para
+// conferir de fora o que está publicado. Com `acao=leads` e a chave certa,
+// devolve as linhas da aba de parciais, que é a lista de gente: quem terminou
+// e quem parou no meio.
+function doGet(e) {
+  const parametros = (e && e.parameter) || {};
+
+  if (parametros.acao !== "leads") {
+    const ss = SpreadsheetApp.openById(ID_DA_PLANILHA);
+    return responder({
       versao: VERSAO,
       abas: ss.getSheets().map(function (s) { return s.getName(); })
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
+    });
+  }
+
+  const chave = chaveDeLeitura();
+  if (!chave) return responder({ erro: "Leitura não configurada: falta a propriedade CHAVE_LEITURA." });
+  if (parametros.chave !== chave) return responder({ erro: "Chave inválida." });
+
+  const sheet = SpreadsheetApp.openById(ID_DA_PLANILHA).getSheetByName(ABA_PARCIAIS);
+  if (!sheet || sheet.getLastRow() < 2) return responder({ colunas: [], linhas: [] });
+
+  const valores = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  const colunas = valores[0].map(String);
+  const linhas = valores.slice(1).map(function (linha) {
+    const registro = {};
+    colunas.forEach(function (nome, i) {
+      const valor = linha[i];
+      registro[nome] = valor instanceof Date ? valor.toISOString() : valor;
+    });
+    return registro;
+  });
+
+  // Mais recente primeiro: é o que se quer ver ao abrir.
+  linhas.reverse();
+  return responder({ colunas: colunas, linhas: linhas });
 }
 
 function doPost(e) {

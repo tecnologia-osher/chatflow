@@ -1,0 +1,619 @@
+/* Editor do chatflow. Cores só por variável, como no tema do motor. */
+
+.ed {
+  --ed-fundo: #f3f4f6;
+  --ed-superficie: #ffffff;
+  --ed-linha: #e3e5e9;
+  --ed-texto: #1f2430;
+  --ed-suave: #6b7280;
+  --ed-acento: #0C2340;
+  --ed-fala: #64748b;
+  --ed-entrada: #ea7b3c;
+  --ed-logica: #8b5cf6;
+  --ed-conexao: #0ea5e9;
+  --ed-erro: #b4453a;
+  --ed-recado-fundo: #fff5ec;
+  --ed-recado-texto: #8a4a1d;
+  --ed-seta: #b6bcc6;
+  /* O azul do Salvar é a cor de ação do editor: bolinhas, linhas, alvos e
+     realces do quadro usam ela. O laranja ficou sendo só a cor da categoria
+     "entrada" na paleta, que é onde ele distingue uma coisa de outra. */
+  --ed-conector: var(--ed-acento);
+  --ed-conector-halo: rgba(12, 35, 64, 0.16);
+  /* Onde fica o centro das bolinhas, medido da borda do cartão. Zero é em
+     cima da borda: metade da bolinha dentro do cartão, metade no quadro —
+     é dali que a linha sai, e é onde ela encosta no grupo em vez de flutuar
+     ao lado dele. E metade da bolinha (miolo de 0.9rem mais 2px de borda). */
+  --ed-conector-fora: 0px;
+  --ed-conector-meio: calc(0.45rem + 2px);
+  --ed-selecionado: #eef2f8;
+  --ed-problema-fundo: #fdeceb;
+
+  /* A paleta flutua por cima do quadro, como no Typebot: o header fica inteiro
+     na largura da janela e nada nele se mexe quando a coluna da esquerda some. */
+  --ed-lado: 17rem;
+  --ed-flutua: 0.7rem;
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  background: var(--ed-fundo);
+  color: var(--ed-texto);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+}
+
+html, body { margin: 0; height: 100%; }
+
+/* --- paleta --- */
+/* Painel solto sobre o quadro, com folga do header e das bordas. */
+.ed__corpo { position: relative; display: grid; min-height: 0; }
+.ed__paleta { position: absolute; z-index: 3;
+  left: var(--ed-flutua); top: var(--ed-flutua); bottom: var(--ed-flutua);
+  width: var(--ed-lado); background: var(--ed-superficie);
+  border: 1px solid var(--ed-linha); border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.08); overflow-y: auto;
+  transition: transform 0.18s ease; }
+
+/* --- painel solto: recolhe para a esquerda e volta pela beira --- */
+/* Com o cadeado aberto, o painel sai da tela e deixa a pílula na borda. Quem
+   decide se ele volta é a distância do mouse até a beira (no app.js), e não o
+   :hover da pílula: encostar nela é mira demais, e a faixa que desse conta
+   roubaria os cliques do quadro embaixo dela. */
+.ed__corpo--solto .ed__paleta {
+  transform: translateX(calc(-100% - var(--ed-flutua) - 8px)); }
+.ed__corpo--espiando .ed__paleta { transform: none; }
+
+/* A pílula é só o sinal de que há algo ali: não recebe mouse nenhum. */
+.ed__puxador { display: none; }
+.ed__corpo--solto .ed__puxador {
+  display: block; position: absolute; z-index: 4; pointer-events: none;
+  left: 0; top: 0; bottom: 0; width: 1.1rem; }
+/* A faixa é invisível; o que se vê é a pílula no meio dela. */
+.ed__puxador-marca { position: absolute; left: 0.25rem; top: 50%; transform: translateY(-50%);
+  width: 0.32rem; height: 3.2rem; border-radius: 999px; background: var(--ed-seta);
+  opacity: 0.55; transition: opacity 0.15s ease, background 0.15s ease; }
+/* Com o painel na tela a pílula não tem mais o que dizer: ela some, em vez de
+   ficar como um risco por cima da borda dele. */
+.ed__corpo--espiando .ed__puxador-marca { opacity: 0; }
+
+/* Cadeado no alto da coluna, discreto até o mouse chegar. */
+.ed__trava { position: sticky; top: 0; float: right; margin: -0.2rem -0.2rem 0 0.4rem;
+  width: 1.7rem; height: 1.7rem; display: grid; place-items: center; padding: 0;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--ed-seta); cursor: pointer; }
+.ed__trava:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__trava--presa { color: var(--ed-suave); }
+.ed__trava-icone { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ed__paleta-corpo { padding: 1rem; }
+.ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--ed-suave); margin: 0; }
+
+/* Cada grupo da coluna da esquerda abre e fecha pelo próprio título. A linha
+   entre um e outro é o que diz onde um acaba e o outro começa — sem ela, a
+   coluna é uma lista comprida de palavras soltas. */
+.ed__secao + .ed__secao { border-top: 1px solid var(--ed-linha); }
+.ed__secao-topo { display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  padding: 0.7rem 0; border: none; background: transparent; cursor: pointer;
+  font: inherit; text-align: left; }
+.ed__secao-topo > .ed__categoria { flex: 1; }
+.ed__secao-topo:hover > .ed__categoria { color: var(--ed-texto); }
+.ed__secao-seta { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--ed-suave);
+  transition: transform 0.15s ease; }
+/* Fechada, a seta aponta para a direita: o conteúdo está "guardado ali". */
+.ed__secao--fechada .ed__secao-seta { transform: rotate(-90deg); }
+.ed__secao-corpo { padding-bottom: 0.9rem; display: grid; gap: 0.25rem; }
+.ed__dica { margin: 0 0 0.9rem; font-size: 0.74rem; line-height: 1.35; color: var(--ed-suave); }
+.ed__grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.ed__tipo { display: flex; align-items: center; gap: 0.45rem;
+  cursor: grab; padding: 0.55rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
+  background: var(--ed-superficie); color: var(--ed-texto); font: inherit; font-size: 0.82rem;
+  text-align: left; }
+.ed__tipo:hover { border-color: var(--ed-acento); }
+.ed__tipo-icone { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; color: var(--ed-suave); }
+.ed__tipo--fala .ed__tipo-icone { color: var(--ed-fala); }
+.ed__tipo--entrada .ed__tipo-icone { color: var(--ed-entrada); }
+.ed__tipo--logica .ed__tipo-icone { color: var(--ed-logica); }
+.ed__tipo--conexao .ed__tipo-icone { color: var(--ed-conexao); }
+.ed__tipo-rotulo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed__tipo--fala { border-left: 3px solid var(--ed-fala); }
+.ed__tipo--entrada { border-left: 3px solid var(--ed-entrada); }
+.ed__tipo--logica { border-left: 3px solid var(--ed-logica); }
+.ed__tipo--conexao { border-left: 3px solid var(--ed-conexao); }
+.ed__recado:not(:empty) { background: var(--ed-recado-fundo); border: 1px solid var(--ed-entrada);
+  color: var(--ed-recado-texto); padding: 0.6rem; border-radius: 8px; margin-bottom: 0.8rem; font-size: 0.82rem; }
+
+/* --- centro --- */
+.ed__centro { display: grid; grid-template-rows: 1fr auto; min-width: 0; min-height: 0; }
+.ed__barra { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 0.6rem; padding: 0.55rem 1rem;
+  background: var(--ed-superficie); border-bottom: 1px solid var(--ed-linha); }
+.ed__barra-lado { display: flex; align-items: center; gap: 0.4rem; }
+.ed__barra-lado:last-child { justify-content: flex-end; }
+
+/* Voltar, desfazer e refazer: ícone só, do tamanho do toque, sem moldura até
+   o mouse chegar. Moldura em tudo deixa o header parecendo um painel de
+   avião. */
+.ed__barra button.ed__voltar, .ed__barra button.ed__passo,
+.ed__barra button.ed__engrenagem {
+  width: 2.2rem; height: 2.2rem; display: grid; place-items: center; padding: 0;
+  border-color: transparent; background: transparent; color: var(--ed-suave);
+  font-size: 1rem; line-height: 1; }
+.ed__barra button.ed__voltar:hover, .ed__barra button.ed__passo:hover:not(:disabled),
+.ed__barra button.ed__engrenagem:hover {
+  background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__barra button.ed__passo:disabled { color: var(--ed-linha); cursor: default; }
+
+.ed__nome { display: flex; align-items: center; min-width: 0; margin-right: 0.3rem; }
+.ed__barra button.ed__nome-texto { max-width: 16rem; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; border-color: transparent; background: transparent;
+  font-weight: 600; padding: 0.3rem 0.45rem; }
+.ed__barra button.ed__nome-texto:hover { background: var(--ed-fundo); }
+.ed__nome-campo { width: 14rem; padding: 0.3rem 0.45rem; border: 1px solid var(--ed-acento);
+  border-radius: 8px; font: inherit; font-weight: 600; background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.ed__nome-campo:focus { outline: none; }
+
+.ed__abas { display: flex; align-items: center; gap: 0.15rem; }
+.ed__barra button.ed__aba { border-color: transparent; background: transparent;
+  color: var(--ed-suave); font-weight: 600; padding: 0.4rem 0.8rem; }
+/* Passar o mouse e estar escolhido falam a mesma língua do Salvar: azul com
+   letra branca. Antes o escolhido era um cinza que mal se via. */
+.ed__barra button.ed__aba:hover, .ed__barra button.ed__aba--ativa {
+  background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
+
+/* Uma seção dentro das configurações: separa idioma de digitação sem precisar
+   de abas dentro de um painel pequeno. */
+.ed__config-secao { margin: 1rem 0 0.1rem; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--ed-suave); }
+
+/* A aba Tema: os controles do lado esquerdo, a conversa de verdade ao lado.
+   Os controles são do programa, não da conversa — azul do editor, nunca o
+   laranja da paleta. Quem mostra a cor do cliente é o quadradinho do
+   seletor, e só ele. */
+.ed__tema { display: grid; grid-template-rows: auto 1fr; gap: 0.8rem;
+  padding: 1.2rem 1.4rem; min-height: 0;
+  /* A conversa de exemplo começa depois do painel: ela é uma tela, não um
+     quadro infinito, e metade dela atrás do painel não serviria para nada.
+     Com o painel solto, ele passa por cima e a conversa fica com a tela toda. */
+  padding-left: calc(var(--ed-lado) + var(--ed-flutua) * 2); }
+.ed__corpo--solto .ed__tema { padding-left: 1.4rem; }
+.ed__tema-topo { display: flex; align-items: center; gap: 0.6rem; }
+.ed__tema-titulo { margin: 0; font-size: 1rem; }
+.ed__tema-reiniciar { margin-left: auto; padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie); color: var(--ed-texto);
+  font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__tema-reiniciar:hover { background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
+.ed__tema-palco { min-height: 0; overflow: hidden; border: 1px solid var(--ed-linha);
+  border-radius: 12px; background: var(--ed-superficie); }
+
+.ed__tema-nota { margin: -0.1rem 0 0.4rem; font-size: 0.72rem; line-height: 1.3;
+  color: var(--ed-suave); }
+.ed__tema-linha { display: flex; align-items: center; gap: 0.6rem; min-height: 2rem; }
+.ed__tema-rotulo { flex: 1; font-size: 0.82rem; }
+.ed__tema-controle { flex: none; display: flex; align-items: center; gap: 0.3rem; }
+/* Campo de texto e slider não cabem na mesma linha do rótulo numa coluna de
+   17rem: nesses dois o rótulo fica em cima. */
+.ed__tema-linha--texto, .ed__tema-linha--largura,
+.ed__tema-linha--fonte { display: grid; gap: 0.25rem; }
+.ed__tema-linha--texto .ed__tema-controle,
+.ed__tema-linha--largura .ed__tema-controle,
+.ed__tema-linha--fonte .ed__tema-controle { display: flex; }
+.ed__tema-linha--texto .ed__tema-rotulo,
+.ed__tema-linha--largura .ed__tema-rotulo,
+.ed__tema-linha--fonte .ed__tema-rotulo { flex: none; }
+
+/* O seletor nativo vem com moldura própria em todo navegador; isto o deixa um
+   quadradinho de cor do tamanho do texto ao lado. */
+.ed__tema-cor { width: 1.8rem; height: 1.8rem; padding: 0; cursor: pointer;
+  border: 1px solid var(--ed-linha); border-radius: 6px; background: var(--ed-superficie); }
+.ed__tema-cor::-webkit-color-swatch-wrapper { padding: 2px; }
+.ed__tema-cor::-webkit-color-swatch { border: none; border-radius: 4px; }
+.ed__tema-cor:hover { border-color: var(--ed-acento); }
+
+/* Voltar ao padrão só aparece quando há escolha a desfazer. */
+.ed__tema-soltar { width: 1.4rem; height: 1.4rem; padding: 0; border-radius: 50%;
+  border: 1px solid transparent; background: transparent; color: var(--ed-suave);
+  font-size: 0.8rem; line-height: 1; cursor: pointer; }
+.ed__tema-soltar:hover:not(:disabled) { background: var(--ed-acento); color: #fff; }
+.ed__tema-soltar:disabled { opacity: 0; cursor: default; }
+
+.ed__tema-texto { width: 100%; box-sizing: border-box; padding: 0.4rem 0.55rem;
+  border: 1px solid var(--ed-linha); border-radius: 8px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.8rem; }
+.ed__tema-texto:focus { outline: none; border-color: var(--ed-acento); }
+
+/* A lista de fontes. A seta é desenhada aqui porque a do navegador muda de
+   cara em cada sistema — e esta é a mesma do resto do editor. */
+.ed__tema-lista { width: 100%; box-sizing: border-box; padding: 0.4rem 1.8rem 0.4rem 0.55rem;
+  border: 1px solid var(--ed-linha); border-radius: 8px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.8rem; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 0.9rem; }
+.ed__tema-lista:hover, .ed__tema-lista:focus { outline: none; border-color: var(--ed-acento); }
+/* Cada nome na sua própria letra, um pouco maior: é pela cara que se escolhe
+   fonte, não pelo nome. */
+.ed__tema-opcao { font-size: 0.95rem; }
+
+.ed__tema-faixa { flex: 1; min-width: 0; accent-color: var(--ed-acento); cursor: pointer; }
+.ed__tema-medida { flex: none; min-width: 3.2rem; text-align: right;
+  font-size: 0.78rem; color: var(--ed-suave); font-variant-numeric: tabular-nums; }
+
+/* Interruptor: trilho que fica azul quando ligado. */
+.ed__tema-chave { width: 2.2rem; height: 1.2rem; padding: 0; border-radius: 999px;
+  border: 1px solid var(--ed-linha); background: var(--ed-fundo); cursor: pointer;
+  display: flex; align-items: center; }
+.ed__tema-chave-bola { width: 0.9rem; height: 0.9rem; margin: 0 0.1rem; border-radius: 50%;
+  background: var(--ed-seta); transition: transform 0.12s ease, background 0.12s ease; }
+.ed__tema-chave--ligado { background: var(--ed-acento); border-color: var(--ed-acento); }
+.ed__tema-chave--ligado .ed__tema-chave-bola { background: #fff; transform: translateX(1rem); }
+
+/* A aba Resultados: uma tabela de gente, larga, com rolagem própria. */
+.ed__resultados { display: grid; align-content: start; gap: 0.8rem;
+  padding: 1.2rem 1.4rem; overflow: auto; }
+.ed__resultados-topo { display: flex; align-items: center; gap: 0.4rem; }
+.ed__resultados-topo > :nth-child(2) { margin-left: auto; }
+.ed__resultados-titulo { margin: 0; font-size: 1rem; }
+.ed__resultados-trocar { padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid transparent; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__resultados-trocar:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__resultados-atualizar { padding: 0.35rem 0.8rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie); font: inherit;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ed__resultados-atualizar:hover:not(:disabled) { background: var(--ed-acento); color: #fff;
+  border-color: var(--ed-acento); }
+.ed__resultados-atualizar:disabled { color: var(--ed-suave); cursor: default; }
+.ed__resultados-vazio, .ed__resultados-conta { margin: 0; color: var(--ed-suave); font-size: 0.82rem; }
+.ed__resultados-aviso { margin: 0; padding: 0.6rem 0.8rem; border-radius: 8px;
+  background: var(--ed-problema-fundo); color: var(--ed-erro); font-size: 0.82rem; }
+.ed__tabela-rolagem { overflow-x: auto; border: 1px solid var(--ed-linha); border-radius: 10px; }
+.ed__tabela { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+.ed__tabela-cabecalho { text-align: left; white-space: nowrap; font-weight: 600;
+  padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--ed-linha);
+  border-right: 1px solid var(--ed-linha); background: var(--ed-superficie); }
+.ed__tabela-cabecalho--extra { color: var(--ed-suave); font-style: italic; }
+.ed__tabela-celula { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--ed-linha);
+  border-right: 1px solid var(--ed-linha); vertical-align: top; }
+.ed__tabela-linha:last-child .ed__tabela-celula { border-bottom: none; }
+.ed__tabela-cabecalho:last-child, .ed__tabela-celula:last-child { border-right: none; }
+.ed__tabela-linha:hover .ed__tabela-celula { background: var(--ed-fundo); }
+.ed__tabela-celula--vazia { color: var(--ed-suave); text-align: center; padding: 1.4rem 0.9rem; }
+/* Pedir a chave: caixa pequena, texto curto, sem parecer formulário de login. */
+.ed__chave { display: grid; gap: 0.5rem; max-width: 26rem; padding: 1rem;
+  border: 1px solid var(--ed-linha); border-radius: 10px; background: var(--ed-superficie); }
+.ed__chave-texto { margin: 0; font-size: 0.82rem; color: var(--ed-suave); line-height: 1.4; }
+.ed__chave-campo { padding: 0.5rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
+  font: inherit; font-size: 0.85rem; }
+.ed__chave-botao { justify-self: start; padding: 0.45rem 0.9rem; border-radius: 8px;
+  border: 1px solid var(--ed-acento); background: var(--ed-acento); color: #fff;
+  font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+
+/* Tema ainda não existe: a tela diz isso em vez de ficar vazia. */
+.ed__em-breve { display: grid; place-content: center; gap: 0.4rem; text-align: center;
+  padding: 3rem 2rem; }
+.ed__em-breve-titulo { margin: 0; font-size: 1.1rem; }
+.ed__em-breve-texto { margin: 0; max-width: 30rem; color: var(--ed-suave); font-size: 0.86rem; }
+
+.ed__area-config { position: fixed; top: 0; left: 0; width: 0; height: 0; }
+.ed__config { position: fixed; top: 4rem; right: 1rem; width: 19rem; z-index: 16;
+  display: grid; gap: 0.55rem; padding: 0.9rem 1rem 1.1rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
+.ed__config-topo { display: flex; align-items: center; justify-content: space-between; }
+.ed__config-titulo { margin: 0; font-size: 0.92rem; }
+.ed__config-fechar { border: none; border-radius: 50%; width: 1.7rem; height: 1.7rem;
+  background: transparent; color: var(--ed-suave); font: inherit; cursor: pointer; }
+.ed__config-fechar:hover { background: var(--ed-fundo); }
+.ed__config-ajuda { margin: 0; font-size: 0.76rem; color: var(--ed-suave); line-height: 1.4; }
+.ed__config-linha { display: grid; grid-template-columns: 1fr 5.5rem; align-items: center;
+  gap: 0.5rem; font-size: 0.82rem; }
+.ed__config-campo { padding: 0.35rem 0.5rem; border: 1px solid var(--ed-linha);
+  border-radius: 7px; font: inherit; font-size: 0.82rem; background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.ed__barra button { padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--ed-linha);
+  background: var(--ed-superficie); font: inherit; cursor: pointer; }
+/* Sempre com o seletor do pai junto: `.ed__salvar` sozinho perde para
+   `.ed__barra button`, que tem especificidade maior, e o fundo volta a
+   branco — foi assim que o botão de baixar ficou invisível, branco no
+   branco. */
+.ed__barra button.ed__salvar--pendente { background: var(--ed-acento); color: #fff;
+  border-color: var(--ed-acento); }
+.ed__barra button.ed__salvar:disabled { color: var(--ed-suave); cursor: default; }
+/* Testar, Centralizar e Salvar com o mesmo peso e o mesmo respiro das abas:
+   é tudo barra, e peso diferente fazia parecer que uns valiam mais. */
+.ed__barra button.ed__testar, .ed__barra button.ed__ajustar,
+.ed__barra button.ed__salvar { font-weight: 600; padding: 0.4rem 0.8rem;
+  display: inline-flex; align-items: center; gap: 0.4rem; }
+/* O ícone acompanha a cor da letra: no hover, os dois viram branco juntos. */
+.ed__barra-icone { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ed__barra-icone--grande { width: 1.25rem; height: 1.25rem; stroke-width: 1.3; }
+/* Desfazer e refazer: traço mais grosso, que num desenho pequeno é o que se
+   enxerga antes da forma. */
+.ed__barra-icone--passo { width: 1.15rem; height: 1.15rem; stroke-width: 2.2; }
+.ed__oculto { display: none; }
+.ed__barra button.ed__testar:hover, .ed__barra button.ed__ajustar:hover {
+  background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
+.ed__problemas:not(:empty) { padding: 0.6rem 1rem; background: var(--ed-problema-fundo); color: var(--ed-erro);
+  border-top: 1px solid var(--ed-linha); font-size: 0.82rem; }
+
+/* --- canvas --- */
+.ed__area-canvas { position: relative; overflow: hidden; }
+/* O quadro mostra a seta de sempre: a mão é para o que se arrasta, e aqui o
+   que se arrasta é o cartão. Enquanto a pessoa de fato arrasta o fundo, a mão
+   fechada aparece — isso é retorno do que está acontecendo, não promessa. */
+.ed__palco { position: absolute; inset: 0; cursor: default;
+  background-image: radial-gradient(var(--ed-linha) 1px, transparent 1px);
+  background-size: 22px 22px; }
+.ed__palco:active { cursor: grabbing; }
+.ed__mundo { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.ed__setas { position: absolute; overflow: visible; width: 1px; height: 1px; pointer-events: none; }
+.ed__seta { stroke: var(--ed-seta); stroke-width: 2; }
+.ed__seta--opcao { stroke: var(--ed-conector); }
+.ed__seta--condicao { stroke: var(--ed-logica); }
+.ed__seta--evento { stroke-dasharray: 5 4; }
+.ed__seta--orfa { stroke: var(--ed-erro); stroke-dasharray: 3 3; }
+
+.ed__cartoes, .ed__eventos { position: absolute; top: 0; left: 0; }
+
+/* O Start: a largada do fluxo. Sem ele, a primeira seta parecia nascer do
+   nada, e num fluxo novo não havia de onde puxar a ligação. */
+.ed__evento { position: absolute; top: 0; left: 0; box-sizing: border-box;
+  display: flex; align-items: center; gap: 0.5rem; height: 3rem; padding: 0 0.95rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(20,25,40,0.07); cursor: grab; font-weight: 600; }
+.ed__evento:active { cursor: grabbing; }
+.ed__evento-icone { color: var(--ed-suave); font-size: 1rem; }
+.ed__evento-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed__evento--invalido { border-style: dashed; font-weight: 500; color: var(--ed-suave); }
+.ed__cartao { position: absolute; top: 0; left: 0; cursor: grab; background: var(--ed-superficie);
+  border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 1px 3px rgba(20,25,40,0.07); }
+/* O bloco não pode recortar o círculo que fica para fora do cartão. */
+.ed__bloco { overflow: visible; }
+.ed__cartao { overflow: visible; }
+.ed__cartao:active { cursor: grabbing; }
+/* O bloco que está sendo levado embora, e o cartão que vai recebê-lo. */
+.ed__bloco--saindo { opacity: 0.35; }
+.ed__cartao--recebendo { border-color: var(--ed-conector);
+  box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
+.ed__bloco--acima { box-shadow: inset 0 2px 0 var(--ed-conector); }
+/* O bloco sendo levado é uma cópia dele mesmo, do tamanho em que está na
+   tela, inclinada e com sombra — como a caixa que se arrasta da paleta. */
+.ed__bloco-fantasma { position: absolute; z-index: 25; pointer-events: none;
+  transform-origin: top left; border-radius: 9px;
+  background: var(--ed-superficie); color: var(--ed-texto);
+  border: 1px solid var(--ed-linha); box-shadow: 0 10px 24px rgba(20,25,40,0.22);
+  opacity: 0.95; overflow: hidden; }
+.ed__bloco--copia { cursor: grabbing; }
+.ed__bloco--copia .ed__bloco-mais { display: none; }
+.ed__cartao--ativo { border-color: var(--ed-acento); box-shadow: 0 0 0 2px rgba(12,35,64,0.15); }
+.ed__cabecalho { display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem 0.55rem 0.85rem;
+  font-weight: 600; cursor: grab; border-bottom: 1px solid var(--ed-linha); }
+.ed__cabecalho-titulo { flex: 0 1 auto; min-width: 1.5rem; max-width: 60%;
+  overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; cursor: text; border-radius: 5px; padding: 0.1rem 0.25rem; margin: -0.1rem -0.25rem; }
+/* O que sobra do cabeçalho depois do nome: é por aqui que se pega o cartão.
+   Precisa de largura mínima, senão um nome comprido não deixa onde pegar. */
+.ed__cabecalho-arrasto { flex: 1 1 auto; min-width: 2.5rem; align-self: stretch; cursor: grab; }
+.ed__cabecalho-titulo:hover { background: var(--ed-fundo); }
+.ed__cabecalho-mais { flex: none; width: 1.4rem; height: 1.4rem; display: grid; place-items: center;
+  border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.85rem; line-height: 1; cursor: pointer; padding: 0; opacity: 0; }
+.ed__cartao:hover .ed__cabecalho-mais, .ed__cartao--ativo .ed__cabecalho-mais { opacity: 1; }
+.ed__play { flex: none; width: 1.6rem; height: 1.6rem; display: grid; place-items: center;
+  border: 1px solid var(--ed-linha); border-radius: 50%; background: var(--ed-superficie);
+  color: var(--ed-suave); font-size: 0.62rem; line-height: 1; cursor: pointer; padding: 0; }
+.ed__play:hover { background: var(--ed-acento); border-color: var(--ed-acento); color: #fff; }
+/* A linha do bloco e a caixa de cada botão são coisas de clicar: o dedo
+   apontando. A mão de arrastar fica para o cartão em volta delas — arrastar
+   dali continua funcionando, mas o que o cursor anuncia é o clique, que é o
+   que a pessoa faz nove em cada dez vezes. */
+.ed__bloco { display: grid; gap: 0.25rem; cursor: pointer;
+  margin: 0.3rem 0.6rem; padding: 0.5rem 0.6rem; border-radius: 9px;
+  background: var(--ed-fundo); }
+.ed__bloco:hover { background: var(--ed-selecionado); }
+.ed__bloco--ativo { background: var(--ed-selecionado);
+  box-shadow: inset 0 0 0 1px var(--ed-linha); }
+/* Sem faixa colorida por categoria: quem diz o tipo é o ícone, e a cor
+   repetida em todo bloco virava listra. O desconhecido continua marcado,
+   porque ali a cor é aviso, não enfeite. */
+.ed__bloco--desconhecido { box-shadow: inset 0 0 0 1px var(--ed-erro); }
+.ed__bloco-icone { flex: none; width: 0.95rem; height: 0.95rem; fill: none;
+  stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+  color: var(--ed-suave); }
+/* Link não tem espaço onde quebrar: sem isto, a URL do WhatsApp saía pela
+   direita do cartão e ficava escrita por cima do fundo. Quebra em qualquer
+   letra — o cartão fica mais alto, mas a informação fica toda dentro dele. */
+.ed__bloco-resumo { flex: 1; min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
+  line-height: 1.3; }
+/* A caixa de edição ocupa o lugar do resumo, sem mudar a altura do cartão
+   mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
+.ed__bloco-campo { width: 100%; min-height: 3.2rem; resize: vertical; box-sizing: border-box;
+  border: 1px solid var(--ed-acento); border-radius: 6px; padding: 0.3rem 0.4rem;
+  font: inherit; font-size: 0.84rem; background: var(--ed-superficie); color: var(--ed-texto); }
+.ed__titulo-campo { flex: 1; min-width: 0; border: 1px solid var(--ed-acento); border-radius: 6px;
+  padding: 0.15rem 0.35rem; font: inherit; font-weight: 600; background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.ed__cabecalho-titulo { cursor: text; }
+
+/* A saída do grupo: de onde se puxa para o próximo cartão. Fica no canto de
+   baixo para não disputar espaço com as bolinhas das opções. */
+.ed__rodape { position: relative; display: flex; align-items: center; justify-content: flex-end;
+  height: 1.7rem; padding: 0 0.85rem; }
+/* Sem a palavra, o rodapé é só o lugar da bolinha: pode ser mais baixo. */
+.ed__rodape--so-bolinha { height: 1.1rem; }
+.ed__rodape-rotulo { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--ed-suave); }
+
+/* Toda ligação se puxa do mesmo lugar visual: anel laranja, miolo branco.
+   Uma só regra para as três — opção, saída do grupo e Start — para não
+   divergirem quando uma delas for mexida.
+   Não distinguem ligado de solto: quem mostra isso é a seta no canvas, e
+   dois jeitos de dizer a mesma coisa viram dois jeitos de se contradizer. */
+.ed__opcao-ponto, .ed__grupo-ponto, .ed__evento-ponto {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 0.9rem; height: 0.9rem; border-radius: 50%; cursor: crosshair;
+  border: 2px solid var(--ed-conector); background: var(--ed-superficie);
+}
+.ed__opcao-ponto:hover, .ed__grupo-ponto:hover, .ed__evento-ponto:hover {
+  box-shadow: 0 0 0 4px var(--ed-conector-halo);
+}
+/* Todas as bolinhas com o centro a --ed-conector-fora da borda do cartão: é
+   essa distância que o modelo usa para a linha nascer dentro delas
+   (CARTAO_CONECTOR em editor/modelo.js, e os dois precisam bater).
+   O `right` de cada uma desconta o recuo do próprio container, porque é dele
+   que a posição absoluta parte: a linha da opção fica dentro do bloco, que
+   tem 0.85rem de preenchimento, e o rodapé encosta na borda do cartão, que
+   tem 1px. Mexer nesses preenchimentos move as bolinhas — e aí a linha nasce
+   fora delas de novo. A conferência é no navegador, medindo. */
+/* A meia-bolinha é 0.45rem de miolo mais os 2px da borda dela — foi esse 2px
+   que fez a conta fechar 2 fora na primeira tentativa. */
+.ed__opcao-ponto {
+  right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 0.85rem + 1px) * -1); }
+.ed__grupo-ponto { right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 1px) * -1); }
+.ed__evento-ponto { right: calc((var(--ed-conector-fora) + var(--ed-conector-meio) + 1px) * -1); }
+
+/* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
+   é o destino daquela opção: cheio quando leva a algum grupo. */
+.ed__bloco-topo { display: flex; align-items: flex-start; gap: 0.45rem; }
+.ed__bloco-mais { flex: none; width: 1.3rem; height: 1.3rem; display: grid; place-items: center;
+  border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; opacity: 0; }
+.ed__bloco:hover .ed__bloco-mais, .ed__bloco--ativo .ed__bloco-mais { opacity: 1; }
+.ed__bloco-mais:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+
+.ed__opcoes-cartao { display: grid; gap: 0.35rem; margin-top: 0.35rem; }
+.ed__opcao-cartao { position: relative; display: flex; align-items: center; }
+.ed__opcao-campo { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.86rem; cursor: pointer; }
+/* Com o cursor dentro, volta a ser caixa de escrever: aí o que a pessoa faz
+   é digitar, e a barra de texto diz onde a letra vai cair. */
+/* Passar o mouse precisa acender a caixa: sem isso, com quatro botões um
+   embaixo do outro, a pessoa não sabe em qual vai clicar. */
+.ed__opcao-campo:hover { border-color: var(--ed-conector); background: var(--ed-fundo); }
+.ed__opcao-campo:focus { cursor: text; outline: none; border-color: var(--ed-conector);
+  background: var(--ed-superficie); }
+/* Acrescenta um botão na lista. Tracejado e discreto: não é um botão que o
+   lead vai ver, é o lugar de criar um. */
+.ed__opcao-nova { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.4rem 0.7rem;
+  border: 1px dashed var(--ed-linha); border-radius: 9px; background: transparent;
+  color: var(--ed-suave); font: inherit; font-size: 0.78rem; text-align: left;
+  cursor: pointer; }
+.ed__opcao-nova:hover { border-color: var(--ed-conector); color: var(--ed-texto); }
+.ed__opcao-campo::placeholder { color: var(--ed-suave); }
+/* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
+   daquela resposta até outro grupo. Dentro, pareceria decoração. */
+.ed__seta--arrastando { stroke: var(--ed-conector); stroke-width: 2; stroke-dasharray: 5 4; }
+/* A faixa de clique: larga, invisível, e a única coisa da camada de setas que
+   recebe mouse. Sem ela, acertar 2px de linha seria sorte. */
+.ed__seta-faixa { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+.ed__seta--selecionada { stroke-width: 3.5; stroke: var(--ed-conector); }
+.ed__menu-ligacao { position: absolute; z-index: 30; transform: translate(-50%, -115%);
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem;
+  background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 9px;
+  box-shadow: 0 6px 20px rgba(20,25,40,0.16); }
+.ed__menu-excluir { border: none; border-radius: 6px; padding: 0.3rem 0.6rem;
+  background: transparent; color: var(--ed-erro); font: inherit; font-size: 0.8rem;
+  cursor: pointer; white-space: nowrap; }
+.ed__menu-excluir:hover { background: var(--ed-problema-fundo); }
+.ed__menu-aviso { max-width: 15rem; padding: 0.2rem 0.4rem; font-size: 0.74rem;
+  color: var(--ed-suave); }
+/* As ações do grupo abrem acima do ⋯ e crescem para a esquerda, para dentro
+   do cartão: a borda direita da caixa encosta no botão. */
+.ed__menu-acoes { transform: translate(-100%, -118%); gap: 0.15rem; padding: 0.25rem; }
+.ed__acao { position: relative; width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
+  border: none; border-radius: 7px; background: transparent; color: var(--ed-suave); cursor: pointer;
+  padding: 0; }
+.ed__acao:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__acao--excluir:hover { background: var(--ed-problema-fundo); color: var(--ed-erro); }
+.ed__acao-icone { width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+  stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.ed__acao-dica { position: absolute; bottom: calc(100% + 0.3rem); left: 50%;
+  transform: translateX(-50%); display: none; white-space: nowrap;
+  padding: 0.15rem 0.4rem; border-radius: 5px; font-size: 0.7rem;
+  background: var(--ed-acento); color: #fff; pointer-events: none; }
+.ed__acao:hover .ed__acao-dica, .ed__acao:focus-visible .ed__acao-dica { display: block; }
+/* A ponta: mesma cor da linha, por isso cada tipo repete a regra no fill. */
+.ed__ponta { fill: var(--ed-seta); stroke: none; }
+.ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-conector); }
+.ed__ponta--condicao { fill: var(--ed-logica); }
+.ed__ponta--orfa { fill: var(--ed-erro); }
+/* O bloco que o ímã pegou: a ligação vai entrar no grupo por aqui, pulando o
+   que estiver acima. */
+.ed__bloco--alvo { background: var(--ed-conector-halo); box-shadow: inset 2px 0 0 var(--ed-conector); }
+/* O cartão que o ímã pegou: quem arrasta precisa ver onde vai soltar. */
+.ed__cartao--alvo { border-color: var(--ed-conector);
+  box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
+
+/* --- lateral --- */
+/* O painel flutua à direita e só existe enquanto há algo que a caixa do
+   cartão não resolve. Coluna fixa dizendo "selecione alguma coisa" é espaço
+   gasto para não informar nada. */
+/* Painel e preview flutuam, mas os invólucros deles eram itens da grade:
+   bastava o painel abrir para a grade criar uma segunda linha, e a linha do
+   canvas encolhia de 900 para 671px. O canvas tem overflow hidden, então os
+   cartões de baixo continuavam desenhados e deixavam de receber clique —
+   ninguém vê um clique que não chega. Fora da grade, com tamanho zero, nada
+   do que nasce aqui dentro pode roubar altura do canvas. */
+.ed__fantasma { position: fixed; z-index: 40; pointer-events: none;
+  padding: 0.3rem 0.6rem; border-radius: 7px; font-size: 0.78rem;
+  background: var(--ed-acento); color: #fff; box-shadow: 0 6px 18px rgba(20,25,40,0.22); }
+/* O que se arrasta da paleta é a própria caixa dela: mesmo tamanho, mesmo
+   ícone, mesma borda colorida — só inclinada e com sombra, para ficar claro
+   que está no ar. */
+.ed__fantasma--tipo { display: flex; align-items: center; gap: 0.45rem; box-sizing: border-box;
+  padding: 0.55rem 0.6rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie);
+  color: var(--ed-texto); font-size: 0.82rem;
+  transform: rotate(-2deg); box-shadow: 0 10px 24px rgba(20,25,40,0.22); opacity: 0.95; }
+.ed__area-painel, .ed__area-preview {
+  position: fixed; top: 0; left: 0; width: 0; height: 0; }
+.ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);
+  overflow-y: auto; z-index: 15; padding: 1rem 1rem 1.2rem; background: var(--ed-superficie);
+  border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
+.ed__painel-fechar { position: absolute; top: 0.5rem; right: 0.5rem; width: 1.7rem; height: 1.7rem;
+  border: none; border-radius: 50%; background: transparent; color: var(--ed-suave);
+  font: inherit; cursor: pointer; }
+.ed__painel-fechar:hover { background: var(--ed-fundo); }
+
+/* O preview fica sobreposto, não numa coluna: enquanto não é pedido, o canvas
+   usa a tela inteira. */
+
+.ed__preview { position: fixed; top: 0; right: 0; bottom: 0; width: 24rem; z-index: 20;
+  display: grid; grid-template-rows: auto auto 1fr; background: var(--ed-superficie);
+  border-left: 1px solid var(--ed-linha); box-shadow: -8px 0 24px rgba(20,25,40,0.09); }
+.ed__preview-barra { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--ed-linha); }
+.ed__preview-titulo { flex: 1; font-weight: 600; font-size: 0.84rem; }
+.ed__preview-reiniciar, .ed__preview-fechar { border: 1px solid var(--ed-linha); border-radius: 7px;
+  background: var(--ed-superficie); font: inherit; font-size: 0.8rem; cursor: pointer; padding: 0.3rem 0.6rem; }
+.ed__preview-nota { margin: 0; padding: 0.6rem 0.9rem; background: var(--ed-recado-fundo);
+  color: var(--ed-recado-texto); font-size: 0.78rem; border-bottom: 1px solid var(--ed-linha); }
+.ed__preview-chat { min-height: 0; overflow: hidden; }
+.ed__titulo-painel { font-size: 0.95rem; margin: 0 0 0.9rem; }
+.ed__linha { display: grid; gap: 0.25rem; margin-bottom: 0.8rem; }
+.ed__rotulo { font-size: 0.74rem; color: var(--ed-suave); }
+.ed__campo, .ed__painel select { padding: 0.45rem 0.55rem; border: 1px solid var(--ed-linha);
+  border-radius: 7px; font: inherit; background: var(--ed-superficie); color: var(--ed-texto); }
+.ed__campo[type="checkbox"] { width: 1rem; justify-self: start; }
+.ed__opcoes { display: grid; gap: 0.4rem; margin-bottom: 0.9rem; }
+.ed__opcao { display: grid; grid-template-columns: 1fr 3.5rem 1fr auto; gap: 0.3rem; align-items: center; }
+.ed__remover-opcao, .ed__acrescentar-opcao { border: 1px solid var(--ed-linha); border-radius: 7px;
+  background: var(--ed-superficie); font: inherit; cursor: pointer; padding: 0.35rem 0.6rem; }
+.ed__aviso { background: var(--ed-fundo); border-radius: 8px; padding: 0.6rem;
+  color: var(--ed-suave); font-size: 0.82rem; }
+.ed__vazio { color: var(--ed-suave); }
+
+/* Sobra da época em que a coluna da esquerda era uma coluna da grade: a regra
+   continuou mandando em `grid-template-columns` depois que `.ed` virou duas
+   LINHAS, e abaixo de 1100px o header era espremido em 13rem e transbordava.
+   O que esta tela quer é um painel mais estreito, não uma coluna. */
+@media (max-width: 1100px) {
+  .ed { --ed-lado: 13rem; }
+}

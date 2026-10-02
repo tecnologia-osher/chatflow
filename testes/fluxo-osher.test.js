@@ -216,3 +216,4 @@ test("nenhum caminho do fluxo dispensa nome ou telefone", () => {
   assert.equal(escape, undefined,
     "voltou o desvio que deixa o lead passar sem os dados de contato")
 })
+

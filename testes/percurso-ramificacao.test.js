@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  criarEstado, avancar, aplicarResposta, contexto,
+  criarEstado, avancar, aplicarResposta, contexto, blocoAtual,
   destinoDaResposta, avaliarRegra, destinoDaLogica
 } from "../motor/percurso.js"
 
@@ -138,4 +138,68 @@ test("percurso completo: escolha desvia o fluxo", () => {
   e = avancar(fluxo, e, { destino: destinoDaResposta(blocoBotoes, "Imóvel") })
   assert.equal(e.grupoAtual, "g_imovel")
   assert.equal(contexto(fluxo, e).classificacao, "quente")
+})
+
+// --- entrar num grupo pelo meio --------------------------------------------
+
+const comMiolo = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Abertura", blocos: [
+      { id: "b_escolha", tipo: "entrada_botoes", salvar_em: "escolha", conteudo: { opcoes: [
+        { id: "o1", label: "Direto ao telefone", proximo: "g2#b_fone" },
+        { id: "o2", label: "Tudo", proximo: "g2" }] } }] },
+    { id: "g2", titulo: "Contato", blocos: [
+      { id: "b_fala", tipo: "texto", conteudo: { texto: "Prazer" } },
+      { id: "b_fone", tipo: "entrada_telefone", salvar_em: "telefone",
+        conteudo: { rotulo: "Qual seu WhatsApp?" } }] }
+  ]
+})
+
+test("destino com bloco entra naquele bloco, pulando os de cima", () => {
+  const fluxo = comMiolo()
+  const estado = avancar(fluxo, criarEstado(fluxo), { destino: "g2#b_fone" })
+  assert.equal(estado.grupoAtual, "g2")
+  assert.equal(blocoAtual(fluxo, estado).id, "b_fone")
+})
+
+test("destino sem bloco continua entrando pelo comeco", () => {
+  const fluxo = comMiolo()
+  const estado = avancar(fluxo, criarEstado(fluxo), { destino: "g2" })
+  assert.equal(blocoAtual(fluxo, estado).id, "b_fala")
+})
+
+test("a partir do bloco de entrada o fluxo segue normalmente", () => {
+  const fluxo = comMiolo()
+  let estado = avancar(fluxo, criarEstado(fluxo), { destino: "g2#b_fone" })
+  estado = avancar(fluxo, estado)
+  assert.equal(estado.terminou, true, "era o último bloco do último grupo")
+})
+
+test("bloco que nao existe mais entra pelo comeco, sem derrubar a conversa", () => {
+  const fluxo = comMiolo()
+  const estado = avancar(fluxo, criarEstado(fluxo), { destino: "g2#b_apagado" })
+  assert.equal(estado.grupoAtual, "g2")
+  assert.equal(blocoAtual(fluxo, estado).id, "b_fala",
+    "perder o bloco não pode perder o lead: o validador é que acusa")
+})
+
+test("grupo que nao existe termina o fluxo, mesmo com bloco no destino", () => {
+  const fluxo = comMiolo()
+  const estado = avancar(fluxo, criarEstado(fluxo), { destino: "g_sumiu#b_fone" })
+  assert.equal(estado.terminou, true)
+})
+
+test("inicio pode apontar para um bloco no meio do grupo", () => {
+  const fluxo = comMiolo()
+  fluxo.eventos = [{ tipo: "inicio", proximo: "g2#b_fone" }]
+  const estado = criarEstado(fluxo)
+  assert.equal(blocoAtual(fluxo, estado).id, "b_fone")
+})
+
+test("o grupo entra no historico uma vez, com ou sem bloco no destino", () => {
+  const fluxo = comMiolo()
+  const estado = avancar(fluxo, criarEstado(fluxo), { destino: "g2#b_fone" })
+  assert.deepEqual(estado.historico, ["g1", "g2"])
 })
