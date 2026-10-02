@@ -83,6 +83,9 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__voltar:hover, .ed__barra button.ed__passo:hover:not(:disabled),
 .ed__barra button.ed__engrenagem:hover {
   background: var(--ed-fundo); color: var(--ed-texto); }
+/* As setas de desfazer e refazer em traço mais grosso: num glifo pequeno, o
+   peso é o que o olho enxerga antes da forma. */
+.ed__barra button.ed__passo { font-weight: 700; font-size: 1.15rem; }
 .ed__barra button.ed__passo:disabled { color: var(--ed-linha); cursor: default; }
 
 .ed__nome { display: flex; align-items: center; min-width: 0; margin-right: 0.3rem; }
