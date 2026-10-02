@@ -201,7 +201,7 @@ const CARTAO_RODAPE = 27
 // Tem de ser o mesmo valor de `--ed-conector-fora` no editor.css: lá ele põe
 // a bolinha, aqui ele faz a linha nascer nela. Dois números diferentes
 // voltariam a abrir o vão.
-const CARTAO_CONECTOR = 13
+const CARTAO_CONECTOR = 0
 
 function alturaDoBloco(bloco) {
   if (bloco.opcoes) {
