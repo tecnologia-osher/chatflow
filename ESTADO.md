@@ -1,4 +1,4 @@
-# Estado do chatflow — 25/09/2026
+# Estado do chatflow — 02/10/2026
 
 ## Sub-projeto 1: EM PRODUÇÃO
 
@@ -236,12 +236,21 @@ visual) resolveria uma pergunta que ninguém está fazendo.
 **A próxima tarefa do chatflow é de distribuição, não de engenharia.**
 
 
-## Sub-projeto 2 em andamento — branch `editor-visual`
+## Sub-projeto 2 — concluído e no ar em 02/10/2026
 
-⚠️ **O trabalho do editor vive na branch `editor-visual`, não na `main`.**
-O Pages serve a `main`: enquanto não houver merge, nada do editor está no ar.
-Em setembro esse mesmo esquecimento deixou três semanas de trabalho parado —
-conferir `git status -sb` antes de dar push.
+O editor foi integrado na `main` com merge `--no-ff` (o mesmo padrão do
+sub-projeto 1: cada sub-projeto fica reversível como unidade) e publicado.
+Abre em **tecnologia-osher.github.io/chatflow/editor/?cliente=osher**.
+
+⚠️ **O aviso que valeu enquanto durou a obra, e vale na próxima:** o trabalho
+viveu 68 commits na branch `editor-visual`, e o Pages serve a `main`. Em
+setembro esse mesmo esquecimento deixou três semanas paradas — conferir
+`git status -sb` antes de dar push.
+
+**Publicado, o editor não grava.** Ele abre, edita, testa e mostra os
+resultados; o Salvar baixa o arquivo e explica por quê. Gravar no lugar de
+onde o arquivo veio é o `servir.py` na bancada — e, no dia em que houver conta
+e banco, o sub-projeto 3.
 
 Primeira fatia combinada em 25/09/2026:
 

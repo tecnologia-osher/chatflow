@@ -25,8 +25,21 @@ python3 -m http.server 8080
 | Um cliente | `localhost:8080/motor/player.html?cliente=osher` |
 | Pré-visualizar sem enviar nada | acrescente `&teste=1` |
 | Começar do zero, ignorando a sessão | acrescente `&novo=1` |
+| **Editor visual** | `localhost:8080/editor/index.html?cliente=osher` |
 
 Testes: `npm test` — usa o runner nativo do Node, nada a instalar.
+
+Para **editar e salvar** pelo editor, use o servidor de bancada em vez do
+`http.server`: ele atende `PUT` e grava o `fluxo.json` e o `tema.json` do
+cliente no disco.
+
+```bash
+python3 servir.py 8000
+```
+
+Aberto de qualquer outro jeito (GitHub Pages, arquivo local), o editor abre,
+edita e testa normalmente — só não grava: o Salvar baixa o arquivo e diz por
+quê. Gravar de verdade, com conta e banco, é o sub-projeto 3.
 
 ## Como um fluxo é descrito
 
@@ -123,6 +136,7 @@ vale a fonte do sistema. O motor continua sem saber que a Osher existe.
 |---|---|
 | `motor/` | O motor. Não contém nada de nenhum cliente |
 | `motor/blocos/` | Um arquivo por tipo de bloco, mais o catálogo |
+| `editor/` | O editor visual: quadro, paleta, tema e resultados |
 | `clientes/<nome>/` | Fluxo, tema, destinos e receptor de um cliente |
 | `exemplos/` | Fluxo genérico de demonstração |
 | `testes/` | Um arquivo por módulo, mais os testes de DOM |
@@ -133,10 +147,14 @@ estado e devolve estado novo, nunca modifica o que recebeu.
 
 ## Estado
 
-**Sub-projeto 1 de 4 concluído** — o formato e o motor. 168 testes passando.
+**Sub-projetos 1 e 2 de 4 concluídos** — o formato e o motor; o editor visual.
+764 testes passando.
 
-Os próximos: 2 = editor visual do fluxo, que é a cara do produto;
-3 = contas, banco e multi-cliente simultâneo; 4 = analytics e CRM.
+O editor desenha o fluxo num quadro, cria e liga grupos arrastando, testa a
+conversa com o motor de verdade, customiza o tema ao lado de uma conversa viva
+e lista os leads que já entraram. Fala português e inglês.
+
+Os próximos: 3 = contas, banco e salvar de verdade; 4 = analytics e CRM.
 
 Onde a obra está e o que está em aberto: [ESTADO.md](ESTADO.md).
 Por que cada decisão foi tomada: [docs/superpowers/specs/](docs/superpowers/specs/).
