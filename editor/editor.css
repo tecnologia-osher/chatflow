@@ -192,7 +192,11 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--ed-linha); border-radius: 50%; background: var(--ed-superficie);
   color: var(--ed-suave); font-size: 0.62rem; line-height: 1; cursor: pointer; padding: 0; }
 .ed__play:hover { background: var(--ed-acento); border-color: var(--ed-acento); color: #fff; }
-.ed__bloco { display: grid; gap: 0.1rem; padding: 0.5rem 0.85rem; cursor: grab;
+/* A linha do bloco e a caixa de cada botão são coisas de clicar: o dedo
+   apontando. A mão de arrastar fica para o cartão em volta delas — arrastar
+   dali continua funcionando, mas o que o cursor anuncia é o clique, que é o
+   que a pessoa faz nove em cada dez vezes. */
+.ed__bloco { display: grid; gap: 0.1rem; padding: 0.5rem 0.85rem; cursor: pointer;
   border-left: 3px solid transparent; }
 .ed__bloco:hover { background: var(--ed-fundo); }
 .ed__bloco--ativo { background: var(--ed-selecionado); }
@@ -265,7 +269,10 @@ html, body { margin: 0; height: 100%; }
 .ed__opcao-cartao { position: relative; display: flex; align-items: center; }
 .ed__opcao-campo { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.5rem 0.7rem;
   border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
-  color: var(--ed-texto); font: inherit; font-size: 0.86rem; }
+  color: var(--ed-texto); font: inherit; font-size: 0.86rem; cursor: pointer; }
+/* Com o cursor dentro, volta a ser caixa de escrever: aí o que a pessoa faz
+   é digitar, e a barra de texto diz onde a letra vai cair. */
+.ed__opcao-campo:focus { cursor: text; }
 .ed__opcao-campo:focus { outline: none; border-color: var(--ed-entrada); }
 /* Acrescenta um botão na lista. Tracejado e discreto: não é um botão que o
    lead vai ver, é o lugar de criar um. */

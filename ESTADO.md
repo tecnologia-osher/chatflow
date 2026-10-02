@@ -732,6 +732,11 @@ os botões (mãozinha) e as bolinhas (mira).
 Arrastando o fundo, a mão fechada aparece enquanto dura o arrasto: isso é
 retorno do que está acontecendo, não promessa do que dá para fazer.
 
-Medido no Chrome: quadro `default`, cartão e bloco `grab`, nome `text`,
-bolinha `crosshair`, botão `pointer` — e arrastar pelo corpo do cartão move o
-grupo exatamente o que o mouse andou.
+E o que se clica mostra o dedo apontando: a linha do bloco, a caixa de cada
+botão, o `+ botão`, o play. A caixa do botão volta a ser barra de texto quando
+recebe o cursor — aí o que a pessoa faz é digitar, e a barra diz onde a letra
+cai.
+
+Medido no Chrome: quadro `default`, cartão `grab`, bloco e caixa de botão
+`pointer`, nome `text`, bolinha `crosshair` — e arrastar pelo corpo do cartão
+move o grupo exatamente o que o mouse andou.
