@@ -693,3 +693,29 @@ E o **Start** passou a se selecionar como um cartão — clicar nele e nada
 acontecer parecia defeito — e ganhou o seu **▶**, que testa do começo.
 Selecionar o Start larga o cartão selecionado e vice-versa: são dois lugares
 diferentes do fluxo.
+
+### Três bolhas, com ícone: Texto, Imagem e Vídeo
+
+583 testes. A categoria **Bolhas** (era "Fala") agora tem três tipos, e toda a
+paleta ganhou ícone antes do rótulo — ler a paleta virou reconhecer a forma em
+vez de soletrar o nome.
+
+- **Texto**: o que já existia.
+- **Imagem**: ganhou **abrir link ao clicar**. A imagem vira um link que abre
+  em outra aba (`noopener`), para a conversa não ser abandonada no meio.
+- **Vídeo** (novo): toca por link. `motor/video.js` traduz o endereço —
+  YouTube (watch, youtu.be, embed, shorts), Vimeo, ou arquivo `.mp4` direto —
+  e o autoplay entra no endereço **sempre mudo**, porque navegador nenhum
+  deixa começar com som e sem o mudo o autoplay simplesmente não acontece.
+  Endereço que ninguém sabe tocar não vira caixa preta: o bloco é pulado e a
+  conversa segue.
+
+**Não entrou, e por quê:** subir imagem, Giphy, Unsplash e ícones. Upload
+precisa de lugar para guardar o arquivo (hoje só existe o `PUT` do fluxo, e no
+editor publicado não há servidor); Giphy e Unsplash precisam de chave de API.
+São duas conversas separadas, não uma linha de código.
+
+O dublê aprendeu que, no DOM, `img.src = x` e `setAttribute("src", x)` são a
+mesma coisa — sem isso, o código podia pôr o endereço pela propriedade e o
+teste jurar, olhando o atributo, que ele não estava lá. `value` ficou de fora
+de propósito: nele propriedade e atributo são coisas diferentes de verdade.

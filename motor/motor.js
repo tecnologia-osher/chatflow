@@ -2,6 +2,7 @@ import { registrarTodos } from "./blocos/index.js"
 import { todos, obter } from "./blocos/_registro.js"
 import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
+import { fonteDeVideo } from "./video.js"
 import { criarEnviador } from "./destinos.js"
 import { criarSessao } from "./sessao.js"
 import {
@@ -201,7 +202,43 @@ export function criarChat({
       const img = document.createElement("img")
       img.src = item.imagem
       img.alt = item.alternativo || ""
-      bolha.append(img)
+      if (item.link) {
+        // Imagem que leva a algum lugar: abre em outra aba, para a conversa
+        // não ser abandonada no meio. `noopener` porque a página de destino
+        // não tem nada que fazer com esta.
+        const laco = document.createElement("a")
+        laco.href = item.link
+        laco.target = "_blank"
+        laco.rel = "noopener noreferrer"
+        laco.className = "cf__imagem-link"
+        laco.append(img)
+        bolha.append(laco)
+      } else {
+        bolha.append(img)
+      }
+      linha.append(bolha)
+    } else if (item.video !== undefined) {
+      const bolha = elementoCom("div", "cf__bolha cf__bolha--video")
+      if (item.video.tipo === "incorporado") {
+        const quadro = document.createElement("iframe")
+        quadro.src = item.video.src
+        quadro.className = "cf__video"
+        quadro.setAttribute("allow", "accelerometer; autoplay; encrypted-media; picture-in-picture")
+        quadro.setAttribute("allowfullscreen", "")
+        quadro.setAttribute("title", item.alternativo || "Vídeo")
+        bolha.append(quadro)
+      } else {
+        const filme = document.createElement("video")
+        filme.src = item.video.src
+        filme.className = "cf__video"
+        filme.setAttribute("controls", "")
+        filme.setAttribute("playsinline", "")
+        if (item.video.autoplay) {
+          filme.setAttribute("autoplay", "")
+          filme.setAttribute("muted", "")
+        }
+        bolha.append(filme)
+      }
       linha.append(bolha)
     } else {
       const classe = item.lado === "pessoa" ? "cf__bolha cf__bolha--pessoa" : "cf__bolha"
@@ -412,11 +449,32 @@ export function criarChat({
 
       if (bloco.tipo === "imagem") {
         const alternativo = bloco.conteudo?.alternativo || ""
+        const link = interpolar(bloco.conteudo?.link_ao_clicar || "", contexto(fluxo, estado)).trim()
         await dizerComPausa(alternativo, {
           lado: "bot",
           imagem: interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
-          alternativo
+          alternativo,
+          ...(link ? { link } : {})
         })
+        estado = avancar(fluxo, estado)
+        continue
+      }
+
+      if (bloco.tipo === "video") {
+        const alternativo = bloco.conteudo?.alternativo || ""
+        const fonte = fonteDeVideo(
+          interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)),
+          { autoplay: !!bloco.conteudo?.autoplay }
+        )
+        // Endereço que ninguém sabe tocar não vira caixa preta: o bloco é
+        // pulado, e o fluxo segue. Quem acusa o endereço vazio é o validador.
+        if (fonte) {
+          await dizerComPausa(alternativo, {
+            lado: "bot",
+            video: { ...fonte, autoplay: !!bloco.conteudo?.autoplay },
+            alternativo
+          })
+        }
         estado = avancar(fluxo, estado)
         continue
       }

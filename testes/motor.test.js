@@ -172,7 +172,13 @@ for (const [tipo, esperado] of Object.entries(atributosEsperados)) {
       },
       destinos: destinosDeTeste()
     })
-    assert.deepEqual(chat.campo().atributos, esperado)
+    // Só o que diz respeito ao teclado: o campo tem outros atributos
+    // legítimos, como o placeholder, e exigir a lista exata quebraria a cada
+    // melhoria do campo.
+    const atributos = chat.campo().atributos
+    for (const [nome, valor] of Object.entries(esperado)) {
+      assert.equal(atributos[nome], valor, `${tipo}: ${nome}`)
+    }
   })
 }
 
@@ -834,4 +840,97 @@ test("resposta com nome reservado nao descaracteriza o evento de funil", async (
   const doFim = chat.eventos().find((e) => e.blocoId === "b_fim")
   assert.ok(doFim, "o evento do último bloco não foi emitido")
   assert.equal(doFim.event, true, "o evento perdeu a marca e seria gravado como lead")
+})
+
+// --- bolhas de imagem e vídeo ----------------------------------------------
+
+test("imagem com link ao clicar vira imagem dentro de um link, em outra aba", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "imagem", conteudo: {
+        url: "https://exemplo.com/foto.png",
+        alternativo: "Nossa casa",
+        link_ao_clicar: "https://exemplo.com/promo"
+      } }] }]
+  } })
+  const laco = hospedeiro.porClasse("cf__imagem-link")[0]
+  assert.ok(laco, "sem o laço, clicar na imagem não leva a lugar nenhum")
+  assert.equal(laco.atributos.href, "https://exemplo.com/promo")
+  assert.equal(laco.atributos.target, "_blank", "abandonar a conversa no meio seria pior")
+  assert.match(laco.atributos.rel || "", /noopener/)
+  assert.equal(laco.filhos[0].atributos.src, "https://exemplo.com/foto.png")
+})
+
+test("imagem sem link continua sendo so imagem", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "imagem", conteudo: { url: "https://exemplo.com/foto.png" } }] }]
+  } })
+  assert.equal(hospedeiro.porClasse("cf__imagem-link").length, 0)
+  assert.equal(hospedeiro.porClasse("cf__bolha")[0].filhos[0].tagName, "IMG")
+})
+
+test("video do YouTube vira quadro incorporado", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "video", conteudo: { url: "https://youtu.be/dQw4w9WgXcQ" } }] }]
+  } })
+  const quadro = hospedeiro.porClasse("cf__video")[0]
+  assert.equal(quadro.tagName, "IFRAME")
+  assert.equal(quadro.atributos.src, "https://www.youtube.com/embed/dQw4w9WgXcQ")
+  assert.equal(/autoplay=1/.test(quadro.atributos.src), false, "sem pedir, não começa sozinho")
+})
+
+test("video com autoplay pede para comecar, e mudo", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "video", conteudo: { url: "https://youtu.be/dQw4w9WgXcQ", autoplay: true } }] }]
+  } })
+  assert.match(hospedeiro.porClasse("cf__video")[0].atributos.src, /autoplay=1.*mute=1/)
+})
+
+test("arquivo de video vira player com controles", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "video", conteudo: { url: "https://exemplo.com/a.mp4", autoplay: true } }] }]
+  } })
+  const filme = hospedeiro.porClasse("cf__video")[0]
+  assert.equal(filme.tagName, "VIDEO")
+  assert.equal(filme.atributos.controls, "")
+  assert.equal(filme.atributos.autoplay, "")
+  assert.equal(filme.atributos.muted, "", "com som, o navegador não deixa começar")
+})
+
+test("video com endereco que ninguem toca nao trava a conversa", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b1", tipo: "video", conteudo: { url: "" } },
+      { id: "b2", tipo: "texto", conteudo: { texto: "Seguindo" } }] }]
+  } })
+  assert.equal(hospedeiro.porClasse("cf__video").length, 0, "caixa preta e muda é pior que nada")
+  assert.ok(hospedeiro.porClasse("cf__bolha").some((b) => /Seguindo/.test(b.textContent)))
+})
+
+test("o endereco do video aceita variavel", async () => {
+  const { hospedeiro } = await montarChat({ fluxo: {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "a", blocos: [
+      { id: "b0", tipo: "definir_variavel", salvar_em: "id", conteudo: { valor: "dQw4w9WgXcQ" } },
+      { id: "b1", tipo: "video", conteudo: { url: "https://youtu.be/{{id}}" } }] }]
+  } })
+  assert.equal(hospedeiro.porClasse("cf__video")[0].atributos.src,
+    "https://www.youtube.com/embed/dQw4w9WgXcQ")
 })

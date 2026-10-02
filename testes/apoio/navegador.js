@@ -9,6 +9,11 @@
 //
 // Continua valendo a regra de zero dependências: nada aqui vem de fora.
 
+// Atributos que a propriedade de mesmo nome reflete, no DOM de verdade.
+// `value` fica de fora de propósito: nele propriedade e atributo são coisas
+// diferentes, e fingir o contrário esconderia defeito em vez de achar.
+const REFLETIDOS = ["src", "href", "alt", "title", "placeholder", "target", "rel"]
+
 // Eventos de foco não sobem a árvore no navegador de verdade.
 const NAO_SOBEM = new Set(["focus", "blur"])
 
@@ -43,6 +48,19 @@ class Elemento {
       this.selectionEnd = 0
     }
     this._texto = ""
+
+    // No DOM, `img.src = x` e `img.setAttribute("src", x)` são a mesma coisa:
+    // a propriedade reflete o atributo. Sem isto, o código podia pôr o
+    // endereço pela propriedade e o teste jurar, olhando o atributo, que ele
+    // não estava lá — ou o contrário.
+    for (const nome of REFLETIDOS) {
+      Object.defineProperty(this, nome, {
+        get: () => this.atributos[nome],
+        set: (valor) => { this.atributos[nome] = String(valor) },
+        configurable: true,
+        enumerable: false
+      })
+    }
     this.style = {
       propriedades: {},
       setProperty(nome, valor) { this.propriedades[nome] = valor }

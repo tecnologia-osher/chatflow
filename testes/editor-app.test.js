@@ -32,7 +32,7 @@ const clicar = (n) => n.disparar("click")
 
 // --- arrastar da paleta para o quadro --------------------------------------
 
-const tipoDaPaleta = (h, rotulo) => porClasse(h, "ed__tipo").find((b) => b.textContent === rotulo)
+const tipoDaPaleta = (h, rotulo) => porClasse(h, "ed__tipo").find((b) => b.textContent.trim() === rotulo)
 
 // Onde um ponto do fluxo aparece na janela. Lê a mesma transformação que o
 // navegador aplica — é o caminho inverso do que o canvas faz ao receber o
@@ -1077,4 +1077,36 @@ test("clicar dentro da caixa do nome nao a fecha", () => {
   const campo = porClasse(hospedeiro, "ed__nome-campo")[0]
   campo.disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   assert.equal(porClasse(hospedeiro, "ed__nome-campo").length, 1)
+})
+
+test("cada tipo da paleta tem icone e rotulo, nos tres da categoria Bolhas", () => {
+  const { hospedeiro } = montar()
+  const tipos = porClasse(hospedeiro, "ed__tipo")
+  assert.equal(porClasse(hospedeiro, "ed__tipo-icone").length, tipos.length,
+    "tipo sem ícone na paleta obriga a soletrar o nome")
+
+  const bolhas = tipos.filter((b) => b.className.includes("ed__tipo--fala"))
+  assert.deepEqual(bolhas.map((b) => b.porClasse("ed__tipo-rotulo")[0].textContent),
+    ["Texto", "Imagem", "Vídeo"])
+  for (const botao of bolhas) {
+    const traco = botao.porClasse("ed__tipo-icone")[0].filhos[0]
+    assert.match(traco.atributos.d || "", /^M/, "o ícone precisa ter desenho")
+  }
+})
+
+test("o desenho de cada bolha e diferente do das outras", () => {
+  const { hospedeiro } = montar()
+  const desenhos = porClasse(hospedeiro, "ed__tipo")
+    .filter((b) => b.className.includes("ed__tipo--fala"))
+    .map((b) => b.porClasse("ed__tipo-icone")[0].filhos[0].atributos.d)
+  assert.equal(new Set(desenhos).size, 3, "três ícones iguais não distinguem nada")
+})
+
+test("arrastar um tipo continua funcionando com o icone dentro", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  arrastar(hospedeiro, "Vídeo", naJanela(hospedeiro, { x: 100, y: 300 }))
+  const novos = editor.fluxo().grupos.filter((g) => !antes.has(g.id))
+  assert.equal(novos.length, 1)
+  assert.equal(novos[0].blocos[0].tipo, "video")
 })
