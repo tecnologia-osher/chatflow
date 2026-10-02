@@ -129,11 +129,14 @@ html, body { margin: 0; height: 100%; }
 .ed__tema-controle { flex: none; display: flex; align-items: center; gap: 0.3rem; }
 /* Campo de texto e slider não cabem na mesma linha do rótulo numa coluna de
    17rem: nesses dois o rótulo fica em cima. */
-.ed__tema-linha--texto, .ed__tema-linha--largura { display: grid; gap: 0.25rem; }
+.ed__tema-linha--texto, .ed__tema-linha--largura,
+.ed__tema-linha--fonte { display: grid; gap: 0.25rem; }
 .ed__tema-linha--texto .ed__tema-controle,
-.ed__tema-linha--largura .ed__tema-controle { display: flex; }
+.ed__tema-linha--largura .ed__tema-controle,
+.ed__tema-linha--fonte .ed__tema-controle { display: flex; }
 .ed__tema-linha--texto .ed__tema-rotulo,
-.ed__tema-linha--largura .ed__tema-rotulo { flex: none; }
+.ed__tema-linha--largura .ed__tema-rotulo,
+.ed__tema-linha--fonte .ed__tema-rotulo { flex: none; }
 
 /* O seletor nativo vem com moldura própria em todo navegador; isto o deixa um
    quadradinho de cor do tamanho do texto ao lado. */
@@ -154,6 +157,19 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--ed-linha); border-radius: 8px; background: var(--ed-superficie);
   color: var(--ed-texto); font: inherit; font-size: 0.8rem; }
 .ed__tema-texto:focus { outline: none; border-color: var(--ed-acento); }
+
+/* A lista de fontes. A seta é desenhada aqui porque a do navegador muda de
+   cara em cada sistema — e esta é a mesma do resto do editor. */
+.ed__tema-lista { width: 100%; box-sizing: border-box; padding: 0.4rem 1.8rem 0.4rem 0.55rem;
+  border: 1px solid var(--ed-linha); border-radius: 8px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.8rem; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 0.9rem; }
+.ed__tema-lista:hover, .ed__tema-lista:focus { outline: none; border-color: var(--ed-acento); }
+/* Cada nome na sua própria letra, um pouco maior: é pela cara que se escolhe
+   fonte, não pelo nome. */
+.ed__tema-opcao { font-size: 0.95rem; }
 
 .ed__tema-faixa { flex: 1; min-width: 0; accent-color: var(--ed-acento); cursor: pointer; }
 .ed__tema-medida { flex: none; min-width: 3.2rem; text-align: right;

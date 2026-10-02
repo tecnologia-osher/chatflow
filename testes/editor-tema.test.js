@@ -152,7 +152,7 @@ test("as secoes tem chave unica e nenhum controle sem rotulo", () => {
     assert.ok(secao.controles.length > 0, `a seção ${secao.chave} está vazia`)
     for (const c of secao.controles) {
       assert.ok(c.rotulo, `controle sem rótulo em ${secao.chave}`)
-      assert.ok(["cor", "texto", "largura", "interruptor"].includes(c.tipo),
+      assert.ok(["cor", "texto", "largura", "interruptor", "fonte"].includes(c.tipo),
         `tipo de controle desconhecido: ${c.tipo}`)
       if (c.tipo !== "largura") assert.ok(c.chave, `controle sem chave em ${secao.chave}`)
     }

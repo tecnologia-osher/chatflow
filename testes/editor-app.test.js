@@ -1774,3 +1774,84 @@ test("desfazer devolve o interruptor ao que o tema diz", async () => {
     "o tema voltou a ter retrato, o interruptor tem de voltar junto")
   assert.ok(linhaDoTema(hospedeiro, "retrato", "Imagem"))
 })
+
+// --- a lista de fontes -----------------------------------------------------
+
+const { FONTES } = await import("../editor/fontes.js")
+const listaDeFontes = (h) => linhaDoTema(h, "conversa", "Fonte").porClasse("ed__tema-lista")[0]
+
+test("a fonte sai de uma lista, com a do cliente ja escolhida", async () => {
+  const { hospedeiro } = montarComTema({
+    tema: { fonte: "'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }
+  })
+  await assentar()
+  const lista = listaDeFontes(hospedeiro)
+  assert.deepEqual(lista.porClasse("ed__tema-opcao").map((o) => o.textContent),
+    FONTES.map((f) => f.nome))
+  assert.equal(lista.value, "Open Sans")
+})
+
+test("cada nome da lista aparece na sua propria letra", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  const opcoes = listaDeFontes(hospedeiro).porClasse("ed__tema-opcao")
+  for (const [i, opcao] of opcoes.entries()) {
+    assert.equal(opcao.style.propriedades["font-family"], FONTES[i].familia,
+      "quinze nomes na mesma letra não ajudam a escolher")
+  }
+})
+
+test("escolher uma fonte troca a familia e a folha, e chega na conversa", async () => {
+  const { hospedeiro, editor } = montarComTema()
+  await assentar()
+  const antes = chatDaAba(hospedeiro)
+  const lista = listaDeFontes(hospedeiro)
+  lista.value = "Poppins"
+  lista.disparar("change")
+
+  assert.match(editor.tema().fonte, /^'Poppins'/)
+  assert.match(editor.tema().fonte_url, /family=Poppins/)
+  assert.equal(chatDaAba(hospedeiro), antes, "trocar de fonte não precisa reiniciar a conversa")
+  assert.match(antes.style.fontFamily, /^'Poppins'/)
+  assert.equal(editor.temMudancas(), true)
+})
+
+test("o padrao do sistema tira a folha, e a conversa deixa de pedi-la", async () => {
+  const { hospedeiro, editor } = montarComTema({
+    tema: { fonte: "'Poppins', sans-serif", fonte_url: "https://exemplo/poppins" }
+  })
+  await assentar()
+  const lista = listaDeFontes(hospedeiro)
+  lista.value = "Padrão do sistema"
+  lista.disparar("change")
+  assert.equal("fonte_url" in editor.tema(), false)
+  assert.equal(listaDeFontes(hospedeiro).value, "Padrão do sistema")
+})
+
+test("fonte escrita a mao no tema.json aparece como personalizada e nao e apagada", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { fonte: "'Comic Sans MS', cursive" } })
+  await assentar()
+  const lista = listaDeFontes(hospedeiro)
+  const ultima = lista.porClasse("ed__tema-opcao").at(-1)
+  assert.match(ultima.textContent, /Personalizada: 'Comic Sans MS'/)
+  assert.equal(lista.value, "personalizada")
+  assert.equal(editor.tema().fonte, "'Comic Sans MS', cursive", "a lista não pode atropelar a escolha de ninguém")
+
+  lista.value = "Poppins"
+  lista.disparar("change")
+  assert.equal(listaDeFontes(hospedeiro).porClasse("ed__tema-opcao").length, FONTES.length,
+    "trocada a fonte, a opção personalizada não tem mais o que guardar")
+})
+
+test("desfazer devolve a fonte de antes, na lista e na conversa", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: {} })
+  await assentar()
+  const lista = listaDeFontes(hospedeiro)
+  lista.value = "Poppins"
+  lista.disparar("change")
+
+  desfazerPasso(hospedeiro).disparar("click")
+  await assentar()
+  assert.equal("fonte" in editor.tema(), false)
+  assert.equal(listaDeFontes(hospedeiro).value, "Padrão do sistema")
+})

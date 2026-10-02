@@ -22,6 +22,7 @@ import {
   corDoTema, corHerdada, definirCor, soltarCor, definirDoTema,
   larguraEmRem, definirLargura
 } from "./tema.js"
+import { FONTES, fonteDoTema, definirFonte, urlDaAmostra } from "./fontes.js"
 import { criarChat, aplicarTema } from "../motor/motor.js"
 
 
@@ -738,6 +739,7 @@ export function criarEditor({
   }
 
   function desenharLadoDoTema() {
+    pedirAmostraDasFontes()
     camposDeCor.clear()
     camposDeTexto.clear()
     const caixa = el("div", "ed__paleta-corpo")
@@ -767,6 +769,7 @@ export function criarEditor({
     const direita = el("span", "ed__tema-controle")
 
     if (controle.tipo === "cor") direita.append(...controleDeCor(controle))
+    else if (controle.tipo === "fonte") direita.append(controleDeFonte())
     else if (controle.tipo === "largura") direita.append(...controleDeLargura())
     else if (controle.tipo === "interruptor") direita.append(interruptorDoRetrato())
     else direita.append(controleDeTexto(controle))
@@ -802,6 +805,53 @@ export function criarEditor({
     })
     camposDeCor.set(controle.chave, { campo, soltar })
     return [campo, soltar]
+  }
+
+  // A lista de fontes. Cada nome aparece na sua própria letra — é o que
+  // permite escolher pela cara em vez de pelo nome.
+  const PERSONALIZADA = "personalizada"
+
+  function controleDeFonte() {
+    const lista = el("select", "ed__tema-lista")
+    lista.setAttribute("aria-label", "Fonte")
+    const escolhida = fonteDoTema(temaAtual)
+
+    for (const fonte of FONTES) {
+      const opcao = el("option", "ed__tema-opcao", fonte.nome)
+      opcao.setAttribute("value", fonte.nome)
+      opcao.style.setProperty("font-family", fonte.familia)
+      lista.append(opcao)
+    }
+    // Fonte escrita à mão no tema.json não some da tela só porque não está na
+    // lista: ela aparece como está, escolhida, e só sai se a pessoa trocar.
+    if (!escolhida) {
+      const opcao = el("option", "ed__tema-opcao", `Personalizada: ${temaAtual.fonte}`)
+      opcao.setAttribute("value", PERSONALIZADA)
+      lista.append(opcao)
+    }
+
+    lista.value = escolhida ? escolhida.nome : PERSONALIZADA
+    lista.addEventListener("change", () => {
+      if (lista.value === PERSONALIZADA) return
+      trocarTema(definirFonte(temaAtual, lista.value))
+      desenharLadoDoTema()
+      temaMexido()
+    })
+    return lista
+  }
+
+  // As folhas de todas as fontes da lista, pedidas uma vez quando a aba abre:
+  // sem elas a lista mostraria quinze nomes na mesma letra.
+  let amostraPedida = false
+  function pedirAmostraDasFontes() {
+    if (amostraPedida) return
+    const cabeca = globalThis.document?.head
+    if (!cabeca) return
+    amostraPedida = true
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.href = urlDaAmostra()
+    cabeca.append(link)
   }
 
   function controleDeLargura() {

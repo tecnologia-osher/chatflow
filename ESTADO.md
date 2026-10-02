@@ -913,3 +913,25 @@ enviar na hora, sem a conversa recomeçar; o seletor do botão, que segue o
 acento, acompanha — senão o painel diria azul enquanto a conversa já está
 vinho. O Testar também passou a abrir com o tema do cliente: testar com as
 cores do motor mostraria um chat que não existe em lugar nenhum.
+
+### A fonte sai de uma lista
+
+710 testes. Os dois campos de texto — família e endereço da folha — viraram uma
+lista com quinze fontes do Google, cada nome **escrito na própria letra**: é
+pela cara que se escolhe fonte, não pelo nome. Escolher escreve as duas coisas
+juntas; antes dava para escrever "Poppins" e esquecer a folha, e o chat
+mostrava a fonte do sistema sem dizer por quê.
+
+A fonte é reconhecida pelo **primeiro nome da pilha**, não pelo texto todo: a
+pilha de reserva de quem escreveu o tema à mão quase nunca é igual à nossa, e
+comparar tudo diria "personalizada" para uma fonte que está na lista. Fonte
+mesmo fora da lista continua valendo — aparece como "Personalizada: …",
+escolhida, e só sai se a pessoa trocar.
+
+"Padrão do sistema" é a primeira da lista e **não baixa nada**: a conversa abre
+sem esperar a rede. Trocar para ela tira a `fonte_url` do arquivo, senão o
+navegador baixaria uma fonte que ninguém mais usa.
+
+Conferido no Chrome: a folha das quinze famílias entra uma vez quando a aba
+abre, a seta é a mesma do resto do editor (a do navegador muda de cara em cada
+sistema), e escolher Poppins troca a letra da conversa sem reiniciá-la.

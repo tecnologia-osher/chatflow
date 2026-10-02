@@ -126,8 +126,7 @@ export const SECOES = [
       { tipo: "cor", chave: "superficie", rotulo: "Fundo das caixas" },
       { tipo: "cor", chave: "texto", rotulo: "Texto" },
       { tipo: "cor", chave: "borda", rotulo: "Bordas" },
-      { tipo: "texto", chave: "fonte", rotulo: "Fonte", dica: "Open Sans, system-ui, sans-serif" },
-      { tipo: "texto", chave: "fonte_url", rotulo: "Endereço da fonte", dica: "https://fonts.googleapis.com/…" }
+      { tipo: "fonte", chave: "fonte", rotulo: "Fonte" }
     ]
   },
   {
