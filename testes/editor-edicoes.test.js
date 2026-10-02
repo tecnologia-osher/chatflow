@@ -7,7 +7,7 @@ import {
   definirCampo, definirSalvarEm, definirTitulo, definirProximo,
   moverGrupo, acrescentarBloco, removerBloco, moverBloco, criarGrupo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
-  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo, duplicarGrupo, nomeDoFluxo, definirNomeDoFluxo
+  definirProximoDoEvento, moverEvento, limparOpcoesVazias, proximoNomeDeGrupo, removerGrupo, duplicarGrupo, nomeDoFluxo, definirNomeDoFluxo, moverBlocoEntreGrupos, blocoViraGrupo
 } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { registrarTodos } from "../motor/blocos/index.js"
@@ -462,4 +462,83 @@ test("definir o nome nao mexe no resto", () => {
   const f = definirNomeDoFluxo(antes, "Novo")
   assert.deepEqual(antes, copia)
   assert.deepEqual(f.grupos, copia.grupos)
+})
+
+// --- levar um bloco para outro grupo ---------------------------------------
+
+const comDoisGrupos = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "a", posicao: { x: 0, y: 0 }, proximo: "g2", blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Um" } },
+      { id: "b2", tipo: "texto", conteudo: { texto: "Dois" } }] },
+    { id: "g2", titulo: "b", posicao: { x: 500, y: 0 }, blocos: [
+      { id: "b3", tipo: "texto", conteudo: { texto: "Três" } }] }
+  ]
+})
+
+const idsDe = (f, grupo) => f.grupos.find((g) => g.id === grupo).blocos.map((b) => b.id)
+
+test("o bloco sai de um grupo e entra no outro, no fim", () => {
+  const f = moverBlocoEntreGrupos(comDoisGrupos(), { de: "g1", bloco: "b1", para: "g2" })
+  assert.deepEqual(idsDe(f, "g1"), ["b2"])
+  assert.deepEqual(idsDe(f, "g2"), ["b3", "b1"])
+})
+
+test("com antesDe, o bloco entra acima daquele", () => {
+  const f = moverBlocoEntreGrupos(comDoisGrupos(), { de: "g1", bloco: "b1", para: "g2", antesDe: "b3" })
+  assert.deepEqual(idsDe(f, "g2"), ["b1", "b3"])
+})
+
+test("dentro do mesmo grupo, muda a ordem", () => {
+  const f = moverBlocoEntreGrupos(comDoisGrupos(), { de: "g1", bloco: "b2", para: "g1", antesDe: "b1" })
+  assert.deepEqual(idsDe(f, "g1"), ["b2", "b1"])
+})
+
+test("o conteudo do bloco vai junto, inteiro", () => {
+  const f = moverBlocoEntreGrupos(comDoisGrupos(), { de: "g1", bloco: "b1", para: "g2" })
+  assert.deepEqual(f.grupos[1].blocos.at(-1), { id: "b1", tipo: "texto", conteudo: { texto: "Um" } })
+})
+
+test("grupo que fica sem bloco continua existindo, com as ligacoes dele", () => {
+  let f = comDoisGrupos()
+  f = moverBlocoEntreGrupos(f, { de: "g1", bloco: "b1", para: "g2" })
+  f = moverBlocoEntreGrupos(f, { de: "g1", bloco: "b2", para: "g2" })
+  assert.deepEqual(idsDe(f, "g1"), [])
+  assert.equal(f.grupos[0].proximo, "g2", "apagar o grupo levaria junto caminhos que ninguém pediu")
+})
+
+test("mover o bloco para acima de si mesmo nao muda nada", () => {
+  const base = comDoisGrupos()
+  assert.equal(moverBlocoEntreGrupos(base, { de: "g1", bloco: "b1", para: "g1", antesDe: "b1" }), base,
+    "o bloco não entra antes de si: sairia da lista e voltaria no mesmo lugar")
+})
+
+test("mover bloco que nao existe, ou para grupo que nao existe, nao muda nada", () => {
+  const base = comDoisGrupos()
+  assert.equal(moverBlocoEntreGrupos(base, { de: "g1", bloco: "b_nada", para: "g2" }), base)
+  assert.equal(moverBlocoEntreGrupos(base, { de: "g1", bloco: "b1", para: "g_nada" }), base)
+})
+
+test("mover nao mexe no fluxo recebido", () => {
+  const antes = comDoisGrupos()
+  const copia = JSON.parse(JSON.stringify(antes))
+  moverBlocoEntreGrupos(antes, { de: "g1", bloco: "b1", para: "g2" })
+  assert.deepEqual(antes, copia)
+})
+
+test("soltar o bloco no quadro cria um grupo com ele", () => {
+  const { fluxo, grupo } = blocoViraGrupo(comDoisGrupos(), { de: "g1", bloco: "b1", x: 900, y: 400 })
+  assert.ok(grupo, "quem chamou precisa saber qual grupo nasceu para selecioná-lo")
+  assert.deepEqual(idsDe(fluxo, "g1"), ["b2"])
+  assert.deepEqual(idsDe(fluxo, grupo), ["b1"])
+  assert.deepEqual(fluxo.grupos.find((g) => g.id === grupo).posicao, { x: 900, y: 400 })
+})
+
+test("bloco que nao existe nao vira grupo nenhum", () => {
+  const base = comDoisGrupos()
+  const { fluxo, grupo } = blocoViraGrupo(base, { de: "g1", bloco: "b_nada", x: 0, y: 0 })
+  assert.equal(grupo, null)
+  assert.equal(fluxo, base)
 })

@@ -740,3 +740,26 @@ cai.
 Medido no Chrome: quadro `default`, cartão `grab`, bloco e caixa de botão
 `pointer`, nome `text`, bolinha `crosshair` — e arrastar pelo corpo do cartão
 move o grupo exatamente o que o mouse andou.
+
+### Os blocos ficaram livres
+
+608 testes. Clicar e segurar um bloco agora leva **o bloco**, não o cartão:
+solto sobre outro grupo ele entra lá, na altura em que foi largado (acima do
+bloco que estiver sob o cursor, ou no fim); solto no quadro, vira um grupo
+novo naquele ponto. Enquanto se arrasta, o bloco de origem apaga, um fantasma
+com o nome do tipo acompanha o cursor, o cartão de destino acende e a linha
+onde ele vai entrar ganha um traço em cima.
+
+O cartão continua se arrastando — pelo cabeçalho, pelo rodapé e pelas bordas,
+que é o que sobra depois dos blocos. E andar menos de 3px continua sendo
+clique, não arrasto: é o mesmo critério do nome do grupo.
+
+Dois cuidados que os testes fixaram: **grupo que fica sem nenhum bloco
+continua existindo**, porque ele ainda é um ponto do fluxo com as ligações
+dele, e apagá-lo levaria junto caminhos que ninguém pediu para apagar; e
+**soltar fora do quadro não faz nada**, nem leva nem cria.
+
+Conferido no Chrome com mouse real: o bloco saiu de "Contato" (3 → 2) e entrou
+em "Fim" (3 → 4), com o fantasma "Texto" no meio do caminho e o cartão de
+destino aceso; e soltar um bloco no vazio criou o "Grupo #7" com ele dentro,
+que um desfazer desfez.

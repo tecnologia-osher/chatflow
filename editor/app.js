@@ -11,7 +11,7 @@ import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
   definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias, removerGrupo, duplicarGrupo,
-  nomeDoFluxo, definirNomeDoFluxo
+  nomeDoFluxo, definirNomeDoFluxo, moverBlocoEntreGrupos, blocoViraGrupo
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
@@ -186,6 +186,18 @@ export function criarEditor({
     aoLigarOpcao: ({ grupo, bloco, opcao, destino }) => {
       trocarFluxo(definirOpcao(atual, { grupo, bloco, opcao, campo: "proximo", valor: destino }))
       redesenhar()
+    },
+    aoMoverBloco: ({ de, bloco, para, antesDe }) => {
+      trocarFluxo(moverBlocoEntreGrupos(atual, { de, bloco, para, antesDe }))
+      selecao = { grupo: para, bloco }
+      redesenhar({ manterVista: true })
+    },
+    aoSoltarBlocoNoQuadro: ({ de, bloco, x, y }) => {
+      const { fluxo: novo, grupo } = blocoViraGrupo(atual, { de, bloco, x, y })
+      if (!grupo) return
+      trocarFluxo(novo)
+      selecao = { grupo, bloco }
+      redesenhar({ manterVista: true })
     },
     aoDuplicarGrupo: ({ grupo }) => {
       const antes = new Set(atual.grupos.map((g) => g.id))

@@ -1224,18 +1224,20 @@ test("o Start tem um play, e ele testa do comeco", () => {
 
 // --- o cartão inteiro é alça ------------------------------------------------
 
-test("arrastar pelo corpo do cartao move o grupo, nao o fundo", () => {
+test("arrastar pelo rodape do cartao move o grupo, nao o fundo", () => {
   const hospedeiro = new Elemento("div")
   const movidos = []
   const canvas = criarCanvas({ elemento: hospedeiro, aoMover: (id, p) => movidos.push({ id, ...p }) })
   canvas.desenhar(fluxo)
   const vista = canvas.vista()
 
-  hospedeiro.porClasse("ed__bloco")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
+  // O bloco agora é alça dele mesmo; o cartão se arrasta pelo que sobra —
+  // cabeçalho, rodapé e as bordas.
+  hospedeiro.porClasse("ed__rodape")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", { clientX: 90, clientY: 50 })
   document.disparar("mouseup", { clientX: 90, clientY: 50 })
 
-  assert.equal(movidos.at(-1)?.id, "g1", "o bloco é parte do cartão")
+  assert.equal(movidos.at(-1)?.id, "g1")
   assert.deepEqual(canvas.vista(), vista, "e o quadro fica onde estava")
 })
 
@@ -1265,4 +1267,146 @@ test("escrever na caixa do bloco nao arrasta o cartao", () => {
   document.disparar("mousemove", { clientX: 80, clientY: 40 })
   document.disparar("mouseup", {})
   assert.deepEqual(movidos, [], "quem escolhe onde pôr o cursor não quer mover o cartão")
+})
+
+// --- arrastar um bloco entre grupos ----------------------------------------
+
+function montarComBlocos(extra = {}) {
+  const comDois = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+    grupos: [
+      { id: "g1", titulo: "Abertura", posicao: { x: 300, y: 40 }, proximo: "g2", blocos: [
+        { id: "b1", tipo: "texto", conteudo: { texto: "Um" } },
+        { id: "b2", tipo: "texto", conteudo: { texto: "Dois" } }] },
+      { id: "g2", titulo: "Fim", posicao: { x: 800, y: 40 }, blocos: [
+        { id: "b3", tipo: "texto", conteudo: { texto: "Três" } }] }
+    ]
+  }
+  const hospedeiro = new Elemento("div")
+  const movidos = []
+  const soltos = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro,
+    aoMoverBloco: (o) => movidos.push(o),
+    aoSoltarBlocoNoQuadro: (o) => soltos.push(o),
+    ...extra
+  })
+  canvas.desenhar(comDois)
+  return { hospedeiro, canvas, movidos, soltos, fluxo: comDois }
+}
+
+const blocoDe = (h, id) => h.porClasse("ed__bloco").find((b) => b.dadosBloco === id)
+
+test("arrastar um bloco ate outro cartao o leva para la", () => {
+  const { hospedeiro, movidos, fluxo: f } = montarComBlocos()
+  const destino = caixas(cartoesDoFluxo(f)).get("g2")
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", { clientX: destino.x + 40, clientY: destino.y + destino.altura - 10 })
+  document.disparar("mouseup", { clientX: destino.x + 40, clientY: destino.y + destino.altura - 10 })
+
+  assert.deepEqual(movidos.at(-1), { de: "g1", bloco: "b1", para: "g2", antesDe: null })
+})
+
+test("soltar sobre um bloco entra acima dele", () => {
+  const { hospedeiro, movidos, fluxo: f } = montarComBlocos()
+  const destino = caixas(cartoesDoFluxo(f)).get("g2")
+  const faixa = destino.blocos[0]
+  const emCima = { clientX: destino.x + 40, clientY: destino.y + faixa.y + faixa.altura / 2 }
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", emCima)
+  document.disparar("mouseup", emCima)
+
+  assert.deepEqual(movidos.at(-1), { de: "g1", bloco: "b1", para: "g2", antesDe: "b3" })
+})
+
+test("soltar no quadro avisa para virar grupo novo, naquele ponto", () => {
+  const { hospedeiro, soltos } = montarComBlocos()
+  const vazio = { clientX: 200, clientY: 600 }
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", vazio)
+  document.disparar("mouseup", vazio)
+
+  assert.equal(soltos.length, 1)
+  assert.equal(soltos[0].de, "g1")
+  assert.equal(soltos[0].bloco, "b1")
+  assert.deepEqual({ x: soltos[0].x, y: soltos[0].y }, { x: 200, y: 600 })
+})
+
+test("enquanto arrasta, o bloco apaga e o cartao de destino acende", () => {
+  const { hospedeiro, fluxo: f } = montarComBlocos()
+  const destino = caixas(cartoesDoFluxo(f)).get("g2")
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", { clientX: destino.x + 40, clientY: destino.y + 50 })
+
+  assert.ok(hospedeiro.porClasse("ed__bloco-fantasma")[0], "sem fantasma, não se vê o que está indo")
+  assert.equal(blocoDe(hospedeiro, "b1").className.includes("ed__bloco--saindo"), true)
+  assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 1)
+
+  document.disparar("mouseup", { clientX: destino.x + 40, clientY: destino.y + 50 })
+  assert.equal(hospedeiro.porClasse("ed__bloco-fantasma").length, 0, "o fantasma precisa sumir")
+  assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 0)
+})
+
+test("clicar no bloco sem andar continua sendo clique, nao arrasto", () => {
+  const selecoes = []
+  const { hospedeiro, movidos, soltos } = montarComBlocos({ aoSelecionar: (s) => selecoes.push(s) })
+  const bloco = blocoDe(hospedeiro, "b1")
+  bloco.disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", { clientX: 311, clientY: 61 })
+  document.disparar("mouseup", { clientX: 311, clientY: 61 })
+  bloco.disparar("click")
+
+  assert.deepEqual(movidos, [])
+  assert.deepEqual(soltos, [])
+  assert.equal(hospedeiro.porClasse("ed__bloco-fantasma").length, 0)
+  assert.deepEqual(selecoes.at(-1), { grupo: "g1", bloco: "b1" })
+})
+
+test("arrastar um bloco nao arrasta o cartao nem o quadro", () => {
+  const movidosDeCartao = []
+  const { hospedeiro, canvas } = montarComBlocos({ aoMover: (id, p) => movidosDeCartao.push({ id, ...p }) })
+  const antes = canvas.vista()
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", { clientX: 500, clientY: 300 })
+  document.disparar("mouseup", { clientX: 500, clientY: 300 })
+
+  assert.deepEqual(movidosDeCartao, [], "o cartão ficou onde estava")
+  assert.deepEqual(canvas.vista(), antes, "e o quadro também")
+})
+
+test("soltar o bloco em cima dele mesmo nao o manda para acima de si", () => {
+  const { hospedeiro, movidos, fluxo: f } = montarComBlocos()
+  const caixa = caixas(cartoesDoFluxo(f)).get("g1")
+  const propria = caixa.blocos[0]
+  const emCimaDele = {
+    clientX: caixa.x + 40,
+    clientY: caixa.y + propria.y + propria.altura / 2
+  }
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  document.disparar("mousemove", emCimaDele)
+  document.disparar("mouseup", emCimaDele)
+  assert.deepEqual(movidos.at(-1), { de: "g1", bloco: "b1", para: "g1", antesDe: null },
+    "acima de si mesmo não é lugar nenhum")
+})
+
+test("soltar fora do quadro nao leva o bloco a lugar nenhum", () => {
+  const { hospedeiro, movidos, soltos } = montarComBlocos()
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  palco.deslocamento = { left: 272, top: 57 }
+  palco.clientWidth = 900
+  palco.clientHeight = 600
+
+  blocoDe(hospedeiro, "b1").disparar("mousedown", { clientX: 310, clientY: 60, button: 0 })
+  // 100px: está na paleta, antes de o palco começar.
+  document.disparar("mousemove", { clientX: 100, clientY: 300 })
+  document.disparar("mouseup", { clientX: 100, clientY: 300 })
+
+  assert.deepEqual(movidos, [])
+  assert.deepEqual(soltos, [], "soltar na paleta não é soltar no quadro")
 })

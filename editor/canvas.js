@@ -32,7 +32,7 @@ function svg(tag, classe) {
 export function criarCanvas({
   elemento, aoSelecionar = () => {}, aoMover = () => {}, aoTestar = () => {},
   aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {}, aoApagarGrupo = () => {},
-  aoDuplicarGrupo = () => {},
+  aoDuplicarGrupo = () => {}, aoMoverBloco = () => {}, aoSoltarBlocoNoQuadro = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
@@ -292,6 +292,102 @@ export function criarCanvas({
     menu.append(apagar)
     palco.append(menu)
     menuAberto = menu
+  }
+
+  // Arrastar um bloco: sai do cartão e acompanha o cursor. Solto sobre um
+  // cartão, entra nele na altura em que foi largado; solto no quadro, vira um
+  // grupo novo ali. Enquanto não anda nada, continua sendo um clique — é o
+  // mesmo critério do nome do grupo.
+  function iniciarArrastoDeBloco(ev, grupo, bloco) {
+    if (ev.button !== undefined && ev.button !== 0) return
+    ev.preventDefault?.()
+    ev.stopPropagation?.()
+    const inicio = { x: ev.clientX, y: ev.clientY }
+    let andou = false
+    let fantasma = null
+
+    function mover(e) {
+      const dx = e.clientX - inicio.x
+      const dy = e.clientY - inicio.y
+      if (!andou && Math.abs(dx) <= FOLGA_DO_CLIQUE && Math.abs(dy) <= FOLGA_DO_CLIQUE) return
+      if (!andou) {
+        andou = true
+        arrastou = true
+        fantasma = el("div", "ed__bloco-fantasma", rotuloDoBloco(grupo, bloco))
+        palco.append(fantasma)
+        marcarBlocoSaindo(grupo, bloco, true)
+      }
+      const onde = noPalco(e)
+      fantasma.style.setProperty("left", `${onde.x}px`)
+      fantasma.style.setProperty("top", `${onde.y}px`)
+      marcarAlvoDeBloco(alvoDoBloco(e, grupo, bloco))
+    }
+
+    function soltar(e) {
+      document.removeEventListener("mousemove", mover)
+      document.removeEventListener("mouseup", soltar)
+      if (!andou) return
+      fantasma?.remove()
+      marcarBlocoSaindo(grupo, bloco, false)
+      marcarAlvoDeBloco(null)
+
+      const alvo = alvoDoBloco(e, grupo, bloco)
+      if (alvo?.grupo) {
+        aoMoverBloco({ de: grupo, bloco, para: alvo.grupo, antesDe: alvo.antesDe })
+      } else if (alvo?.quadro) {
+        aoSoltarBlocoNoQuadro({ de: grupo, bloco, ...alvo.ponto })
+      }
+    }
+
+    document.addEventListener("mousemove", mover)
+    document.addEventListener("mouseup", soltar)
+  }
+
+  function rotuloDoBloco(grupo, bloco) {
+    const cartao = cartoes(fluxoAtual).find((c) => c.id === grupo)
+    const achado = (cartao?.blocos || []).find((b) => b.id === bloco)
+    return achado?.rotulo || "Bloco"
+  }
+
+  // Onde o bloco cairia: dentro de um cartão (e acima de qual bloco), ou no
+  // quadro. O cartão de origem também vale — mover de lugar dentro do próprio
+  // grupo é um caso legítimo.
+  function alvoDoBloco(ev, grupoDeOrigem, blocoArrastado) {
+    const ponto = paraMundo(vista, noPalco(ev))
+    if (!palcoContem(ev)) return null
+    const grupo = caixaEm(caixasAtuais, ponto)
+    if (!grupo) return { quadro: true, ponto }
+
+    const caixa = caixasAtuais.get(grupo)
+    const sobre = blocoEmCaixa(caixa, ponto)
+    const antesDe = sobre && sobre !== blocoArrastado ? sobre : null
+    return { grupo, antesDe, origem: grupoDeOrigem }
+  }
+
+  function palcoContem(ev) {
+    const area = palco.getBoundingClientRect?.() || { left: 0, top: 0, right: 0, bottom: 0 }
+    return ev.clientX >= area.left && ev.clientX <= area.right &&
+      ev.clientY >= area.top && ev.clientY <= area.bottom
+  }
+
+  function marcarBlocoSaindo(grupo, bloco, saindo) {
+    for (const no of acharNaCamada("ed__bloco")) {
+      if (no.dadosGrupo !== grupo || no.dadosBloco !== bloco) continue
+      const base = no.className.replace(" ed__bloco--saindo", "")
+      no.className = saindo ? `${base} ed__bloco--saindo` : base
+    }
+  }
+
+  function marcarAlvoDeBloco(alvo) {
+    for (const [grupo, no] of nosDeCartoes) {
+      const base = no.className.replace(" ed__cartao--recebendo", "")
+      no.className = grupo === alvo?.grupo ? `${base} ed__cartao--recebendo` : base
+    }
+    for (const no of acharNaCamada("ed__bloco")) {
+      const base = no.className.replace(" ed__bloco--acima", "")
+      const acertou = alvo?.antesDe && no.dadosBloco === alvo.antesDe && no.dadosGrupo === alvo.grupo
+      no.className = acertou ? `${base} ed__bloco--acima` : base
+    }
   }
 
   function desenharFio() {
@@ -567,6 +663,13 @@ export function criarCanvas({
         // decorar a ordem em que os cartões foram desenhados.
         noBloco.dadosGrupo = cartao.id
         noBloco.dadosBloco = bloco.id
+
+        // O bloco é alça dele mesmo: arrastar daqui leva o bloco, não o
+        // cartão. O cartão continua se arrastando pelas bordas, pelo
+        // cabeçalho e pelo rodapé.
+        noBloco.addEventListener("mousedown", (ev) => {
+          iniciarArrastoDeBloco(ev, cartao.id, bloco.id)
+        })
         const topo = el("div", "ed__bloco-topo")
         topo.append(el("span", "ed__bloco-rotulo", bloco.rotulo))
 

@@ -108,6 +108,52 @@ export function acrescentarBloco(fluxo, { grupo, tipo, apos = null }) {
   })
 }
 
+// Levar um bloco de um grupo para outro, ou mudar o lugar dele dentro do
+// mesmo grupo. `antesDe` é o bloco que vai ficar logo abaixo dele; sem isso,
+// entra no fim.
+//
+// Um grupo que fica sem nenhum bloco continua existindo: ele ainda é um ponto
+// do fluxo, com as ligações dele, e apagá-lo por conta própria levaria junto
+// caminhos que ninguém pediu para apagar.
+export function moverBlocoEntreGrupos(fluxo, { de, bloco, para, antesDe = null }) {
+  const origem = (fluxo.grupos || []).find((g) => g && g.id === de)
+  const oBloco = (origem?.blocos || []).find((b) => b && b.id === bloco)
+  if (!oBloco) return fluxo
+  if (!(fluxo.grupos || []).some((g) => g && g.id === para)) return fluxo
+  if (de === para && antesDe === bloco) return fluxo
+
+  const grupos = (fluxo.grupos || []).map((grupo) => {
+    if (!grupo) return grupo
+    let blocos = grupo.blocos || []
+    if (grupo.id === de) blocos = blocos.filter((b) => b && b.id !== bloco)
+    if (grupo.id === para) {
+      const lista = [...blocos]
+      const onde = antesDe ? lista.findIndex((b) => b && b.id === antesDe) : -1
+      if (onde === -1) lista.push(oBloco)
+      else lista.splice(onde, 0, oBloco)
+      blocos = lista
+    }
+    return blocos === grupo.blocos ? grupo : { ...grupo, blocos }
+  })
+  return { ...fluxo, grupos }
+}
+
+// Soltar o bloco no quadro: ele sai do grupo de origem e vira um grupo novo
+// naquele ponto. Devolve o fluxo e o id do grupo que nasceu, porque quem
+// chamou vai querer selecioná-lo.
+export function blocoViraGrupo(fluxo, { de, bloco, x, y }) {
+  const origem = (fluxo.grupos || []).find((g) => g && g.id === de)
+  const oBloco = (origem?.blocos || []).find((b) => b && b.id === bloco)
+  if (!oBloco) return { fluxo, grupo: null }
+
+  const comGrupo = criarGrupo(fluxo, { x, y })
+  const novo = comGrupo.grupos[comGrupo.grupos.length - 1]
+  return {
+    fluxo: moverBlocoEntreGrupos(comGrupo, { de, bloco, para: novo.id }),
+    grupo: novo.id
+  }
+}
+
 export function removerBloco(fluxo, { grupo, bloco }) {
   return trocarGrupo(fluxo, grupo, (g) => {
     const blocos = (g.blocos || []).filter(Boolean)

@@ -1110,3 +1110,63 @@ test("arrastar um tipo continua funcionando com o icone dentro", () => {
   assert.equal(novos.length, 1)
   assert.equal(novos[0].blocos[0].tipo, "video")
 })
+
+// --- levar blocos de um grupo para outro -----------------------------------
+
+const arrastarBloco = (hospedeiro, blocoId, destino) => {
+  const bloco = porClasse(hospedeiro, "ed__bloco").find((b) => b.dadosBloco === blocoId)
+  bloco.disparar("mousedown", { clientX: 10, clientY: 10, button: 0 })
+  document.disparar("mousemove", destino)
+  document.disparar("mouseup", destino)
+}
+
+test("arrastar o bloco para outro grupo muda o fluxo e redesenha", async () => {
+  const { cartoes, caixas } = await import("../editor/modelo.js")
+  const f = fluxoBase()
+  f.grupos[1].blocos.push({ id: "b2", tipo: "texto", conteudo: { texto: "Tchau" } })
+  const { hospedeiro, editor } = montar(f)
+  const destino = caixas(cartoes(editor.fluxo())).get("g2")
+
+  arrastarBloco(hospedeiro, "b1", naJanela(hospedeiro, {
+    x: destino.x + 30, y: destino.y + destino.altura - 8
+  }))
+
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), [])
+  assert.deepEqual(editor.fluxo().grupos[1].blocos.map((b) => b.id), ["b2", "b1"])
+  assert.equal(editor.selecao().grupo, "g2", "o bloco continua selecionado onde foi parar")
+})
+
+test("soltar o bloco no quadro cria um grupo com ele", async () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  arrastarBloco(hospedeiro, "b1", naJanela(hospedeiro, { x: 150, y: 300 }))
+
+  const novo = editor.fluxo().grupos.find((g) => !antes.has(g.id))
+  assert.ok(novo, "o grupo novo precisa existir")
+  assert.deepEqual(novo.blocos.map((b) => b.id), ["b1"])
+  assert.deepEqual(editor.fluxo().grupos[0].blocos, [], "e sair de onde estava")
+  assert.equal(porClasse(hospedeiro, "ed__cartao").length, 3)
+  assert.equal(editor.selecao().grupo, novo.id)
+})
+
+test("levar um bloco cabe num desfazer so", async () => {
+  const { cartoes, caixas } = await import("../editor/modelo.js")
+  const { hospedeiro, editor } = montar()
+  const destino = caixas(cartoes(editor.fluxo())).get("g2")
+  arrastarBloco(hospedeiro, "b1", naJanela(hospedeiro, { x: destino.x + 30, y: destino.y + 20 }))
+  assert.deepEqual(editor.fluxo().grupos[1].blocos.map((b) => b.id), ["b1"])
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), ["b1"])
+  assert.deepEqual(editor.fluxo().grupos[1].blocos, [])
+})
+
+test("o bloco virar grupo tambem cabe num desfazer so", () => {
+  const { hospedeiro, editor } = montar()
+  arrastarBloco(hospedeiro, "b1", naJanela(hospedeiro, { x: 150, y: 300 }))
+  assert.equal(editor.fluxo().grupos.length, 3)
+
+  porClasse(hospedeiro, "ed__passo--desfazer")[0].disparar("click")
+  assert.equal(editor.fluxo().grupos.length, 2)
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), ["b1"])
+})
