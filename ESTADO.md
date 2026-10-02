@@ -763,3 +763,16 @@ Conferido no Chrome com mouse real: o bloco saiu de "Contato" (3 → 2) e entrou
 em "Fim" (3 → 4), com o fantasma "Texto" no meio do caminho e o cartão de
 destino aceso; e soltar um bloco no vazio criou o "Grupo #7" com ele dentro,
 que um desfazer desfez.
+
+### O que se arrasta da paleta é a própria caixa
+
+611 testes. Arrastar um tipo mostrava um adesivo escuro com o nome. Agora o
+que acompanha o cursor é a **própria caixa da paleta** — mesmo tamanho, mesmo
+ícone, mesma borda colorida, inclinada e com sombra para ficar claro que está
+no ar. E ela fica **presa onde a mão pegou**: quem agarrou pela beirada
+continua segurando pela beirada, em vez de a caixa saltar para o centro do
+cursor.
+
+Medido no Chrome: caixa da paleta 116×36, fantasma 117×40 (a diferença é a
+inclinação), e o cursor a 21,12 da borda dele depois de ter pego a 20,10 da
+borda dela.

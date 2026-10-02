@@ -1170,3 +1170,49 @@ test("o bloco virar grupo tambem cabe num desfazer so", () => {
   assert.equal(editor.fluxo().grupos.length, 2)
   assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), ["b1"])
 })
+
+test("o que se arrasta da paleta e a propria caixa, com icone e tamanho", () => {
+  const { hospedeiro } = montar()
+  const botao = tipoDaPaleta(hospedeiro, "Botões")
+  botao.deslocamento = { left: 30, top: 200 }
+  botao.clientWidth = 150
+  botao.clientHeight = 44
+
+  botao.disparar("mousedown", { button: 0, clientX: 40, clientY: 210, currentTarget: botao })
+  document.disparar("mousemove", { clientX: 500, clientY: 400 })
+
+  const fantasma = porClasse(hospedeiro, "ed__fantasma")[0]
+  assert.ok(fantasma.className.includes("ed__fantasma--tipo"), "arrastar o nome solto não mostra o que vai cair")
+  assert.equal(fantasma.porClasse("ed__tipo-icone").length, 1)
+  assert.equal(fantasma.porClasse("ed__tipo-rotulo")[0].textContent, "Botões")
+  assert.equal(fantasma.style.propriedades.width, "150px")
+  assert.equal(fantasma.style.propriedades.height, "44px")
+
+  document.disparar("mouseup", { clientX: 500, clientY: 400 })
+})
+
+test("o fantasma fica preso onde a mao pegou, nao salta para o cursor", () => {
+  const { hospedeiro } = montar()
+  const botao = tipoDaPaleta(hospedeiro, "Texto")
+  botao.deslocamento = { left: 30, top: 200 }
+  botao.clientWidth = 150
+  botao.clientHeight = 44
+
+  // Pegou a 10px da borda esquerda e 10 do topo.
+  botao.disparar("mousedown", { button: 0, clientX: 40, clientY: 210, currentTarget: botao })
+  document.disparar("mousemove", { clientX: 500, clientY: 400 })
+
+  const fantasma = porClasse(hospedeiro, "ed__fantasma")[0]
+  assert.equal(fantasma.style.propriedades.left, "490px", "manteve os 10px da borda")
+  assert.equal(fantasma.style.propriedades.top, "390px")
+  document.disparar("mouseup", { clientX: 500, clientY: 400 })
+})
+
+test("sem saber o tamanho da caixa, o fantasma ainda aparece", () => {
+  const { hospedeiro } = montar()
+  const botao = tipoDaPaleta(hospedeiro, "Texto")
+  botao.disparar("mousedown", { button: 0, clientX: 5, clientY: 5 })
+  document.disparar("mousemove", { clientX: 300, clientY: 200 })
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 1)
+  document.disparar("mouseup", { clientX: 300, clientY: 200 })
+})

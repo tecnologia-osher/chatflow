@@ -352,6 +352,14 @@ html, body { margin: 0; height: 100%; }
 .ed__fantasma { position: fixed; z-index: 40; pointer-events: none;
   padding: 0.3rem 0.6rem; border-radius: 7px; font-size: 0.78rem;
   background: var(--ed-acento); color: #fff; box-shadow: 0 6px 18px rgba(20,25,40,0.22); }
+/* O que se arrasta da paleta é a própria caixa dela: mesmo tamanho, mesmo
+   ícone, mesma borda colorida — só inclinada e com sombra, para ficar claro
+   que está no ar. */
+.ed__fantasma--tipo { display: flex; align-items: center; gap: 0.45rem; box-sizing: border-box;
+  padding: 0.55rem 0.6rem; border-radius: 8px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie);
+  color: var(--ed-texto); font-size: 0.82rem;
+  transform: rotate(-2deg); box-shadow: 0 10px 24px rgba(20,25,40,0.22); opacity: 0.95; }
 .ed__area-painel, .ed__area-preview {
   position: fixed; top: 0; left: 0; width: 0; height: 0; }
 .ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);

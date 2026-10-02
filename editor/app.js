@@ -454,16 +454,8 @@ export function criarEditor({
       for (const definicao of lista) {
         const botao = el("button", `ed__tipo ed__tipo--${categoria}`)
         botao.setAttribute("type", "button")
-        const caminho = ICONE_DO_TIPO[definicao.tipo]
-        if (caminho) {
-          const desenho = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-          desenho.setAttribute("class", "ed__tipo-icone")
-          desenho.setAttribute("viewBox", "0 0 16 16")
-          const traco = document.createElementNS("http://www.w3.org/2000/svg", "path")
-          traco.setAttribute("d", caminho)
-          desenho.append(traco)
-          botao.append(desenho)
-        }
+        const icone = iconeDoTipo(definicao.tipo)
+        if (icone) botao.append(icone)
         botao.append(el("span", "ed__tipo-rotulo", definicao.rotulo))
         botao.addEventListener("mousedown", (ev) => arrastarTipo(ev, definicao))
         botao.addEventListener("click", () => {
@@ -495,6 +487,18 @@ export function criarEditor({
     redesenhar()
   }
 
+  function iconeDoTipo(tipo) {
+    const caminho = ICONE_DO_TIPO[tipo]
+    if (!caminho) return null
+    const desenho = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    desenho.setAttribute("class", "ed__tipo-icone")
+    desenho.setAttribute("viewBox", "0 0 16 16")
+    const traco = document.createElementNS("http://www.w3.org/2000/svg", "path")
+    traco.setAttribute("d", caminho)
+    desenho.append(traco)
+    return desenho
+  }
+
   // Arrastar um tipo da paleta até o quadro. Solto no vazio, cria um grupo
   // ali mesmo com o bloco dentro; solto sobre um cartão, entra nele. É o que
   // substituiu o botão "Novo grupo": grupo vazio não serve para nada, e o
@@ -502,13 +506,30 @@ export function criarEditor({
   function arrastarTipo(ev, definicao) {
     if (ev.button !== undefined && ev.button !== 0) return
     ev.preventDefault?.()
-    const fantasma = el("div", "ed__fantasma", definicao.rotulo)
+
+    // O fantasma é a própria caixa da paleta, do mesmo tamanho e com o mesmo
+    // ícone: o que se vê sendo levado é a coisa, não o nome dela. E ele fica
+    // preso onde a mão pegou — se a pessoa agarrou pela beirada, continua
+    // pela beirada, em vez de saltar para o centro do cursor.
+    const caixa = ev.currentTarget?.getBoundingClientRect?.() || null
+    const presoEm = caixa
+      ? { x: ev.clientX - caixa.left, y: ev.clientY - caixa.top }
+      : { x: 20, y: 16 }
+
+    const fantasma = el("div", `ed__fantasma ed__fantasma--tipo ed__tipo--${definicao.categoria}`)
+    const icone = iconeDoTipo(definicao.tipo)
+    if (icone) fantasma.append(icone)
+    fantasma.append(el("span", "ed__tipo-rotulo", definicao.rotulo))
+    if (caixa) {
+      fantasma.style.setProperty("width", `${Math.round(caixa.width)}px`)
+      fantasma.style.setProperty("height", `${Math.round(caixa.height)}px`)
+    }
     let visivel = false
 
     function mover(e) {
       if (!visivel) { raiz.append(fantasma); visivel = true }
-      fantasma.style.setProperty("left", `${e.clientX + 14}px`)
-      fantasma.style.setProperty("top", `${e.clientY + 14}px`)
+      fantasma.style.setProperty("left", `${e.clientX - presoEm.x}px`)
+      fantasma.style.setProperty("top", `${e.clientY - presoEm.y}px`)
     }
 
     function soltar(e) {
