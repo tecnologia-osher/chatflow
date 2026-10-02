@@ -64,7 +64,7 @@ test("a paleta oferece todos os tipos do catalogo, agrupados", () => {
   const itens = porClasse(hospedeiro, "ed__tipo")
   assert.equal(itens.length, todos().length)
   const categorias = porClasse(hospedeiro, "ed__categoria").map((c) => c.textContent)
-  for (const c of ["Fala", "Entrada", "Lógica", "Conexão"]) assert.ok(categorias.includes(c), `faltou ${c}`)
+  for (const c of ["Bolhas", "Entrada", "Lógica", "Conexão"]) assert.ok(categorias.includes(c), `faltou ${c}`)
 })
 
 test("clicar num tipo com grupo selecionado acrescenta o bloco nele", () => {

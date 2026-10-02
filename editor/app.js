@@ -17,7 +17,7 @@ import { validarFluxo } from "../motor/validar.js"
 import { criarPreview } from "./preview.js"
 
 const NOME_DA_CATEGORIA = {
-  fala: "Fala", entrada: "Entrada", logica: "Lógica", conexao: "Conexão"
+  fala: "Bolhas", entrada: "Entrada", logica: "Lógica", conexao: "Conexão"
 }
 
 function el(tag, classe, texto) {
