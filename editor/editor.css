@@ -140,7 +140,10 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__salvar--pendente { background: var(--ed-acento); color: #fff;
   border-color: var(--ed-acento); }
 .ed__barra button.ed__salvar:disabled { color: var(--ed-suave); cursor: default; }
-.ed__testar { font-weight: 600; }
+/* Testar, Centralizar e Salvar com o mesmo peso e o mesmo respiro das abas:
+   é tudo barra, e peso diferente fazia parecer que uns valiam mais. */
+.ed__barra button.ed__testar, .ed__barra button.ed__ajustar,
+.ed__barra button.ed__salvar { font-weight: 600; padding: 0.4rem 0.8rem; }
 .ed__oculto { display: none; }
 .ed__barra button.ed__testar:hover, .ed__barra button.ed__ajustar:hover {
   background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
