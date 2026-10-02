@@ -68,3 +68,13 @@ test("o painel solto sai da tela e volta pela beira", () => {
   assert.match(css, /\.ed__paleta \{[^}]*transition: transform/,
     "sem transição ele pula, em vez de correr")
 })
+
+test("nada manda em grid-template-columns no .ed, que e uma grade de linhas", () => {
+  // O header é irmão do corpo: duas linhas. Uma regra de colunas sobrando —
+  // de uma media query antiga, por exemplo — põe o header dentro da primeira
+  // coluna e espreme a barra inteira. Foi o que aconteceu abaixo de 1100px.
+  const culpadas = regras.filter((r) =>
+    /(^|[\s,])\.ed(\s*\{|,|$)/.test(r.seletor + " {") && /grid-template-columns/.test(r.corpo))
+  assert.deepEqual(culpadas.map((r) => r.seletor), [])
+  assert.match(css, /\.ed \{[^}]*grid-template-rows: auto 1fr/)
+})

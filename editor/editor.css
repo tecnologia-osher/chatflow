@@ -610,6 +610,10 @@ html, body { margin: 0; height: 100%; }
   color: var(--ed-suave); font-size: 0.82rem; }
 .ed__vazio { color: var(--ed-suave); }
 
+/* Sobra da época em que a coluna da esquerda era uma coluna da grade: a regra
+   continuou mandando em `grid-template-columns` depois que `.ed` virou duas
+   LINHAS, e abaixo de 1100px o header era espremido em 13rem e transbordava.
+   O que esta tela quer é um painel mais estreito, não uma coluna. */
 @media (max-width: 1100px) {
-  .ed { grid-template-columns: 13rem 1fr; }
+  .ed { --ed-lado: 13rem; }
 }
