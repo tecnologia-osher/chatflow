@@ -19,6 +19,7 @@ const NAO_SOBEM = new Set(["focus", "blur"])
 
 class Elemento {
   constructor(tag, svg = false) {
+    this.ehSvg = svg
     this.tagName = String(tag).toUpperCase()
     this.filhos = []
     this.className = ""
@@ -175,6 +176,24 @@ class Elemento {
     // Quem está com o cursor. Sem isto, "a caixa nova recebe o foco" não teria
     // como falhar num teste.
     if (globalThis.document) globalThis.document.focado = this
+  }
+
+  // Cópia funda, como `cloneNode(true)`: mesma marcação, mesmos atributos,
+  // mesmo texto — e **sem** os ouvintes, que o DOM de verdade também não
+  // copia. É o que permite arrastar uma cópia do que está na tela.
+  cloneNode(fundo = false) {
+    const copia = new Elemento(this.tagName, this.ehSvg === true)
+    copia.className = this.className
+    for (const [nome, valor] of Object.entries(this.atributos)) copia.setAttribute(nome, valor)
+    for (const [nome, valor] of Object.entries(this.style.propriedades)) {
+      copia.style.setProperty(nome, valor)
+    }
+    if (this.value !== undefined) copia.value = this.value
+    copia.dadosGrupo = this.dadosGrupo
+    copia.dadosBloco = this.dadosBloco
+    if (!this.filhos.length) copia.textContent = this._texto
+    else if (fundo) copia.append(...this.filhos.map((f) => f.cloneNode(true)))
+    return copia
   }
 
   // Percorre a árvore inteira coletando quem tem a classe pedida.

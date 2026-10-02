@@ -303,6 +303,13 @@ export function criarCanvas({
     ev.preventDefault?.()
     ev.stopPropagation?.()
     const inicio = { x: ev.clientX, y: ev.clientY }
+    const noDoBloco = ev.currentTarget || ev.target
+    const medida = noDoBloco?.getBoundingClientRect?.() || null
+    // Onde a mão pegou, em pixels de tela: o fantasma fica preso ali, em vez
+    // de saltar para o centro do cursor.
+    const presoEm = medida
+      ? { x: ev.clientX - medida.left, y: ev.clientY - medida.top }
+      : { x: 20, y: 14 }
     let andou = false
     let fantasma = null
 
@@ -313,13 +320,24 @@ export function criarCanvas({
       if (!andou) {
         andou = true
         arrastou = true
-        fantasma = el("div", "ed__bloco-fantasma", rotuloDoBloco(grupo, bloco))
+        // O que se arrasta é uma cópia do próprio bloco, do tamanho em que
+        // ele está na tela — não um adesivo com o nome do tipo.
+        fantasma = el("div", "ed__bloco-fantasma")
+        const copia = noDoBloco?.cloneNode?.(true)
+        if (copia) {
+          copia.className = `${copia.className} ed__bloco--copia`
+          fantasma.append(copia)
+          fantasma.style.setProperty("width", `${Math.round((medida?.width || 0) / vista.escala)}px`)
+          fantasma.style.setProperty("transform", `scale(${vista.escala}) rotate(-2deg)`)
+        } else {
+          fantasma.textContent = rotuloDoBloco(grupo, bloco)
+        }
         palco.append(fantasma)
         marcarBlocoSaindo(grupo, bloco, true)
       }
       const onde = noPalco(e)
-      fantasma.style.setProperty("left", `${onde.x}px`)
-      fantasma.style.setProperty("top", `${onde.y}px`)
+      fantasma.style.setProperty("left", `${onde.x - presoEm.x}px`)
+      fantasma.style.setProperty("top", `${onde.y - presoEm.y}px`)
       marcarAlvoDeBloco(alvoDoBloco(e, grupo, bloco))
     }
 

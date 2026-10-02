@@ -776,3 +776,18 @@ cursor.
 Medido no Chrome: caixa da paleta 116×36, fantasma 117×40 (a diferença é a
 inclinação), e o cursor a 21,12 da borda dele depois de ter pego a 20,10 da
 borda dela.
+
+### E a mesma coisa para os blocos dentro do grupo
+
+614 testes. O bloco arrastado era um adesivo com o nome do tipo. Agora é uma
+**cópia do próprio bloco**, com o texto que está nele, do tamanho em que está
+na tela (inclusive a escala do zoom), inclinada e com sombra — e presa onde a
+mão pegou, como a caixa da paleta.
+
+Medido no Chrome: bloco 158×43 na tela, fantasma 160×45 (a diferença é a
+inclinação), com o conteúdo "Texto⋯Show, prazer em te conhecer," dentro, e o
+cursor a 26,18 da borda dele depois de ter pego a 25,12 da borda do bloco.
+
+O dublê de DOM ganhou `cloneNode(true)`: cópia funda com marcação, atributos,
+estilo e texto, e **sem** os ouvintes — que o DOM de verdade também não copia.
+Sem isso, a cópia arrastada começaria um segundo arrasto ao ser tocada.

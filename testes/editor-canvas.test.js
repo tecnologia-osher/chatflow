@@ -1410,3 +1410,50 @@ test("soltar fora do quadro nao leva o bloco a lugar nenhum", () => {
   assert.deepEqual(movidos, [])
   assert.deepEqual(soltos, [], "soltar na paleta não é soltar no quadro")
 })
+
+test("o bloco arrastado e uma copia dele mesmo, nao um adesivo com o nome", () => {
+  const { hospedeiro } = montarComBlocos()
+  const bloco = blocoDe(hospedeiro, "b1")
+  bloco.deslocamento = { left: 300, top: 100 }
+  bloco.clientWidth = 230
+  bloco.clientHeight = 54
+
+  bloco.disparar("mousedown", { clientX: 320, clientY: 115, button: 0, currentTarget: bloco })
+  document.disparar("mousemove", { clientX: 600, clientY: 400 })
+
+  const fantasma = hospedeiro.porClasse("ed__bloco-fantasma")[0]
+  const copia = fantasma.porClasse("ed__bloco--copia")[0]
+  assert.ok(copia, "o que se arrasta precisa ser o bloco, não o nome dele")
+  assert.match(copia.textContent, /Um/, "com o conteúdo que está na tela")
+  assert.match(fantasma.style.propriedades.width || "", /^\d+px$/, "e do tamanho dele")
+
+  document.disparar("mouseup", { clientX: 600, clientY: 400 })
+})
+
+test("a copia fica presa onde a mao pegou", () => {
+  const { hospedeiro } = montarComBlocos()
+  const bloco = blocoDe(hospedeiro, "b1")
+  bloco.deslocamento = { left: 300, top: 100 }
+  bloco.clientWidth = 230
+  bloco.clientHeight = 54
+  // Pegou a 20px da esquerda e 15 do topo do bloco.
+  bloco.disparar("mousedown", { clientX: 320, clientY: 115, button: 0, currentTarget: bloco })
+  document.disparar("mousemove", { clientX: 600, clientY: 400 })
+
+  const fantasma = hospedeiro.porClasse("ed__bloco-fantasma")[0]
+  assert.equal(fantasma.style.propriedades.left, "580px")
+  assert.equal(fantasma.style.propriedades.top, "385px")
+  document.disparar("mouseup", { clientX: 600, clientY: 400 })
+})
+
+test("a copia nao leva os ouvintes do original", () => {
+  const { hospedeiro, movidos } = montarComBlocos()
+  const bloco = blocoDe(hospedeiro, "b1")
+  bloco.disparar("mousedown", { clientX: 310, clientY: 60, button: 0, currentTarget: bloco })
+  document.disparar("mousemove", { clientX: 600, clientY: 400 })
+
+  const copia = hospedeiro.porClasse("ed__bloco--copia")[0]
+  copia.disparar("mousedown", { clientX: 600, clientY: 400, button: 0 })
+  document.disparar("mouseup", { clientX: 600, clientY: 400 })
+  assert.equal(movidos.length <= 1, true, "clicar na cópia não pode começar outro arrasto")
+})
