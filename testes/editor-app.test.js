@@ -1288,15 +1288,25 @@ test("com a chave colada, busca e monta a tabela com as colunas do fluxo", async
     ["02/10 11:05", "concluído", "Ana"])
 })
 
-test("planilha vazia diz que ninguem entrou, em vez de tabela sem linha", async () => {
-  const { hospedeiro } = montarComLeads([])
+test("sem ninguem ainda, a tabela ja mostra as colunas do fluxo", async () => {
+  const f = fluxoBase()
+  f.grupos[0].blocos.push(
+    { id: "b_nome", tipo: "entrada_texto", salvar_em: "nome", conteudo: { rotulo: "Seu nome" } })
+  const { hospedeiro } = montarComLeads([], f)
   abrirResultados(hospedeiro)
   porClasse(hospedeiro, "ed__chave-campo")[0].value = "segredo"
   porClasse(hospedeiro, "ed__chave")[0].disparar("submit")
   await assentar()
 
-  assert.equal(porClasse(hospedeiro, "ed__tabela").length, 0)
-  assert.match(porClasse(hospedeiro, "ed__resultados-vazio")[0].textContent, /ninguém entrou/i)
+  // A tabela fica pronta: quando o primeiro lead cair, ele entra como linha
+  // embaixo do cabeçalho, sem nada mudar de lugar.
+  assert.deepEqual(porClasse(hospedeiro, "ed__tabela-cabecalho").map((c) => c.textContent),
+    ["Quando", "Situação", "Seu nome"])
+  const vazia = porClasse(hospedeiro, "ed__tabela-celula--vazia")[0]
+  assert.ok(vazia, "a tabela precisa dizer que ainda não há ninguém")
+  assert.match(vazia.textContent, /ninguém entrou/i)
+  assert.equal(vazia.atributos.colspan, "3", "a frase atravessa a tabela inteira")
+  assert.equal(porClasse(hospedeiro, "ed__resultados-conta").length, 0, "zero pessoas não se conta")
 })
 
 test("chave recusada aparece na tela, e a tabela nao mente", async () => {

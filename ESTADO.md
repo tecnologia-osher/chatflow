@@ -854,3 +854,13 @@ do script), publicar, e colar a mesma frase na aba Resultados.
 Enquanto isso não acontece, a aba diz exatamente isso em vez de mentir: o
 Apps Script antigo responde sem `linhas`, e devolver lista vazia ali diria
 "ninguém entrou no chat" para uma planilha possivelmente cheia.
+
+### A tabela de resultados existe antes do primeiro lead
+
+638 testes. Com a planilha vazia, a aba mostrava uma frase e nenhuma tabela.
+Agora a tabela aparece de qualquer jeito, com as colunas do fluxo e uma linha
+dizendo que ninguém entrou ainda — quando o primeiro lead cair, ele entra
+embaixo do cabeçalho e nada muda de lugar.
+
+Erro de leitura continua sem tabela: ali não há dado nenhum para mostrar, e
+cabeçalho sozinho ao lado de "chave inválida" pareceria planilha vazia.

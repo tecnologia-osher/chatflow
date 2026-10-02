@@ -623,12 +623,9 @@ export function criarEditor({
       return
     }
 
-    if (!leads.length) {
-      areaResultados.append(el("p", "ed__resultados-vazio",
-        "Ninguém entrou no chat ainda — ou a planilha deste cliente está vazia."))
-      return
-    }
-
+    // A tabela aparece mesmo sem ninguém: as colunas saem do fluxo, então ela
+    // já mostra o que vai ser perguntado. Quando o primeiro lead cair, ele
+    // entra como uma linha embaixo do cabeçalho — nada muda de lugar.
     const colunas = colunasDosResultados(atual, leads)
     const tabela = el("table", "ed__tabela")
     const cabecalho = el("tr", "ed__tabela-linha")
@@ -647,11 +644,22 @@ export function criarEditor({
       }
       tabela.append(no)
     }
+
+    if (!leads.length) {
+      const no = el("tr", "ed__tabela-linha")
+      const celula = el("td", "ed__tabela-celula ed__tabela-celula--vazia",
+        "Ninguém entrou no chat ainda. Quando alguém entrar, aparece aqui.")
+      celula.setAttribute("colspan", String(colunas.length))
+      no.append(celula)
+      tabela.append(no)
+    }
     const rolagem = el("div", "ed__tabela-rolagem")
     rolagem.append(tabela)
     areaResultados.append(rolagem)
-    areaResultados.append(el("p", "ed__resultados-conta",
-      `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`))
+    if (leads.length) {
+      areaResultados.append(el("p", "ed__resultados-conta",
+        `${leads.length} ${leads.length === 1 ? "pessoa" : "pessoas"} · a mais recente primeiro`))
+    }
   }
 
   function formularioDaChave() {

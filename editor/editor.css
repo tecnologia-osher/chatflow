@@ -136,6 +136,7 @@ html, body { margin: 0; height: 100%; }
 .ed__tabela-linha:last-child .ed__tabela-celula { border-bottom: none; }
 .ed__tabela-cabecalho:last-child, .ed__tabela-celula:last-child { border-right: none; }
 .ed__tabela-linha:hover .ed__tabela-celula { background: var(--ed-fundo); }
+.ed__tabela-celula--vazia { color: var(--ed-suave); text-align: center; padding: 1.4rem 0.9rem; }
 /* Pedir a chave: caixa pequena, texto curto, sem parecer formulário de login. */
 .ed__chave { display: grid; gap: 0.5rem; max-width: 26rem; padding: 1rem;
   border: 1px solid var(--ed-linha); border-radius: 10px; background: var(--ed-superficie); }
