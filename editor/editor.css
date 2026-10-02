@@ -15,8 +15,11 @@
   --ed-recado-fundo: #fff5ec;
   --ed-recado-texto: #8a4a1d;
   --ed-seta: #b6bcc6;
-  --ed-conector: var(--ed-entrada);
-  --ed-conector-halo: rgba(234, 123, 60, 0.18);
+  /* O azul do Salvar é a cor de ação do editor: bolinhas, linhas, alvos e
+     realces do quadro usam ela. O laranja ficou sendo só a cor da categoria
+     "entrada" na paleta, que é onde ele distingue uma coisa de outra. */
+  --ed-conector: var(--ed-acento);
+  --ed-conector-halo: rgba(12, 35, 64, 0.16);
   /* Onde fica o centro das bolinhas, medido da borda do cartão. Zero é em
      cima da borda: metade da bolinha dentro do cartão, metade no quadro —
      é dali que a linha sai, e é onde ela encosta no grupo em vez de flutuar
@@ -101,9 +104,10 @@ html, body { margin: 0; height: 100%; }
 .ed__abas { display: flex; align-items: center; gap: 0.15rem; }
 .ed__barra button.ed__aba { border-color: transparent; background: transparent;
   color: var(--ed-suave); font-weight: 600; padding: 0.4rem 0.8rem; }
-.ed__barra button.ed__aba:hover { background: var(--ed-fundo); color: var(--ed-texto); }
-.ed__barra button.ed__aba--ativa { background: var(--ed-superficie); color: var(--ed-texto);
-  border-color: var(--ed-linha); box-shadow: 0 1px 2px rgba(20,25,40,0.06); }
+/* Passar o mouse e estar escolhido falam a mesma língua do Salvar: azul com
+   letra branca. Antes o escolhido era um cinza que mal se via. */
+.ed__barra button.ed__aba:hover, .ed__barra button.ed__aba--ativa {
+  background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 
 /* Tema e Resultados ainda não existem: a tela diz isso em vez de ficar vazia. */
 .ed__em-breve { display: grid; place-content: center; gap: 0.4rem; text-align: center;
@@ -138,7 +142,8 @@ html, body { margin: 0; height: 100%; }
 .ed__barra button.ed__salvar:disabled { color: var(--ed-suave); cursor: default; }
 .ed__testar { font-weight: 600; }
 .ed__oculto { display: none; }
-.ed__testar:hover { border-color: var(--ed-acento); }
+.ed__barra button.ed__testar:hover, .ed__barra button.ed__ajustar:hover {
+  background: var(--ed-acento); color: #fff; border-color: var(--ed-acento); }
 .ed__problemas:not(:empty) { padding: 0.6rem 1rem; background: var(--ed-problema-fundo); color: var(--ed-erro);
   border-top: 1px solid var(--ed-linha); font-size: 0.82rem; }
 
@@ -154,7 +159,7 @@ html, body { margin: 0; height: 100%; }
 .ed__mundo { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 .ed__setas { position: absolute; overflow: visible; width: 1px; height: 1px; pointer-events: none; }
 .ed__seta { stroke: var(--ed-seta); stroke-width: 2; }
-.ed__seta--opcao { stroke: var(--ed-entrada); }
+.ed__seta--opcao { stroke: var(--ed-conector); }
 .ed__seta--condicao { stroke: var(--ed-logica); }
 .ed__seta--evento { stroke-dasharray: 5 4; }
 .ed__seta--orfa { stroke: var(--ed-erro); stroke-dasharray: 3 3; }
@@ -179,9 +184,9 @@ html, body { margin: 0; height: 100%; }
 .ed__cartao:active { cursor: grabbing; }
 /* O bloco que está sendo levado embora, e o cartão que vai recebê-lo. */
 .ed__bloco--saindo { opacity: 0.35; }
-.ed__cartao--recebendo { border-color: var(--ed-entrada);
+.ed__cartao--recebendo { border-color: var(--ed-conector);
   box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
-.ed__bloco--acima { box-shadow: inset 0 2px 0 var(--ed-entrada); }
+.ed__bloco--acima { box-shadow: inset 0 2px 0 var(--ed-conector); }
 /* O bloco sendo levado é uma cópia dele mesmo, do tamanho em que está na
    tela, inclinada e com sombra — como a caixa que se arrasta da paleta. */
 .ed__bloco-fantasma { position: absolute; z-index: 25; pointer-events: none;
@@ -296,8 +301,8 @@ html, body { margin: 0; height: 100%; }
    é digitar, e a barra de texto diz onde a letra vai cair. */
 /* Passar o mouse precisa acender a caixa: sem isso, com quatro botões um
    embaixo do outro, a pessoa não sabe em qual vai clicar. */
-.ed__opcao-campo:hover { border-color: var(--ed-entrada); background: var(--ed-fundo); }
-.ed__opcao-campo:focus { cursor: text; outline: none; border-color: var(--ed-entrada);
+.ed__opcao-campo:hover { border-color: var(--ed-conector); background: var(--ed-fundo); }
+.ed__opcao-campo:focus { cursor: text; outline: none; border-color: var(--ed-conector);
   background: var(--ed-superficie); }
 /* Acrescenta um botão na lista. Tracejado e discreto: não é um botão que o
    lead vai ver, é o lugar de criar um. */
@@ -305,15 +310,15 @@ html, body { margin: 0; height: 100%; }
   border: 1px dashed var(--ed-linha); border-radius: 9px; background: transparent;
   color: var(--ed-suave); font: inherit; font-size: 0.78rem; text-align: left;
   cursor: pointer; }
-.ed__opcao-nova:hover { border-color: var(--ed-entrada); color: var(--ed-texto); }
+.ed__opcao-nova:hover { border-color: var(--ed-conector); color: var(--ed-texto); }
 .ed__opcao-campo::placeholder { color: var(--ed-suave); }
 /* O círculo fica para FORA do cartão: é a alça de onde se puxa a ligação
    daquela resposta até outro grupo. Dentro, pareceria decoração. */
-.ed__seta--arrastando { stroke: var(--ed-entrada); stroke-width: 2; stroke-dasharray: 5 4; }
+.ed__seta--arrastando { stroke: var(--ed-conector); stroke-width: 2; stroke-dasharray: 5 4; }
 /* A faixa de clique: larga, invisível, e a única coisa da camada de setas que
    recebe mouse. Sem ela, acertar 2px de linha seria sorte. */
 .ed__seta-faixa { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
-.ed__seta--selecionada { stroke-width: 3.5; stroke: var(--ed-entrada); }
+.ed__seta--selecionada { stroke-width: 3.5; stroke: var(--ed-conector); }
 .ed__menu-ligacao { position: absolute; z-index: 30; transform: translate(-50%, -115%);
   display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem;
   background: var(--ed-superficie); border: 1px solid var(--ed-linha); border-radius: 9px;
@@ -341,14 +346,14 @@ html, body { margin: 0; height: 100%; }
 .ed__acao:hover .ed__acao-dica, .ed__acao:focus-visible .ed__acao-dica { display: block; }
 /* A ponta: mesma cor da linha, por isso cada tipo repete a regra no fill. */
 .ed__ponta { fill: var(--ed-seta); stroke: none; }
-.ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-entrada); }
+.ed__ponta--opcao, .ed__ponta--arrastando { fill: var(--ed-conector); }
 .ed__ponta--condicao { fill: var(--ed-logica); }
 .ed__ponta--orfa { fill: var(--ed-erro); }
 /* O bloco que o ímã pegou: a ligação vai entrar no grupo por aqui, pulando o
    que estiver acima. */
-.ed__bloco--alvo { background: var(--ed-conector-halo); box-shadow: inset 2px 0 0 var(--ed-entrada); }
+.ed__bloco--alvo { background: var(--ed-conector-halo); box-shadow: inset 2px 0 0 var(--ed-conector); }
 /* O cartão que o ímã pegou: quem arrasta precisa ver onde vai soltar. */
-.ed__cartao--alvo { border-color: var(--ed-entrada);
+.ed__cartao--alvo { border-color: var(--ed-conector);
   box-shadow: 0 0 0 3px var(--ed-conector-halo), 0 1px 3px rgba(20,25,40,0.07); }
 
 /* --- lateral --- */

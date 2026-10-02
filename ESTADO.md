@@ -811,3 +811,17 @@ As medidas do modelo foram refeitas no navegador, de novo: bloco 28 + 16 por
 linha de texto (com a margem dentro), 27 letras por linha (o ícone e a margem
 tiraram largura do texto), bloco de botões 43 + 40 por opção, rodapé 27 com a
 palavra e 17 sem ela.
+
+### O quadro falando uma cor só
+
+614 testes. O azul do Salvar virou a **cor de ação do editor**. As bolinhas,
+as setas de opção, o fio que se arrasta, a linha selecionada e todos os
+realces de alvo deixaram de ser laranja. Conferido varrendo o DOM: **nenhum
+elemento dentro do quadro usa mais o laranja**.
+
+O laranja ficou onde ele distingue uma coisa de outra: a categoria "Entrada"
+na paleta e a faixa de recado.
+
+No header, passar o mouse e estar escolhido falam a mesma língua do Salvar —
+fundo azul, letra branca — nas abas e nos botões Testar e Centralizar. Antes a
+aba escolhida era um cinza que mal se via.
