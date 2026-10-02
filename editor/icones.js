@@ -36,6 +36,9 @@ export const ICONE_DA_ACAO = {
   // glifos ↶ ↷ do texto saíam em pé e finos demais para um botão.
   desfazer: { viewBox: "0 0 24 24", d: "M9 14 4 9l5-5M20 20v-7a4 4 0 0 0-4-4H4" },
   refazer: { viewBox: "0 0 24 24", d: "M15 14l5-5-5-5M4 20v-7a4 4 0 0 1 4-4h12" },
+  // Seta da seção que abre e fecha. Deitada para baixo quando aberta; o CSS
+  // a gira quando fechada, para não haver dois desenhos dizendo a mesma coisa.
+  seta: { viewBox: "0 0 24 24", d: "M6 9l6 6 6-6" },
   // Quatro cantos apontando para dentro: pôr tudo na tela.
   centralizar: "M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3",
   // Disquete, que ainda é o que todo mundo lê como "guardar".

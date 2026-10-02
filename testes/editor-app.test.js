@@ -18,14 +18,14 @@ const fluxoBase = () => ({
   ]
 })
 
-function montar(fluxo = fluxoBase()) {
+function montar(fluxo = fluxoBase(), armazenamento = criarArmazenamento()) {
   const hospedeiro = new Elemento("div")
   const baixados = []
   const editor = criarEditor({
     elemento: hospedeiro, fluxo, aoBaixar: (t, n) => baixados.push({ t, n }),
-    esperarNoTeste: async () => {}
+    esperarNoTeste: async () => {}, armazenamento
   })
-  return { hospedeiro, editor, baixados }
+  return { hospedeiro, editor, baixados, armazenamento }
 }
 
 const clicar = (n) => n.disparar("click")
@@ -2034,4 +2034,102 @@ test("centralizar poe o fluxo ao lado da paleta, nao atras dela", () => {
   porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Resultados").disparar("click")
   centralizar()
   assert.equal(editor.vista().x, semPaleta)
+})
+
+// --- as seções da coluna da esquerda abrem e fecham ------------------------
+
+const secao = (h, chave) => porClasse(h, `ed__secao--${chave}`)[0]
+const fechada = (h, chave) => secao(h, chave).className.includes("ed__secao--fechada")
+
+test("cada grupo da paleta e uma secao com seta, aberta de inicio", () => {
+  const { hospedeiro } = montar()
+  const secoes = porClasse(hospedeiro, "ed__secao")
+  assert.deepEqual(secoes.map((s) => s.porClasse("ed__categoria")[0].textContent),
+    ["Bolhas", "Entrada", "Lógica", "Conexão"])
+  for (const s of secoes) {
+    assert.equal(s.porClasse("ed__secao-topo")[0].atributos["aria-expanded"], "true")
+    assert.ok(s.porClasse("ed__secao-corpo").length, "seção que já abre dobrada esconde o que ninguém viu ainda")
+  }
+})
+
+test("clicar no titulo fecha a secao, e o conteudo some de verdade", () => {
+  const { hospedeiro } = montar()
+  const quantosTipos = porClasse(hospedeiro, "ed__tipo").length
+  const bolhas = () => secao(hospedeiro, "fala")
+
+  bolhas().porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(fechada(hospedeiro, "fala"), true)
+  assert.equal(bolhas().porClasse("ed__secao-corpo").length, 0)
+  assert.equal(bolhas().porClasse("ed__secao-topo")[0].atributos["aria-expanded"], "false")
+  assert.ok(porClasse(hospedeiro, "ed__tipo").length < quantosTipos,
+    "escondido por CSS continuaria no caminho do teclado e do arrasto")
+
+  bolhas().porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(fechada(hospedeiro, "fala"), false)
+  assert.equal(porClasse(hospedeiro, "ed__tipo").length, quantosTipos)
+})
+
+test("fechar uma secao nao mexe nas outras", () => {
+  const { hospedeiro } = montar()
+  secao(hospedeiro, "logica").porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(fechada(hospedeiro, "logica"), true)
+  assert.equal(fechada(hospedeiro, "fala"), false)
+  assert.equal(fechada(hospedeiro, "entrada"), false)
+})
+
+test("a secao fechada continua fechada na proxima vez que abrir o editor", () => {
+  const guardado = criarArmazenamento()
+  const primeiro = montar(fluxoBase(), guardado)
+  secao(primeiro.hospedeiro, "logica").porClasse("ed__secao-topo")[0].disparar("click")
+
+  const segundo = montar(fluxoBase(), guardado)
+  assert.equal(fechada(segundo.hospedeiro, "logica"), true,
+    "dobrar a mesma seção toda vez que abre seria pior que não poder dobrar")
+  assert.equal(fechada(segundo.hospedeiro, "fala"), false)
+})
+
+test("o que se fecha no fluxo nao fecha nada no tema", async () => {
+  const guardado = criarArmazenamento()
+  const { hospedeiro } = montar(fluxoBase(), guardado)
+  secao(hospedeiro, "fala").porClasse("ed__secao-topo")[0].disparar("click")
+
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Tema").disparar("click")
+  await assentar()
+  assert.equal(fechada(hospedeiro, "falas"), false, "são colunas diferentes, com seções diferentes")
+  assert.deepEqual(JSON.parse(guardado.getItem("chatflow:secoes")), { fluxo: ["fala"], tema: [] })
+
+  secao(hospedeiro, "falas").porClasse("ed__secao-topo")[0].disparar("click")
+  assert.deepEqual(JSON.parse(guardado.getItem("chatflow:secoes")), { fluxo: ["fala"], tema: ["falas"] },
+    "o que se dobra no tema tem de ser guardado como do tema")
+
+  porClasse(hospedeiro, "ed__aba").find((b) => b.textContent === "Fluxo").disparar("click")
+  assert.equal(fechada(hospedeiro, "fala"), true, "voltar para o fluxo acha o que estava dobrado lá")
+})
+
+test("as secoes do tema tambem dobram, e a conversa segue viva", async () => {
+  const { hospedeiro } = montarComTema()
+  await assentar()
+  const chat = chatDaAba(hospedeiro)
+  assert.ok(linhaDoTema(hospedeiro, "conversa", "Fundo"))
+
+  secao(hospedeiro, "conversa").porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(secao(hospedeiro, "conversa").porClasse("ed__tema-linha").length, 0)
+  assert.equal(chatDaAba(hospedeiro), chat, "dobrar um grupo de cores não reinicia a conversa")
+  assert.ok(linhaDoTema(hospedeiro, "falas", "Fundo"), "as outras seções continuam lá")
+})
+
+test("cor de secao fechada nao some do tema, so da tela", async () => {
+  const { hospedeiro, editor } = montarComTema({ tema: { cores: { acento: "#112233" } } })
+  await assentar()
+  secao(hospedeiro, "falas").porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(editor.tema().cores.acento, "#112233")
+  assert.equal(chatDaAba(hospedeiro).style.propriedades["--cf-acento"], "#112233")
+})
+
+test("copia estragada do que esta fechado abre tudo, em vez de quebrar", () => {
+  const guardado = criarArmazenamento()
+  guardado.setItem("chatflow:secoes", "{isto não é json")
+  const { hospedeiro } = montar(fluxoBase(), guardado)
+  assert.equal(porClasse(hospedeiro, "ed__secao-corpo").length,
+    porClasse(hospedeiro, "ed__secao").length)
 })

@@ -1018,3 +1018,20 @@ A aba Tema recua o conteúdo para depois do painel (ela é uma tela, não um
 quadro infinito); o quadro do fluxo passa por baixo mesmo, que é o que dá
 espaço. E o dublê de DOM aprendeu `parentNode`: quem sobe a árvore a partir do
 alvo de um evento usa esse nome, não o `pai` que ele tinha inventado.
+
+### Os grupos da coluna da esquerda dobram
+
+750 testes. Cada grupo das duas colunas — Bolhas, Entrada, Lógica, Conexão no
+fluxo; Conversa, Retrato, Falas do chat e os outros no tema — virou uma seção
+com seta, que abre e fecha pelo próprio título. Fechada, a seta aponta para a
+direita e **o corpo não é desenhado**: escondido por CSS ele continuaria no
+caminho do teclado e do arrasto, e a coluna fingiria estar curta.
+
+**O que está fechado fica guardado no navegador** (`chatflow:secoes`), por
+aba: dobrar "Lógica" no fluxo não dobra nada no tema. Guarda-se o que está
+*fechado*, não o que está aberto, para que seção nova nasça aberta — ninguém
+descobre um grupo que já abre dobrado. Cópia estragada abre tudo, em vez de
+deixar a coluna vazia.
+
+Dobrar uma seção de cores **não reinicia a conversa** da aba Tema, e a cor da
+seção fechada continua valendo: ela some da tela, não do tema.

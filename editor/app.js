@@ -80,6 +80,58 @@ export function criarEditor({
     if (idiomaValido(guardado)) idioma = guardado
   } catch { /* sem armazenamento: vale o idioma do navegador */ }
 
+  // Que seções da coluna da esquerda estão fechadas, por aba. Guardado aqui
+  // e não no projeto: dobrar "Lógica" é arrumação de quem edita, não uma
+  // decisão do fluxo. Guarda-se o que está FECHADO para que seção nova nasça
+  // aberta — ninguém descobre um grupo que já abre dobrado.
+  const NOME_DAS_SECOES = "chatflow:secoes"
+  const secoesFechadas = { fluxo: new Set(), tema: new Set() }
+  try {
+    const guardado = JSON.parse(armazenamento?.getItem(NOME_DAS_SECOES) || "{}")
+    for (const onde of Object.keys(secoesFechadas)) {
+      if (Array.isArray(guardado[onde])) secoesFechadas[onde] = new Set(guardado[onde])
+    }
+  } catch { /* sem armazenamento ou cópia estragada: tudo aberto */ }
+
+  function guardarSecoes() {
+    try {
+      armazenamento?.setItem(NOME_DAS_SECOES, JSON.stringify({
+        fluxo: [...secoesFechadas.fluxo], tema: [...secoesFechadas.tema]
+      }))
+    } catch { /* vale só esta sessão */ }
+  }
+
+  // Uma seção dobrável: o título é o botão, e a seta conta o estado. Fechada,
+  // o corpo não é desenhado — some da tela e some do caminho do teclado.
+  function secaoDobravel({ onde, chave, titulo, nota, classe = "", montarCorpo }) {
+    const aberta = !secoesFechadas[onde].has(chave)
+    const caixa = el("section",
+      `ed__secao ed__secao--${chave}${classe ? ` ${classe}` : ""}${aberta ? "" : " ed__secao--fechada"}`)
+
+    const topo = el("button", "ed__secao-topo")
+    topo.setAttribute("type", "button")
+    topo.setAttribute("aria-expanded", aberta ? "true" : "false")
+    topo.append(el("span", "ed__categoria", titulo))
+    const seta = iconeDaAcao("seta", "ed__secao-seta")
+    if (seta) topo.append(seta)
+    else topo.append(el("span", "ed__secao-seta", aberta ? "⌄" : "›"))
+    topo.addEventListener("click", () => {
+      if (aberta) secoesFechadas[onde].add(chave)
+      else secoesFechadas[onde].delete(chave)
+      guardarSecoes()
+      desenharLado()
+    })
+    caixa.append(topo)
+
+    if (aberta) {
+      const corpo = el("div", "ed__secao-corpo")
+      if (nota) corpo.append(el("p", "ed__tema-nota", nota))
+      montarCorpo(corpo)
+      caixa.append(corpo)
+    }
+    return caixa
+  }
+
   let traduzir = criarTradutor(idioma)
   // Indireto de propósito: canvas, painel e preview recebem esta função uma
   // vez e seguem traduzindo certo depois que o idioma muda.
@@ -567,7 +619,17 @@ export function criarEditor({
     }
 
     for (const [categoria, lista] of porCategoria) {
-      caixa.append(el("h3", "ed__categoria", t(NOME_DA_CATEGORIA[categoria] || categoria)))
+      caixa.append(secaoDobravel({
+        onde: "fluxo",
+        chave: categoria,
+        titulo: t(NOME_DA_CATEGORIA[categoria] || categoria),
+        montarCorpo: (corpo) => corpo.append(gradeDeTipos(lista, categoria))
+      }))
+    }
+    paleta.replaceChildren(caixa)
+  }
+
+  function gradeDeTipos(lista, categoria) {
       const grade = el("div", "ed__grade")
       for (const definicao of lista) {
         const botao = el("button", `ed__tipo ed__tipo--${categoria}`)
@@ -588,9 +650,7 @@ export function criarEditor({
         })
         grade.append(botao)
       }
-      caixa.append(grade)
-    }
-    paleta.replaceChildren(caixa)
+      return grade
   }
 
   // O mesmo caminho para o clique e para o arrasto: o bloco entra no grupo e
@@ -792,15 +852,21 @@ export function criarEditor({
       t("O que mudar aqui vale para a conversa de todos os leads deste projeto.")))
 
     for (const secao of SECOES_DO_TEMA) {
-      const bloco = el("section", `ed__tema-secao ed__tema-secao--${secao.chave}`)
-      bloco.append(el("h3", "ed__categoria", t(secao.titulo)))
-      if (secao.nota) bloco.append(el("p", "ed__tema-nota", t(secao.nota)))
-      for (const controle of secao.controles) {
-        // O caminho da imagem só aparece com o retrato ligado: campo vazio
-        // embaixo de um interruptor desligado só faz perguntar para quê.
-        if (controle.chave === "avatar" && controle.tipo === "texto" && !mostrandoRetrato()) continue
-        bloco.append(linhaDoTema(controle))
-      }
+      const bloco = secaoDobravel({
+        onde: "tema",
+        chave: secao.chave,
+        titulo: t(secao.titulo),
+        nota: secao.nota ? t(secao.nota) : "",
+        montarCorpo: (corpo) => {
+          for (const controle of secao.controles) {
+            // O caminho da imagem só aparece com o retrato ligado: campo vazio
+            // embaixo de um interruptor desligado só faz perguntar para quê.
+            if (controle.chave === "avatar" && controle.tipo === "texto" && !mostrandoRetrato()) continue
+            corpo.append(linhaDoTema(controle))
+          }
+        },
+        classe: `ed__tema-secao ed__tema-secao--${secao.chave}`
+      })
       caixa.append(bloco)
     }
 
