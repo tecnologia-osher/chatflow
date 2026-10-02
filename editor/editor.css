@@ -294,8 +294,11 @@ html, body { margin: 0; height: 100%; }
   color: var(--ed-texto); font: inherit; font-size: 0.86rem; cursor: pointer; }
 /* Com o cursor dentro, volta a ser caixa de escrever: aí o que a pessoa faz
    é digitar, e a barra de texto diz onde a letra vai cair. */
-.ed__opcao-campo:focus { cursor: text; }
-.ed__opcao-campo:focus { outline: none; border-color: var(--ed-entrada); }
+/* Passar o mouse precisa acender a caixa: sem isso, com quatro botões um
+   embaixo do outro, a pessoa não sabe em qual vai clicar. */
+.ed__opcao-campo:hover { border-color: var(--ed-entrada); background: var(--ed-fundo); }
+.ed__opcao-campo:focus { cursor: text; outline: none; border-color: var(--ed-entrada);
+  background: var(--ed-superficie); }
 /* Acrescenta um botão na lista. Tracejado e discreto: não é um botão que o
    lead vai ver, é o lugar de criar um. */
 .ed__opcao-nova { flex: 1; min-width: 0; box-sizing: border-box; padding: 0.4rem 0.7rem;
