@@ -1265,3 +1265,27 @@ para não se confundir com o que a pessoa escreveu.
 
 Só a mídia convida: a fala vazia já se edita clicando e digitando, e o convite
 ali seria barulho. Assim que o endereço entra, o convite dá lugar a ele.
+
+### Procurar um tipo
+
+854 testes. São catorze tipos em quatro grupos: quem sabe o nome não devia
+caçar com os olhos. A faixa do alto ganhou uma **busca**, ao lado do cadeado,
+e a coluna vai estreitando conforme se digita.
+
+**Acha por pedaço e sem acento** — "video" acha Vídeo, "condi" acha Condição,
+"tel" acha Telefone. **O nome do grupo também acha**: "bolhas" traz os três de
+lá, porque o grupo é um nome que a pessoa conhece. **Duas palavras estreitam**:
+"entrada texto" acha um item, não os dois que se chamam Texto.
+
+**Procurando, os grupos dobrados abrem** — achado escondido dentro de uma
+seção fechada é o mesmo que não ter achado. Apagada a busca, cada grupo volta
+a estar como a pessoa o deixou.
+
+**O campo é criado uma vez e nunca redesenhado**: refazer a coluna a cada
+tecla tiraria o cursor dele na primeira letra. Só os tipos se redesenham.
+Conferido no Chrome com teclado de verdade — "t", "e", "l" — e o foco ficou no
+campo as três vezes.
+
+O que a busca não faz: trocar singular por plural. "botao" não acha "Botões";
+"bot" acha. Inventar radicais do português seria uma gramática dentro do
+editor.

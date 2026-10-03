@@ -66,6 +66,10 @@ export const EM_INGLES = {
   "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.":
     "Drag the type onto the board to create a group, or select a group before clicking.",
 
+  "Procurar": "Search",
+  "Procurar um tipo": "Search for a type",
+  "Nenhum tipo com esse nome.": "No type with that name.",
+
   // --- tipos de bloco ---
   "Texto": "Text",
   "Imagem": "Image",

@@ -26,6 +26,7 @@ import { FONTES, fonteDoTema, definirFonte, urlDaAmostra } from "./fontes.js"
 import { criarChat, aplicarTema } from "../motor/motor.js"
 import { resolverMidia } from "../motor/midia.js"
 import { criarTradutor, idiomaValido, IDIOMAS, PADRAO as IDIOMA_PADRAO } from "./idioma.js"
+import { filtrar, palavrasDe } from "./busca.js"
 
 
 const NOME_DA_CATEGORIA = {
@@ -118,8 +119,8 @@ export function criarEditor({
 
   // Uma seção dobrável: o título é o botão, e a seta conta o estado. Fechada,
   // o corpo não é desenhado — some da tela e some do caminho do teclado.
-  function secaoDobravel({ onde, chave, titulo, nota, classe = "", montarCorpo }) {
-    const aberta = !secoesFechadas[onde].has(chave)
+  function secaoDobravel({ onde, chave, titulo, nota, classe = "", sempreAberta = false, montarCorpo }) {
+    const aberta = sempreAberta || !secoesFechadas[onde].has(chave)
     const caixa = el("section",
       `ed__secao ed__secao--${chave}${classe ? ` ${classe}` : ""}${aberta ? "" : " ed__secao--fechada"}`)
 
@@ -679,32 +680,69 @@ export function criarEditor({
   // --- paleta ----------------------------------------------------------
   // O cadeado numa faixa própria, no alto: flutuando, o título da primeira
   // seção subia para o lado dele e a coluna começava torta.
-  function topoDoLado() {
+  function topoDoLado(antes = null) {
     const topo = el("div", "ed__lado-topo")
+    if (antes) topo.append(antes)
     topo.append(cadeadoDoLado())
     return topo
   }
 
+  // A busca dos tipos. O campo é criado uma vez e nunca redesenhado: refazer
+  // o input a cada tecla tiraria o cursor dele na primeira letra.
+  let busca = ""
+  const campoDeBusca = el("input", "ed__busca")
+  campoDeBusca.setAttribute("type", "search")
+  const listaDeTipos = el("div", "ed__tipos")
+  campoDeBusca.addEventListener("input", () => {
+    busca = campoDeBusca.value
+    desenharTipos()
+  })
+  // O que acontece no campo é do campo: sem isto, o Ctrl+Z de quem digita
+  // errado desfaz a última edição do fluxo.
+  campoDeBusca.addEventListener("keydown", (ev) => ev.stopPropagation?.())
+
   function desenharPaleta() {
     const caixa = el("div", "ed__paleta-corpo")
-    caixa.append(topoDoLado())
+    campoDeBusca.setAttribute("placeholder", t("Procurar"))
+    campoDeBusca.setAttribute("aria-label", t("Procurar um tipo"))
+    caixa.append(topoDoLado(campoDeBusca))
     caixa.append(el("div", "ed__recado", recado))
+    desenharTipos()
+    caixa.append(listaDeTipos)
+    paleta.replaceChildren(caixa)
+  }
+
+  // Só os tipos se redesenham a cada tecla: o campo de busca fica de pé, com
+  // o cursor onde estava.
+  function desenharTipos() {
+    const nomeDoGrupo = (categoria) => t(NOME_DA_CATEGORIA[categoria] || categoria)
+    const achados = filtrar(todos(), busca,
+      (definicao) => [t(definicao.rotulo), nomeDoGrupo(definicao.categoria)])
+
+    listaDeTipos.replaceChildren()
+    if (!achados.length) {
+      listaDeTipos.append(el("p", "ed__sem-tipo", t("Nenhum tipo com esse nome.")))
+      return
+    }
 
     const porCategoria = new Map()
-    for (const definicao of todos()) {
+    for (const definicao of achados) {
       if (!porCategoria.has(definicao.categoria)) porCategoria.set(definicao.categoria, [])
       porCategoria.get(definicao.categoria).push(definicao)
     }
 
+    // Procurando, os grupos abrem: achado escondido dentro de uma seção
+    // dobrada é o mesmo que não ter achado nada.
+    const procurando = palavrasDe(busca).length > 0
     for (const [categoria, lista] of porCategoria) {
-      caixa.append(secaoDobravel({
+      listaDeTipos.append(secaoDobravel({
         onde: "fluxo",
         chave: categoria,
-        titulo: t(NOME_DA_CATEGORIA[categoria] || categoria),
+        titulo: nomeDoGrupo(categoria),
+        sempreAberta: procurando,
         montarCorpo: (corpo) => corpo.append(gradeDeTipos(lista, categoria))
       }))
     }
-    paleta.replaceChildren(caixa)
   }
 
   function gradeDeTipos(lista, categoria) {

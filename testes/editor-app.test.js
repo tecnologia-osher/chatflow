@@ -2312,3 +2312,103 @@ test("voltar aos projetos grava o que estava pendente", async () => {
   assert.equal(salvos.length, 1)
   assert.equal(editor.temMudancas(), false, "depois de gravar, sair é seguro")
 })
+
+// --- a busca dos tipos -----------------------------------------------------
+
+const campoDeBusca = (h) => porClasse(h, "ed__busca")[0]
+const tiposNaTela = (h) => porClasse(h, "ed__tipo").map((b) => b.textContent.trim())
+
+function procurar(h, termo) {
+  const campo = campoDeBusca(h)
+  campo.value = termo
+  campo.disparar("input")
+  return campo
+}
+
+test("a busca fica no alto da coluna, ao lado do cadeado", () => {
+  const { hospedeiro } = montar()
+  const topo = porClasse(hospedeiro, "ed__lado-topo")[0]
+  assert.deepEqual(topo.filhos.map((f) => f.className.split(" ")[0]), ["ed__busca", "ed__trava"])
+  assert.equal(campoDeBusca(hospedeiro).atributos.placeholder, "Procurar")
+})
+
+test("procurar deixa na tela so os tipos com aquelas letras", () => {
+  const { hospedeiro } = montar()
+  const todosOsTipos = tiposNaTela(hospedeiro)
+  assert.ok(todosOsTipos.length > 10, "sem tipos o teste não prova nada")
+
+  procurar(hospedeiro, "tele")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Telefone"])
+
+  procurar(hospedeiro, "")
+  assert.deepEqual(tiposNaTela(hospedeiro), todosOsTipos, "apagar a busca traz tudo de volta")
+})
+
+test("acento nao atrapalha quem digita com pressa", () => {
+  const { hospedeiro } = montar()
+  procurar(hospedeiro, "video")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Vídeo"])
+  procurar(hospedeiro, "condi")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Condição"])
+})
+
+test("o nome do grupo tambem acha", () => {
+  const { hospedeiro } = montar()
+  procurar(hospedeiro, "bolhas")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Texto", "Imagem", "Vídeo"])
+  assert.deepEqual(porClasse(hospedeiro, "ed__categoria").map((e) => e.textContent), ["Bolhas"],
+    "grupo sem nenhum achado não fica ocupando a coluna")
+})
+
+test("duas palavras estreitam a busca, nao alargam", () => {
+  const { hospedeiro } = montar()
+  procurar(hospedeiro, "texto")
+  assert.equal(tiposNaTela(hospedeiro).length, 2, "há um Texto em Bolhas e outro em Entrada")
+  procurar(hospedeiro, "entrada texto")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Texto"])
+  assert.deepEqual(porClasse(hospedeiro, "ed__categoria").map((e) => e.textContent), ["Entrada"])
+})
+
+test("procurando, o grupo dobrado abre: achado escondido nao e achado", () => {
+  const { hospedeiro } = montar()
+  secao(hospedeiro, "entrada").porClasse("ed__secao-topo")[0].disparar("click")
+  assert.equal(tiposNaTela(hospedeiro).some((n) => n === "Telefone"), false, "dobrado, some")
+
+  procurar(hospedeiro, "tele")
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Telefone"])
+
+  procurar(hospedeiro, "")
+  assert.equal(tiposNaTela(hospedeiro).some((n) => n === "Telefone"), false,
+    "apagada a busca, o grupo volta a estar dobrado como a pessoa deixou")
+})
+
+test("busca sem achado diz isso, em vez de uma coluna vazia", () => {
+  const { hospedeiro } = montar()
+  procurar(hospedeiro, "xyz")
+  assert.deepEqual(tiposNaTela(hospedeiro), [])
+  assert.match(porClasse(hospedeiro, "ed__sem-tipo")[0].textContent, /Nenhum tipo/)
+})
+
+test("digitar na busca nao refaz a coluna: o cursor fica onde estava", () => {
+  // Refazer a paleta a cada tecla recria (ou ao menos remonta) o campo, e o
+  // navegador tira o foco de elemento que muda de lugar na árvore. O dublê
+  // não sente isso: o que ele prova é que a coluna não foi remontada.
+  const { hospedeiro } = montar()
+  const campoAntes = campoDeBusca(hospedeiro)
+  const corpoAntes = porClasse(hospedeiro, "ed__paleta-corpo")[0]
+  procurar(hospedeiro, "te")
+  procurar(hospedeiro, "tel")
+  assert.equal(campoDeBusca(hospedeiro), campoAntes)
+  assert.equal(porClasse(hospedeiro, "ed__paleta-corpo")[0], corpoAntes,
+    "só os tipos se redesenham a cada tecla")
+  assert.equal(campoDeBusca(hospedeiro).value, "tel")
+})
+
+test("o tipo achado continua servindo para arrastar e para clicar", () => {
+  const { hospedeiro, editor } = montar()
+  procurar(hospedeiro, "video")
+  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
+  tipoDaPaleta(hospedeiro, "Vídeo").disparar("click")
+  const blocos = editor.fluxo().grupos[0].blocos
+  assert.equal(blocos.at(-1).tipo, "video", "achar e não poder usar seria pior que não achar")
+})

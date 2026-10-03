@@ -93,8 +93,17 @@ html, body { margin: 0; height: 100%; }
 .ed__trava-icone { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor;
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ed__paleta-corpo { padding: 0.6rem 1rem 1rem; }
-/* O cadeado mora numa faixa só dele, encostado à direita. */
-.ed__lado-topo { display: flex; justify-content: flex-end; min-height: 1.7rem; }
+/* A faixa do alto: a busca ocupa o que sobra, o cadeado fecha à direita. */
+.ed__lado-topo { display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end;
+  min-height: 1.7rem; }
+.ed__busca { flex: 1; min-width: 0; padding: 0.4rem 0.6rem; border: 1px solid var(--ed-linha);
+  border-radius: 9px; background: var(--ed-superficie); color: var(--ed-texto);
+  font: inherit; font-size: 0.82rem; }
+.ed__busca:focus { outline: none; border-color: var(--ed-acento); }
+/* O X de limpar que o navegador põe no campo de busca, do tamanho do resto. */
+.ed__busca::-webkit-search-cancel-button { cursor: pointer; }
+.ed__tipos { display: block; }
+.ed__sem-tipo { margin: 1rem 0 0; color: var(--ed-suave); font-size: 0.82rem; }
 .ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ed-suave); margin: 0; }
 
