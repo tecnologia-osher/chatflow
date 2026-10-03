@@ -67,7 +67,6 @@ export const EM_INGLES = {
   "Arraste para mover o grupo": "Drag to move the group",
   "Ações do grupo": "Group actions",
   "Ações deste bloco": "Actions for this block",
-  "Mais opções": "More options",
   "Excluir": "Delete",
   "Excluir grupo": "Delete group",
   "Duplicar": "Duplicate",
@@ -88,18 +87,6 @@ export const EM_INGLES = {
   "Este caminho vem de uma regra de condição, que ainda não se edita aqui.":
     "This path comes from a condition rule, which can't be edited here yet.",
 
-  // --- painel lateral ---
-  "Grupo": "Group",
-  "Título": "Title",
-  "Próximo grupo": "Next group",
-  "Salvar na variável": "Save to variable",
-  "Opções": "Options",
-  "Acrescentar opção": "Add option",
-  "— não liga —": "— no link —",
-  "Selecione um bloco ou um grupo no canvas para editar.":
-    "Select a block or a group on the canvas to edit it.",
-  '"{campo}" ainda se edita no arquivo. O editor visual chega numa próxima fatia.':
-    '"{campo}" is still edited in the file. The visual editor gets there in a later slice.',
 
   // --- teste ---
   "Teste · do início": "Test · from the start",

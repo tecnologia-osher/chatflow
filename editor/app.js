@@ -1,10 +1,9 @@
-// O editor inteiro: paleta, canvas, painel e preview.
+// O editor inteiro: paleta, canvas e preview.
 //
 // O fluxo é o único estado. Toda edição devolve um fluxo novo e a tela é
 // redesenhada a partir dele — não há estado espalhado que possa divergir.
 
 import { criarCanvas } from "./canvas.js"
-import { criarPainel } from "./painel.js"
 import { todos } from "./catalogo.js"
 import { campoPrincipal } from "./modelo.js"
 import {
@@ -144,12 +143,11 @@ export function criarEditor({
   }
 
   let traduzir = criarTradutor(idioma)
-  // Indireto de propósito: canvas, painel e preview recebem esta função uma
+  // Indireto de propósito: canvas e preview recebem esta função uma
   // vez e seguem traduzindo certo depois que o idioma muda.
   const t = (frase, valores) => traduzir(frase, valores)
   let selecao = { grupo: null, bloco: null }
   let recado = ""
-  let detalhesAbertos = false
   // O retrato do fluxo como ele está gravado. Comparar com o de agora é o que
   // diz se há algo a salvar — mais honesto que marcar "sujo" em cada edição e
   // esquecer de marcar numa delas.
@@ -224,7 +222,6 @@ export function criarEditor({
     retratoAberto = null
     if (selecao.grupo && !atual.grupos.some((g) => g && g.id === selecao.grupo)) {
       selecao = { grupo: null, bloco: null }
-      detalhesAbertos = false
     }
     redesenhar()
   }
@@ -235,9 +232,8 @@ export function criarEditor({
   const barra = el("header", "ed__barra")
   const palcoCanvas = el("div", "ed__area-canvas")
   const problemas = el("div", "ed__problemas")
-  // Nem painel nem preview ocupam coluna: os dois flutuam e só existem
-  // enquanto são necessários. O canvas fica com o resto da tela.
-  const areaPainel = el("div", "ed__area-painel")
+  // O preview não ocupa coluna: flutua e só existe enquanto é necessário.
+  // O canvas fica com o resto da tela.
   const areaPreview = el("div", "ed__area-preview")
   const areaConfiguracoes = el("div", "ed__area-config")
   const emBreve = el("div", "ed__em-breve ed__oculto")
@@ -253,7 +249,7 @@ export function criarEditor({
   const puxador = el("span", "ed__puxador")
   puxador.append(el("span", "ed__puxador-marca"))
   corpo.append(puxador, paleta, centro)
-  raiz.append(barra, corpo, areaPainel, areaPreview, areaConfiguracoes)
+  raiz.append(barra, corpo, areaPreview, areaConfiguracoes)
   elemento.replaceChildren(raiz)
 
   const canvas = criarCanvas({
@@ -263,9 +259,8 @@ export function criarEditor({
     aoSelecionar: (nova) => {
       selecao = nova
       recado = ""
-      detalhesAbertos = false
-      // Redesenho inteiro, e não só painel e paleta: trocar de seleção é
-      // trocar de lugar na tela, e é aí que a opção que ninguém nomeou sai.
+      // Redesenho inteiro, e não só a paleta: trocar de seleção é trocar de
+      // lugar na tela, e é aí que a opção que ninguém nomeou sai.
       redesenhar()
     },
     aoEditarCampo: ({ grupo, bloco, campo, valor }) => {
@@ -332,10 +327,9 @@ export function criarEditor({
     },
     aoApagarGrupo: ({ grupo }) => {
       trocarFluxo(removerGrupo(atual, { grupo }))
-      // Seleção apontando para o que não existe mais deixaria o painel e a
-      // paleta trabalhando num grupo fantasma.
+      // Seleção apontando para o que não existe mais deixaria a paleta
+      // trabalhando num grupo fantasma.
       if (selecao.grupo === grupo) selecao = { grupo: null, bloco: null }
-      detalhesAbertos = false
       redesenhar()
     },
     // Apagar a ligação é apagar o destino de quem a criou. Qual campo é
@@ -362,12 +356,6 @@ export function criarEditor({
       // O bloco que se foi não pode continuar selecionado: a seleção fica no
       // grupo, que é onde a pessoa está olhando.
       if (selecao.bloco === bloco) selecao = { grupo, bloco: null }
-      detalhesAbertos = false
-      redesenhar()
-    },
-    aoAbrirDetalhes: ({ grupo, bloco }) => {
-      selecao = { grupo, bloco }
-      detalhesAbertos = true
       redesenhar()
     },
     aoMover: (grupo, { x, y }) => {
@@ -380,11 +368,6 @@ export function criarEditor({
     tema: () => temaParaOChat(),
     elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste, t
   })
-  const painel = criarPainel({
-    elemento: areaPainel, t,
-    aoEditar: (novo) => { trocarFluxo(novo); redesenhar() }
-  })
-
   // --- barra -----------------------------------------------------------
   const ajustar = el("button", "ed__ajustar")
   ajustar.setAttribute("type", "button")
@@ -1422,24 +1405,6 @@ export function criarEditor({
     problemas.textContent = relatorio.valido ? "" : relatorio.erros.join(" · ")
   }
 
-  // O painel nunca aparece sozinho: só quando alguém pede pelo ⋯ — do bloco
-  // ou do grupo. Selecionar deixou de abri-lo, porque o cartão já resolve o
-  // que ele oferecia: o nome se edita no lugar e o destino se arrasta pela
-  // bolinha. Formulário que aparece sem ser chamado atrapalha.
-  function precisaDePainel() {
-    return !!(selecao.grupo && detalhesAbertos)
-  }
-
-  function desenharPainel() {
-    if (!precisaDePainel()) { areaPainel.replaceChildren(); return }
-    painel.mostrar({ fluxo: atual, selecao, aoFechar: () => {
-      selecao = { grupo: null, bloco: null }
-      detalhesAbertos = false
-      areaPainel.replaceChildren()
-      canvas.selecionar({ grupo: null, bloco: null })
-    } })
-  }
-
   // Edição dentro do cartão: refaz tudo menos os cartões, para a caixa de
   // texto não ser recriada a cada tecla e o cursor não saltar para o fim.
   function semRedesenharCartoes() {
@@ -1463,7 +1428,6 @@ export function criarEditor({
     if (!editandoNome) desenharNome()
     canvas.desenhar(atual)
     canvas.selecionar(selecao)
-    desenharPainel()
     desenharLado()
     desenharProblemas()
     preview.atualizar(atual)

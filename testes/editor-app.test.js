@@ -354,12 +354,6 @@ test("excluir pela lixeira do ... apaga o grupo", () => {
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g1"])
 })
 
-test("fechar o painel some com ele", () => {
-  const { hospedeiro } = montar(comBotoes())
-  maisOpcoesDoBloco(hospedeiro, 1)
-  porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
-  assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
-})
 
 // --- opções no cartão ------------------------------------------------------
 
@@ -403,18 +397,6 @@ test("Backspace numa opcao vazia a remove", () => {
   assert.deepEqual(editor.fluxo().grupos[0].blocos[1].conteudo.opcoes.map((o) => o.id), ["o2"])
 })
 
-// O ⋯ do bloco abre as ações dele; "Mais opções" é a que leva ao painel.
-function maisOpcoesDoBloco(h, indice = 0) {
-  porClasse(h, "ed__bloco-mais")[indice].disparar("click")
-  porClasse(h, "ed__acao--detalhes")[0].disparar("click")
-}
-
-test("o botao de detalhes abre o painel para pontos e destino", () => {
-  const { hospedeiro } = montar(comBotoes())
-  maisOpcoesDoBloco(hospedeiro, 1)
-  assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
-  assert.ok(porClasse(hospedeiro, "ed__opcao").length > 0, "pontos e destino continuam acessíveis")
-})
 
 // --- o padrão e a opção que se desfaz -------------------------------------
 

@@ -1097,3 +1097,30 @@ E as medições viraram teste: `MEDIDO_NO_CHROME` guarda o passo de um bloco de
 uma e de duas linhas e a altura de dois cartões inteiros da Osher, com folga de
 2 a 3px. Constante chutada passava por todos os testes de relação entre
 constantes — nenhum deles sabia qual é o tamanho de verdade. Esse sabe.
+
+### A roda passeia, e o painel da direita acabou
+
+757 testes (eram 773: foram-se os do painel, que deixou de existir).
+
+**A roda do mouse e o trackpad passeiam pelo quadro** — para cima, para baixo e
+para os lados — como em qualquer mapa. Zoom virou gesto à parte: a **pinça do
+trackpad** e o **Ctrl/⌘+roda**, que chegam ao navegador como `wheel` com
+`ctrlKey`. Antes toda rolagem dava zoom, e o fluxo saltava de tamanho quando a
+pessoa só queria descer a tela. Medido no Chrome: rolar 200 para baixo move a
+vista de y=202 para y=2 sem mexer na escala; Ctrl+roda leva a escala de 0,6
+para 0,718 ancorada no cursor.
+
+**O painel da direita foi removido inteiro** — `editor/painel.js` e os seus
+testes saíram do repositório, junto com o CSS que o vestia. O botão direito
+num bloco abre só a lixeira, e o ⋯ abre a mesma coisa.
+
+**O que isso custou, dito sem rodeio:** o campo principal de cada bloco
+continua editável no cartão (o texto da fala, o endereço da imagem ou do vídeo,
+o texto de exemplo da entrada, a lista de botões). Perderam onde ser editados:
+texto alternativo da imagem, link ao clicar, autoplay do vídeo, texto do botão
+de enviar, mínimo e máximo do número, múltipla escolha, abrir em nova aba, o
+nome da variável (`salvar_em`) e as regras de condição — que já não eram
+editáveis antes.
+
+O caminho natural é o do Typebot: esses campos descem para dentro do próprio
+cartão, abaixo do texto, aparecendo só no bloco selecionado.

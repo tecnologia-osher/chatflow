@@ -578,15 +578,7 @@ html, body { margin: 0; height: 100%; }
   border: 1px solid var(--ed-linha); background: var(--ed-superficie);
   color: var(--ed-texto); font-size: 0.82rem;
   transform: rotate(-2deg); box-shadow: 0 10px 24px rgba(20,25,40,0.22); opacity: 0.95; }
-.ed__area-painel, .ed__area-preview {
-  position: fixed; top: 0; left: 0; width: 0; height: 0; }
-.ed__painel { position: fixed; top: 4.5rem; right: 1rem; width: 21rem; max-height: calc(100vh - 6rem);
-  overflow-y: auto; z-index: 15; padding: 1rem 1rem 1.2rem; background: var(--ed-superficie);
-  border: 1px solid var(--ed-linha); border-radius: 12px; box-shadow: 0 8px 28px rgba(20,25,40,0.13); }
-.ed__painel-fechar { position: absolute; top: 0.5rem; right: 0.5rem; width: 1.7rem; height: 1.7rem;
-  border: none; border-radius: 50%; background: transparent; color: var(--ed-suave);
-  font: inherit; cursor: pointer; }
-.ed__painel-fechar:hover { background: var(--ed-fundo); }
+.ed__area-preview { position: fixed; top: 0; left: 0; width: 0; height: 0; }
 
 /* O preview fica sobreposto, não numa coluna: enquanto não é pedido, o canvas
    usa a tela inteira. */
@@ -602,19 +594,6 @@ html, body { margin: 0; height: 100%; }
 .ed__preview-nota { margin: 0; padding: 0.6rem 0.9rem; background: var(--ed-recado-fundo);
   color: var(--ed-recado-texto); font-size: 0.78rem; border-bottom: 1px solid var(--ed-linha); }
 .ed__preview-chat { min-height: 0; overflow: hidden; }
-.ed__titulo-painel { font-size: 0.95rem; margin: 0 0 0.9rem; }
-.ed__linha { display: grid; gap: 0.25rem; margin-bottom: 0.8rem; }
-.ed__rotulo { font-size: 0.74rem; color: var(--ed-suave); }
-.ed__campo, .ed__painel select { padding: 0.45rem 0.55rem; border: 1px solid var(--ed-linha);
-  border-radius: 7px; font: inherit; background: var(--ed-superficie); color: var(--ed-texto); }
-.ed__campo[type="checkbox"] { width: 1rem; justify-self: start; }
-.ed__opcoes { display: grid; gap: 0.4rem; margin-bottom: 0.9rem; }
-.ed__opcao { display: grid; grid-template-columns: 1fr 3.5rem 1fr auto; gap: 0.3rem; align-items: center; }
-.ed__remover-opcao, .ed__acrescentar-opcao { border: 1px solid var(--ed-linha); border-radius: 7px;
-  background: var(--ed-superficie); font: inherit; cursor: pointer; padding: 0.35rem 0.6rem; }
-.ed__aviso { background: var(--ed-fundo); border-radius: 8px; padding: 0.6rem;
-  color: var(--ed-suave); font-size: 0.82rem; }
-.ed__vazio { color: var(--ed-suave); }
 
 /* Sobra da época em que a coluna da esquerda era uma coluna da grade: a regra
    continuou mandando em `grid-template-columns` depois que `.ed` virou duas

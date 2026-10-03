@@ -37,7 +37,7 @@ export function criarCanvas({
   aoDuplicarGrupo = () => {}, aoMoverBloco = () => {}, aoSoltarBlocoNoQuadro = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
-  aoAbrirDetalhes = () => {}, aoApagarBloco = () => {}, aoLigarOpcao = () => {},
+  aoApagarBloco = () => {}, aoLigarOpcao = () => {},
   aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
   // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
   // assim quem monta um canvas sozinho não precisa passar idioma nenhum.
@@ -147,10 +147,20 @@ export function criarCanvas({
     })
   })
 
+  // Roda e trackpad passeiam pelo quadro — para cima e para baixo, para os
+  // lados —, como em qualquer mapa. Zoom é gesto à parte: a pinça do trackpad
+  // e o Ctrl+roda chegam aqui como wheel com `ctrlKey`, que é como o navegador
+  // conta um gesto de zoom. Dar zoom em toda rolagem fazia o fluxo saltar de
+  // tamanho quando a pessoa só queria descer a tela.
   palco.addEventListener("wheel", (ev) => {
     ev.preventDefault?.()
     fecharMenu()
-    vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: noPalco(ev) })
+    if (ev.ctrlKey || ev.metaKey) {
+      vista = aplicarZoom(vista, { delta: ev.deltaY, ponto: noPalco(ev) })
+    } else {
+      // Rolar para baixo leva o conteúdo para cima: o sinal é invertido.
+      vista = arrastar(vista, { dx: -(ev.deltaX || 0), dy: -(ev.deltaY || 0) })
+    }
     aplicarVista()
   })
 
@@ -254,8 +264,6 @@ export function criarCanvas({
     menuAberto = menu
   }
 
-  // Dois controles deslizantes: o que não cabe no cartão mora atrás deste.
-  const CONTROLES = "M2.5 5.5h3.5M9 5.5h4.5M2.5 10.5h6M11.5 10.5h2M7.5 4v3M10 9v3"
   const LIXEIRA = "M3 5h10M6.5 5V3.5h3V5M4.5 5l.6 7.5h5.8L11.5 5"
   const DUPLICAR = "M5.5 2.5h6a1 1 0 0 1 1 1v6M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"
 
@@ -301,10 +309,8 @@ export function criarCanvas({
     menuAberto = menu
   }
 
-  // As ações de um bloco, no mesmo molde das do grupo. O ⋯ deixou de abrir o
-  // painel direto: apagar um bloco não tinha caminho nenhum na tela, e abrir
-  // um painel inteiro para trocar uma palavra é caro demais — o texto se
-  // edita no próprio cartão.
+  // As ações de um bloco: só a lixeira. Tudo o que o bloco diz se edita no
+  // próprio cartão — não há painel nenhum para onde mandar a pessoa.
   function abrirAcoesDoBloco(ev, cartao, bloco) {
     fecharMenu()
     const onde = noPalco(ev)
@@ -314,8 +320,6 @@ export function criarCanvas({
     menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
     menu.addEventListener("contextmenu", (e) => e.preventDefault?.())
     menu.append(
-      iconeDeAcao("ed__acao--detalhes", CONTROLES, t("Mais opções"),
-        () => aoAbrirDetalhes({ grupo: cartao.id, bloco: bloco.id })),
       iconeDeAcao("ed__acao--excluir", LIXEIRA, t("Excluir"),
         () => aoApagarBloco({ grupo: cartao.id, bloco: bloco.id }))
     )
@@ -789,6 +793,14 @@ export function criarCanvas({
           selecao = { grupo: cartao.id, bloco: bloco.id }
           desenhar(fluxoAtual)
           aoSelecionar({ grupo: cartao.id, bloco: bloco.id })
+        })
+
+        // Mesmo gesto da linha e do grupo: esquerdo seleciona, direito abre a
+        // caixa de ações no ponto clicado.
+        noBloco.addEventListener("contextmenu", (ev) => {
+          ev.preventDefault?.()
+          ev.stopPropagation?.()
+          abrirAcoesDoBloco(ev, cartao, bloco)
         })
         no.append(noBloco)
       }

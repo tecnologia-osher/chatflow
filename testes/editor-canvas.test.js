@@ -72,11 +72,32 @@ test("clicar no cabecalho do cartao seleciona o grupo, sem bloco", () => {
   assert.deepEqual(eventos.selecionado.at(-1), { grupo: "g1", bloco: null })
 })
 
-test("a roda do mouse dá zoom e ancora no cursor", () => {
+test("a roda passeia pelo quadro, para cima e para os lados", () => {
   const { hospedeiro, canvas } = montar()
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  const escala = canvas.vista().escala
+
+  palco.disparar("wheel", { deltaY: 120, clientX: 400, clientY: 300 })
+  assert.deepEqual({ x: canvas.vista().x, y: canvas.vista().y }, { x: 0, y: -120 },
+    "rolar para baixo leva o conteúdo para cima, como em qualquer mapa")
+
+  palco.disparar("wheel", { deltaX: 80, deltaY: 0, clientX: 400, clientY: 300 })
+  assert.deepEqual({ x: canvas.vista().x, y: canvas.vista().y }, { x: -80, y: -120 },
+    "trackpad para o lado anda para o lado")
+  assert.equal(canvas.vista().escala, escala, "rolar não pode mudar o tamanho do fluxo")
+})
+
+test("a pinça e o Ctrl+roda dão zoom, ancorados no cursor", () => {
+  const { hospedeiro, canvas } = montar()
+  const palco = hospedeiro.porClasse("ed__palco")[0]
   const antes = canvas.vista().escala
-  hospedeiro.porClasse("ed__palco")[0].disparar("wheel", { deltaY: -120, clientX: 400, clientY: 300 })
+  // A pinça do trackpad chega ao navegador como wheel com ctrlKey — é assim
+  // que ele conta um gesto de zoom.
+  palco.disparar("wheel", { deltaY: -120, clientX: 400, clientY: 300, ctrlKey: true })
   assert.ok(canvas.vista().escala > antes)
+
+  palco.disparar("wheel", { deltaY: 120, clientX: 400, clientY: 300, metaKey: true })
+  assert.ok(canvas.vista().escala < antes || Math.abs(canvas.vista().escala - antes) < 0.001)
 })
 
 test("arrastar o fundo movimenta a vista, nao o grupo", () => {
@@ -100,7 +121,8 @@ test("arrastar o cabecalho move o grupo e avisa a nova posicao", () => {
 
 test("o arrasto do grupo respeita o zoom", () => {
   const { hospedeiro, canvas, eventos } = montar()
-  hospedeiro.porClasse("ed__palco")[0].disparar("wheel", { deltaY: -120, clientX: 0, clientY: 0 })
+  hospedeiro.porClasse("ed__palco")[0].disparar("wheel",
+    { deltaY: -120, clientX: 0, clientY: 0, ctrlKey: true })
   const escala = canvas.vista().escala
   hospedeiro.porClasse("ed__cabecalho")[0].disparar("mousedown", { clientX: 0, clientY: 0, button: 0 })
   document.disparar("mousemove", { clientX: 100, clientY: 0 })
@@ -1480,15 +1502,13 @@ const fluxoDeTipos = {
 
 function montarComTipos() {
   const hospedeiro = new Elemento("div")
-  const detalhes = []
   const apagados = []
   const canvas = criarCanvas({
     elemento: hospedeiro,
-    aoAbrirDetalhes: (o) => detalhes.push(o),
     aoApagarBloco: (o) => apagados.push(o)
   })
   canvas.desenhar(fluxoDeTipos)
-  return { hospedeiro, detalhes, apagados }
+  return { hospedeiro, apagados }
 }
 
 const porClasse = (no, classe) => no.porClasse(classe)
@@ -1509,14 +1529,22 @@ test("o texto do bloco fica numa linha propria, embaixo do nome", () => {
     "o texto ao lado do nome espremeria os dois")
 })
 
-test("o ⋯ do bloco abre as acoes dele, nao o painel", () => {
-  const { hospedeiro, detalhes } = montarComTipos()
+test("o ⋯ do bloco abre as acoes dele: so a lixeira", () => {
+  const { hospedeiro } = montarComTipos()
   porClasse(hospedeiro, "ed__bloco-mais")[0].disparar("click")
   const menu = porClasse(hospedeiro, "ed__menu-acoes")[0]
   assert.ok(menu, "o ⋯ precisa abrir a caixa de ações")
-  assert.deepEqual(menu.porClasse("ed__acao-dica").map((e) => e.textContent),
-    ["Mais opções", "Excluir"])
-  assert.deepEqual(detalhes, [], "abrir um painel inteiro para trocar uma palavra é caro demais")
+  assert.deepEqual(menu.porClasse("ed__acao-dica").map((e) => e.textContent), ["Excluir"],
+    "tudo o que o bloco diz se edita no próprio cartão: não há para onde mandar ninguém")
+})
+
+test("o botao direito no bloco abre a mesma lixeira", () => {
+  const { hospedeiro, apagados } = montarComTipos()
+  porClasse(hospedeiro, "ed__bloco")[2].disparar("contextmenu", { clientX: 10, clientY: 10 })
+  const menu = porClasse(hospedeiro, "ed__menu-acoes")[0]
+  assert.ok(menu, "o gesto é o mesmo da linha e do grupo")
+  menu.porClasse("ed__acao--excluir")[0].disparar("click")
+  assert.deepEqual(apagados, [{ grupo: "g1", bloco: "b3" }])
 })
 
 test("Excluir no ⋯ apaga aquele bloco, e so ele", () => {
@@ -1526,9 +1554,4 @@ test("Excluir no ⋯ apaga aquele bloco, e so ele", () => {
   assert.deepEqual(apagados, [{ grupo: "g1", bloco: "b2" }])
 })
 
-test("Mais opcoes no ⋯ leva ao painel, que e onde mora o resto", () => {
-  const { hospedeiro, detalhes } = montarComTipos()
-  porClasse(hospedeiro, "ed__bloco-mais")[2].disparar("click")
-  porClasse(hospedeiro, "ed__acao--detalhes")[0].disparar("click")
-  assert.deepEqual(detalhes, [{ grupo: "g1", bloco: "b3" }])
-})
+
