@@ -3,6 +3,7 @@
 // a pessoa tem na mão é um link, um arquivo, e um interruptor.
 
 import { caixaDoTipo, problemaNoArquivo } from "./midia.js"
+import { ALTURA_MINIMA, ALTURA_MAXIMA } from "../motor/incorporar.js"
 import { preencher } from "./idioma.js"
 
 function el(tag, classe, texto) {
@@ -56,7 +57,56 @@ export function criarCaixaDeMidia({
     if (molde.nota) corpo.append(el("p", "ed__midia-nota", t(molde.nota)))
     caixa.append(corpo)
 
+    if (molde.numero) caixa.append(linhaDoNumero())
     if (molde.interruptor) caixa.append(linhaDoInterruptor())
+  }
+
+  // Altura: menos, mais, e o número no meio — como no print, e como qualquer
+  // campo de medida. Digitar também vale.
+  function linhaDoNumero() {
+    const { campo, rotulo, sufixo, padrao } = molde.numero
+    const linha = el("div", "ed__midia-linha ed__midia-linha--numero")
+    linha.append(el("span", "ed__midia-rotulo", t(rotulo)))
+
+    const valor = () => {
+      const bruto = Number.parseInt(conteudo[campo], 10)
+      return Number.isFinite(bruto) ? bruto : padrao
+    }
+    const grupo = el("div", "ed__midia-numero")
+    const entrada = el("input", "ed__midia-numero-campo")
+    entrada.setAttribute("type", "number")
+    entrada.setAttribute("min", String(ALTURA_MINIMA))
+    entrada.setAttribute("max", String(ALTURA_MAXIMA))
+    entrada.setAttribute("aria-label", t(rotulo))
+    entrada.value = String(valor())
+
+    const gravar = (novo) => {
+      const preso = Math.min(ALTURA_MAXIMA, Math.max(ALTURA_MINIMA, novo))
+      entrada.value = String(preso)
+      conteudo = { ...conteudo, [campo]: preso }
+      aoEditar(campo, preso)
+    }
+    const passo = (quanto) => {
+      const botao = el("button", "ed__midia-passo", quanto > 0 ? "+" : "−")
+      botao.setAttribute("type", "button")
+      botao.setAttribute("aria-label", quanto > 0 ? t("Aumentar") : t("Diminuir"))
+      botao.addEventListener("click", () => gravar(valor() + quanto))
+      return botao
+    }
+    entrada.addEventListener("input", () => {
+      const bruto = Number.parseInt(entrada.value, 10)
+      if (!Number.isFinite(bruto)) return
+      conteudo = { ...conteudo, [campo]: bruto }
+      aoEditar(campo, bruto)
+    })
+    // Prender o número enquanto se digita tira o cursor do meio da conta; na
+    // saída, sim: é quando o valor vira definitivo.
+    entrada.addEventListener("change", () => gravar(valor()))
+
+    grupo.append(passo(-20), entrada, passo(20))
+    linha.append(grupo)
+    if (sufixo) linha.append(el("span", "ed__midia-sufixo", sufixo))
+    return linha
   }
 
   function campoDeTexto(campo, dica, valorInicial) {

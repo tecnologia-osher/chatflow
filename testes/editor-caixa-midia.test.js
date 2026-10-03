@@ -149,3 +149,58 @@ test("o que se faz dentro da caixa nao vaza para o cartao atras dela", () => {
   porClasse(no, "ed__midia-campo")[0].disparar("mousedown")
   assert.equal(vazou, false, "clicar num campo selecionava o cartão e arrastava o bloco")
 })
+
+// --- incorporar ------------------------------------------------------------
+
+test("a caixa do incorporar tem endereco, recomendacao e altura", () => {
+  const { no } = montar({ tipo: "incorporar", conteudo: {} })
+  assert.equal(no.porClasse("ed__midia-campo")[0].atributos.placeholder, "Cole o link ou o código…")
+  assert.match(no.porClasse("ed__midia-nota")[0].textContent, /PDFs, iframes e sites/)
+  assert.equal(no.porClasse("ed__midia-numero-campo")[0].value, "400", "o padrão do print")
+  assert.equal(no.porClasse("ed__midia-sufixo")[0].textContent, "px")
+  assert.equal(no.porClasse("ed__midia-chave").length, 0, "altura não é interruptor")
+})
+
+test("os botoes de mais e menos andam a altura e gravam", () => {
+  const { no, edicoes } = montar({ tipo: "incorporar", conteudo: { altura: 400 } })
+  const passos = no.porClasse("ed__midia-passo")
+  passos[1].disparar("click")
+  assert.deepEqual(edicoes.at(-1), { campo: "altura", valor: 420 })
+  passos[0].disparar("click")
+  passos[0].disparar("click")
+  assert.deepEqual(edicoes.at(-1), { campo: "altura", valor: 380 })
+  assert.equal(no.porClasse("ed__midia-numero-campo")[0].value, "380")
+})
+
+test("a altura nao passa dos limites que cabem numa tela", () => {
+  const { no, edicoes } = montar({ tipo: "incorporar", conteudo: { altura: 1195 } })
+  no.porClasse("ed__midia-passo")[1].disparar("click")
+  assert.equal(edicoes.at(-1).valor, 1200)
+  const outra = montar({ tipo: "incorporar", conteudo: { altura: 85 } })
+  outra.no.porClasse("ed__midia-passo")[0].disparar("click")
+  assert.equal(outra.edicoes.at(-1).valor, 80)
+})
+
+test("digitar a altura grava sem prender no meio da conta", () => {
+  const { no, edicoes } = montar({ tipo: "incorporar", conteudo: { altura: 400 } })
+  const campo = no.porClasse("ed__midia-numero-campo")[0]
+  campo.value = "6"
+  campo.disparar("input")
+  assert.deepEqual(edicoes.at(-1), { campo: "altura", valor: 6 },
+    "prender enquanto se digita tiraria o cursor do meio do número")
+  campo.value = "600"
+  campo.disparar("input")
+  assert.deepEqual(edicoes.at(-1), { campo: "altura", valor: 600 })
+  campo.disparar("change")
+  assert.equal(campo.value, "600", "na saída o valor vira definitivo")
+})
+
+test("altura fora dos limites e presa quando o campo perde o foco", () => {
+  const { no, edicoes } = montar({ tipo: "incorporar", conteudo: { altura: 400 } })
+  const campo = no.porClasse("ed__midia-numero-campo")[0]
+  campo.value = "9999"
+  campo.disparar("input")
+  campo.disparar("change")
+  assert.equal(edicoes.at(-1).valor, 1200)
+  assert.equal(campo.value, "1200")
+})

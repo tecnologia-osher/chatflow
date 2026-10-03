@@ -29,6 +29,14 @@ export const CAIXAS = {
     // motor saber abrir um seria mentir na própria tela.
     nota: "Funciona com YouTube, Vimeo e arquivos de vídeo (.mp4).",
     interruptor: { campo: "autoplay", rotulo: "Começar sozinho" }
+  },
+  incorporar: {
+    abas: [{ chave: "link", rotulo: "Link" }],
+    campo: { nome: "url", dica: "Cole o link ou o código…" },
+    nota: "Funciona com PDFs, iframes e sites.",
+    // Altura em vez de interruptor: uma página incorporada não tem tamanho
+    // próprio dentro da conversa, alguém precisa dizer o dela.
+    numero: { campo: "altura", rotulo: "Altura", sufixo: "px", padrao: 400 }
   }
 }
 

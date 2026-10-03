@@ -1016,3 +1016,52 @@ test("o chat devolve o elemento que montou, para o tema mudar depois", async () 
   aplicarTema(chat.raiz, { cores: { acento: "#445566" } })
   assert.equal(chat.raiz.style.propriedades["--cf-acento"], "#445566")
 })
+
+// --- a bolha de incorporar -------------------------------------------------
+
+test("a bolha de incorporar mostra a pagina num quadro, na altura pedida", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b", tipo: "incorporar", conteudo: { url: "https://exemplo/a.pdf", altura: 500 } }] }] },
+    destinos: destinosDeTeste()
+  })
+  const quadro = hospedeiro.porClasse("cf__incorporado")[0]
+  assert.ok(quadro, "sem quadro, a página incorporada não aparece")
+  assert.equal(quadro.src, "https://exemplo/a.pdf")
+  assert.equal(quadro.style.height, "500px")
+  assert.match(quadro.atributos.sandbox || "", /allow-scripts/,
+    "página de outra origem entra presa, não solta dentro da conversa")
+})
+
+test("o codigo de incorporar colado inteiro vira o endereco de dentro dele", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [{ id: "b", tipo: "incorporar",
+        conteudo: { url: '<iframe src="https://exemplo/form" width="640"></iframe>' } }] }] },
+    destinos: destinosDeTeste()
+  })
+  assert.equal(hospedeiro.porClasse("cf__incorporado")[0].src, "https://exemplo/form")
+})
+
+test("sem altura, o quadro usa a altura padrao", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b", tipo: "incorporar", conteudo: { url: "https://exemplo/a" } }] }] },
+    destinos: destinosDeTeste()
+  })
+  assert.equal(hospedeiro.porClasse("cf__incorporado")[0].style.height, "400px")
+})
+
+test("endereco que nao e endereco nao vira quadro em branco, e a conversa segue", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b1", tipo: "incorporar", conteudo: { url: "javascript:alert(1)" } },
+        { id: "b2", tipo: "texto", conteudo: { texto: "Continuo aqui" } }] }] },
+    destinos: destinosDeTeste()
+  })
+  assert.equal(hospedeiro.porClasse("cf__incorporado").length, 0)
+  assert.match(hospedeiro.porClasse("cf__thread")[0].textContent, /Continuo aqui/)
+})

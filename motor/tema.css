@@ -102,6 +102,12 @@
 }
 .cf__bolha img { max-width: 100%; height: auto; border-radius: 6px; display: block; }
 
+/* Quadro de outra página dentro da conversa — um PDF, um formulário, um site.
+   Ocupa a largura da bolha e a altura que o bloco pedir. */
+.cf__bolha--incorporado { padding: 0; overflow: hidden; width: 100%; }
+.cf__incorporado { display: block; width: 100%; border: 0; border-radius: 6px;
+  background: var(--cf-superficie); }
+
 /* As opções vivem na conversa, do lado de quem responde, e não numa barra
    fixa no rodapé: a pessoa lê a pergunta e a resposta está logo abaixo dela.
    Ficam lado a lado e só quebram quando a linha enche — quatro faixas de

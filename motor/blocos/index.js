@@ -3,6 +3,7 @@ import { registrar } from "./_registro.js"
 import texto from "./texto.js"
 import imagem from "./imagem.js"
 import video from "./video.js"
+import incorporar from "./incorporar.js"
 import entradaTexto from "./entrada-texto.js"
 import entradaNumero from "./entrada-numero.js"
 import entradaEmail from "./entrada-email.js"
@@ -16,7 +17,7 @@ import redirecionar from "./redirecionar.js"
 import webhook from "./webhook.js"
 
 export const CATALOGO_V1 = [
-  texto, imagem, video,
+  texto, imagem, video, incorporar,
   entradaTexto, entradaNumero, entradaEmail, entradaTelefone, entradaData, entradaBotoes,
   condicao, definirVariavel, irPara,
   redirecionar, webhook

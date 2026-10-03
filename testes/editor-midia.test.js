@@ -8,9 +8,10 @@ import {
   TIPOS_DE_IMAGEM, LIMITE_DA_IMAGEM
 } from "../editor/midia.js"
 
-test("so imagem e video tem caixa propria", () => {
+test("so as bolhas de midia tem caixa propria", () => {
   assert.equal(temCaixa("imagem"), true)
   assert.equal(temCaixa("video"), true)
+  assert.equal(temCaixa("incorporar"), true)
   assert.equal(temCaixa("texto"), false, "a fala se escreve no cartão, não numa caixa")
   assert.equal(temCaixa("entrada_botoes"), false)
   assert.equal(caixaDoTipo("texto"), null)
@@ -38,8 +39,22 @@ test("toda caixa diz o campo que edita e tem dica no lugar do texto", () => {
     assert.ok(caixa.campo?.nome, `${tipo} sem campo`)
     assert.ok(caixa.campo?.dica, `${tipo} sem dica`)
     assert.ok(caixa.abas?.length, `${tipo} sem aba`)
-    assert.ok(caixa.interruptor?.rotulo, `${tipo} sem rótulo no interruptor`)
+    // Interruptor ou número: cada bolha tem o seu segundo controle, e nenhuma
+    // fica só com o campo de endereço.
+    assert.ok(caixa.interruptor?.rotulo || caixa.numero?.rotulo, `${tipo} sem segundo controle`)
   }
+})
+
+test("a caixa do incorporar tem o endereco, a recomendacao e a altura", () => {
+  const caixa = caixaDoTipo("incorporar")
+  assert.deepEqual(caixa.abas.map((a) => a.rotulo), ["Link"])
+  assert.match(caixa.campo.dica, /código/, "o que os serviços dão de copiar é o código")
+  assert.match(caixa.nota, /PDFs/)
+  assert.match(caixa.nota, /iframes/)
+  assert.match(caixa.nota, /sites/)
+  assert.equal(caixa.numero.campo, "altura")
+  assert.equal(caixa.numero.padrao, 400)
+  assert.equal(caixa.interruptor, undefined, "altura não é interruptor")
 })
 
 // --- o arquivo que sobe ----------------------------------------------------

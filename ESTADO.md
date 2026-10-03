@@ -1289,3 +1289,29 @@ campo as três vezes.
 O que a busca não faz: trocar singular por plural. "botao" não acha "Botões";
 "bot" acha. Inventar radicais do português seria uma gramática dentro do
 editor.
+
+### A bolha Incorporar, e a caixa que fecha ao clicar fora
+
+871 testes. **Incorporar** é a quarta bolha: põe uma página dentro da
+conversa — um PDF, um formulário, um site. A caixa dela traz o campo, a
+recomendação **"Funciona com PDFs, iframes e sites."** e a **altura** com
+menos/mais, em 400px por padrão, como no print.
+
+**Aceita o código inteiro, não só o link.** Quem copia de um serviço de PDF ou
+de formulário recebe `<iframe src="…">`, e extrair o src na mão é trabalho que
+o editor devia fazer. O que não é endereço não vira quadro: `javascript:` e
+texto solto são ignorados, e a conversa segue — o bloco é pulado, como no
+vídeo com endereço que ninguém sabe tocar.
+
+**O quadro entra preso:** `sandbox` com scripts e formulários, sem janela nova
+e sem acesso de volta a esta página. Altura entre 80 e 1200px — mais que isso
+não cabe em tela nenhuma e a conversa some embaixo.
+
+**A caixa agora fecha ao clicar no vazio do quadro.** Antes ela só fechava
+quando outra caixa abria, e ficava pendurada enquanto a pessoa trabalhava em
+outro lugar. Só no clique: quem arrastou o quadro queria passear, não desmarcar
+o que escolheu.
+
+O que não veio do print: o **"Wait for event?"**, que no Typebot espera um
+evento do site que hospeda o chat. O chatflow não tem esse canal ainda — o
+interruptor existiria para não fazer nada.

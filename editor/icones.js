@@ -4,6 +4,9 @@ export const ICONE_DO_TIPO = {
   texto: "M2.5 3.5h11v7.5h-6l-3 2.5v-2.5h-2z",
   imagem: "M2.5 3.5h11v9h-11zM2.5 10l3-3 2.5 2.5 2-2 3.5 3.5M10.5 6.2h.01",
   video: "M2.5 3.5h11v9h-11zM6.8 6.3l3.7 2.2-3.7 2.2z",
+  // Janela de navegador: moldura, barra de cima e o conteúdo dentro. É o que
+  // uma página incorporada é — a página de outro alguém dentro desta.
+  incorporar: "M2.5 3.5h11v9h-11zM2.5 6.3h11M4.6 8.6h6.8M4.6 10.6h4",
   entrada_texto: "M2.5 4.5h11v7h-11zM5 8h4",
   entrada_numero: "M2.5 4.5h11v7h-11zM5.5 10.2V6.5l-1.3 1",
   entrada_email: "M2.5 4h11v8h-11zM2.5 4.6l5.5 4 5.5-4",

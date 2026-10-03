@@ -1609,3 +1609,31 @@ test("bolha de midia vazia convida a clicar, em vez de uma linha em branco", () 
   assert.deepEqual(resumos.map((r) => r.className.includes("--vazia")), [true, true, false, false],
     "o convite fica apagado, para não se confundir com o que a pessoa escreveu")
 })
+
+test("clicar no vazio do quadro larga a selecao e fecha a caixa da midia", () => {
+  const hospedeiro = new Elemento("div")
+  const selecionados = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoSelecionar: (o) => selecionados.push(o) })
+  canvas.desenhar(fluxoDeTipos)
+  canvas.selecionar({ grupo: "g1", bloco: "b2" })
+  assert.equal(hospedeiro.porClasse("ed__midia").length, 1)
+
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  palco.disparar("mousedown", { clientX: 600, clientY: 400, button: 0 })
+  document.disparar("mouseup", {})
+  assert.equal(hospedeiro.porClasse("ed__midia").length, 0, "a caixa fica aberta atrás do quadro")
+  assert.deepEqual(selecionados.at(-1), { grupo: null, bloco: null })
+})
+
+test("arrastar o quadro nao larga a selecao: quem arrasta quer passear", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTipos)
+  canvas.selecionar({ grupo: "g1", bloco: "b2" })
+
+  const palco = hospedeiro.porClasse("ed__palco")[0]
+  palco.disparar("mousedown", { clientX: 600, clientY: 400, button: 0 })
+  document.disparar("mousemove", { clientX: 700, clientY: 460 })
+  document.disparar("mouseup", {})
+  assert.equal(hospedeiro.porClasse("ed__midia").length, 1, "passear não é desmarcar")
+})

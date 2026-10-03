@@ -217,6 +217,21 @@ html, body { margin: 0; height: 100%; }
 .ed__midia-subir-rotulo { font-weight: 600; font-size: 0.82rem; }
 .ed__midia-arquivo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .ed__midia-interruptor { display: grid; gap: 0.4rem; }
+/* Altura: menos, o número, mais — grudados, como qualquer campo de medida. */
+.ed__midia-linha--numero { justify-content: space-between; }
+.ed__midia-numero { display: flex; align-items: stretch; border: 1px solid var(--ed-linha);
+  border-radius: 9px; overflow: hidden; background: var(--ed-superficie); }
+.ed__midia-numero-campo { width: 4.2rem; border: none; border-left: 1px solid var(--ed-linha);
+  border-right: 1px solid var(--ed-linha); padding: 0.35rem 0.4rem; text-align: center;
+  font: inherit; font-size: 0.82rem; background: transparent; color: var(--ed-texto);
+  -moz-appearance: textfield; }
+.ed__midia-numero-campo::-webkit-outer-spin-button,
+.ed__midia-numero-campo::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ed__midia-numero-campo:focus { outline: none; }
+.ed__midia-passo { width: 2rem; border: none; background: transparent; color: var(--ed-suave);
+  font: inherit; font-size: 0.95rem; line-height: 1; cursor: pointer; }
+.ed__midia-passo:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__midia-sufixo { color: var(--ed-suave); font-size: 0.8rem; }
 .ed__midia-linha { display: flex; align-items: center; gap: 0.5rem; }
 .ed__midia-rotulo { font-size: 0.82rem; }
 .ed__midia-chave { flex: none; width: 2.2rem; height: 1.2rem; padding: 0; border-radius: 999px;

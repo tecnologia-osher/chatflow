@@ -3,6 +3,7 @@ import { todos, obter } from "./blocos/_registro.js"
 import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
 import { fonteDeVideo } from "./video.js"
+import { enderecoIncorporado, alturaIncorporada } from "./incorporar.js"
 import { criarEnviador } from "./destinos.js"
 import { criarSessao } from "./sessao.js"
 import {
@@ -244,6 +245,19 @@ export function criarChat({
         bolha.append(img)
       }
       linha.append(bolha)
+    } else if (item.incorporado !== undefined) {
+      const bolha = elementoCom("div", "cf__bolha cf__bolha--incorporado")
+      const quadro = document.createElement("iframe")
+      quadro.src = item.incorporado.src
+      quadro.className = "cf__incorporado"
+      quadro.style.height = `${item.incorporado.altura}px`
+      // Caixa de outra origem dentro da conversa: sem permissão para abrir
+      // janela nem mexer no topo, e sem acesso de volta a esta página.
+      quadro.setAttribute("sandbox", "allow-scripts allow-forms allow-same-origin allow-popups")
+      quadro.setAttribute("loading", "lazy")
+      quadro.setAttribute("title", item.alternativo || "")
+      bolha.append(quadro)
+      linha.append(bolha)
     } else if (item.video !== undefined) {
       const bolha = elementoCom("div", "cf__bolha cf__bolha--video")
       if (item.video.tipo === "incorporado") {
@@ -483,6 +497,21 @@ export function criarChat({
           alternativo,
           ...(link ? { link } : {})
         })
+        estado = avancar(fluxo, estado)
+        continue
+      }
+
+      if (bloco.tipo === "incorporar") {
+        const endereco = enderecoIncorporado(
+          interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)))
+        // Endereço que não é endereço não vira quadro em branco: o bloco é
+        // pulado e a conversa segue, como no vídeo.
+        if (endereco) {
+          await dizerComPausa("", {
+            lado: "bot",
+            incorporado: { src: endereco, altura: alturaIncorporada(bloco.conteudo?.altura) }
+          })
+        }
         estado = avancar(fluxo, estado)
         continue
       }

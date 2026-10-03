@@ -8,11 +8,11 @@ function preparar() {
   registrarTodos()
 }
 
-test("registra os catorze tipos do catalogo", () => {
+test("registra os quinze tipos do catalogo", () => {
   preparar()
-  assert.equal(todos().length, 14)
+  assert.equal(todos().length, 15)
   assert.deepEqual(todos().filter((d) => d.categoria === "fala").map((d) => d.tipo),
-    ["texto", "imagem", "video"], "as três bolhas")
+    ["texto", "imagem", "video", "incorporar"], "as quatro bolhas")
 })
 
 test("so tres tipos ramificam", () => {

@@ -136,7 +136,7 @@ export function criarCanvas({
   // --- arrasto: um só mecanismo para o fundo e para o cartão ---------------
   // O que muda entre os dois é o que fazer com o deslocamento. Escrever duas
   // vezes convidaria a corrigir um e esquecer o outro.
-  function iniciarArrasto(ev, aoDeslocar) {
+  function iniciarArrasto(ev, aoDeslocar, aoClicar = null) {
     if (ev.button !== undefined && ev.button !== 0) return
     // Arrastar é sair de perto: a caixa de renomear fecha. Ela não fechava
     // sozinha porque o preventDefault abaixo segura o foco onde está, e sem
@@ -161,6 +161,7 @@ export function criarCanvas({
     function soltar() {
       document.removeEventListener("mousemove", mover)
       document.removeEventListener("mouseup", soltar)
+      if (!arrastou) aoClicar?.()
     }
     document.addEventListener("mousemove", mover)
     document.addEventListener("mouseup", soltar)
@@ -172,6 +173,14 @@ export function criarCanvas({
     iniciarArrasto(ev, (dx, dy) => {
       vista = { ...vista, x: base.x + dx, y: base.y + dy }
       aplicarVista()
+    }, () => {
+      // Clicar no vazio do quadro larga o que estava selecionado — é assim
+      // que a caixa de uma bolha de mídia se fecha. Só no clique: quem
+      // arrastou o quadro queria passear, não desmarcar o que escolheu.
+      if (!selecao.grupo && !selecao.bloco) return
+      selecao = { grupo: null, bloco: null }
+      desenhar(fluxoAtual)
+      aoSelecionar({ grupo: null, bloco: null })
     })
   })
 
