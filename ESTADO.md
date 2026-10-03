@@ -1255,3 +1255,13 @@ dica do mouse em cada caixa.
 O cadeado ganhou uma faixa só dele no alto. Flutuando à direita, como estava,
 o título da primeira seção subiria para o lado dele e a coluna começaria
 torta. Medido no Chrome: o cadeado em y=76 e BOLHAS em y=116, nas duas abas.
+
+### Bolha de mídia vazia convida a clicar
+
+835 testes. Imagem e vídeo sem endereço mostravam uma linha em branco no
+cartão — parecia bloco quebrado, e o jeito de preencher (clicar e usar a
+caixa) não se adivinha. Agora dizem **"Clique para editar…"**, em cinza claro
+para não se confundir com o que a pessoa escreveu.
+
+Só a mídia convida: a fala vazia já se edita clicando e digitando, e o convite
+ali seria barulho. Assim que o endereço entra, o convite dá lugar a ele.

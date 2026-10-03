@@ -479,6 +479,9 @@ html, body { margin: 0; height: 100%; }
    letra — o cartão fica mais alto, mas a informação fica toda dentro dele. */
 .ed__bloco-resumo { min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
   line-height: 1.3; }
+/* Bolha de mídia vazia: o convite fica apagado, para não se confundir com o
+   que a pessoa escreveu de verdade. */
+.ed__bloco-resumo--vazia { color: var(--ed-seta); }
 /* A caixa de edição ocupa o lugar do resumo, sem mudar a altura do cartão
    mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
 .ed__bloco-campo { width: 100%; min-height: 3.2rem; resize: vertical; box-sizing: border-box;

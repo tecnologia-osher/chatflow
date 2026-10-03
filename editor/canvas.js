@@ -816,7 +816,14 @@ export function criarCanvas({
         // O que o bloco diz fica embaixo do nome, numa linha própria: é o
         // texto que muda, e é nele que se escreve.
         if (caixaDeTexto) noBloco.append(caixaDeTexto)
-        else if (!bloco.opcoes) noBloco.append(el("span", "ed__bloco-resumo", bloco.resumo))
+        else if (!bloco.opcoes) {
+          // Bolha de mídia ainda vazia diz o que fazer com ela. Uma linha em
+          // branco no cartão parece bloco quebrado, e o jeito de preencher
+          // uma imagem — clicar e usar a caixa — não se adivinha.
+          const vazia = temCaixa(bloco.tipo) && !bloco.resumo
+          noBloco.append(el("span", `ed__bloco-resumo${vazia ? " ed__bloco-resumo--vazia" : ""}`,
+            vazia ? t("Clique para editar…") : bloco.resumo))
+        }
         if (bloco.opcoes) noBloco.append(listaDeOpcoes(cartao, bloco))
 
         noBloco.addEventListener("click", (ev) => {

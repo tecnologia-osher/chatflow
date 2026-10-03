@@ -84,6 +84,7 @@ export const EM_INGLES = {
   // --- a caixa da bolha de mídia ---
   "Link": "Link",
   "Upload": "Upload",
+  "Clique para editar…": "Click to edit…",
   "Cole o link da imagem…": "Paste the image link…",
   "Cole o link do vídeo…": "Paste the video link…",
   "Abrir link ao clicar": "On click link",

@@ -1588,3 +1588,24 @@ test("trocar de bloco troca a caixa, sem deixar a antiga pendurada", () => {
   assert.equal(hospedeiro.porClasse("ed__midia")[0].porClasse("ed__midia-abas").length, 0,
     "a caixa agora é a do vídeo, que tem uma aba só")
 })
+
+test("bolha de midia vazia convida a clicar, em vez de uma linha em branco", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar({
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "Grupo #1", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b1", tipo: "video", conteudo: {} },
+      { id: "b2", tipo: "imagem", conteudo: {} },
+      { id: "b3", tipo: "imagem", conteudo: { url: "https://exemplo/a.png" } },
+      { id: "b4", tipo: "texto", conteudo: { texto: "" } }
+    ] }]
+  })
+  const resumos = hospedeiro.porClasse("ed__bloco-resumo")
+  assert.deepEqual(resumos.map((r) => r.textContent),
+    ["Clique para editar…", "Clique para editar…", "https://exemplo/a.png", ""],
+    "só a mídia vazia convida: a fala vazia já se edita clicando e digitando")
+  assert.deepEqual(resumos.map((r) => r.className.includes("--vazia")), [true, true, false, false],
+    "o convite fica apagado, para não se confundir com o que a pessoa escreveu")
+})
