@@ -1,0 +1,101 @@
+/* A primeira página: a lista dos chats e os caminhos para criar mais um.
+   Usa as mesmas variáveis do editor — é a mesma casa, outra sala. */
+
+.pr {
+  --pr-largura: 72rem;
+  min-height: 100vh;
+  padding: 2rem 1.5rem 4rem;
+  background: var(--ed-fundo);
+  color: var(--ed-texto);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+}
+.pr__topo { display: flex; align-items: center; gap: 0.6rem;
+  max-width: var(--pr-largura); margin: 0 auto 1.4rem; }
+.pr__titulo { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+.pr__voltar { width: 2.2rem; height: 2.2rem; display: grid; place-items: center; padding: 0;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--ed-suave); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.pr__voltar:hover { background: var(--ed-superficie); color: var(--ed-texto); }
+.pr__recado { max-width: var(--pr-largura); margin: 0 auto 1rem; padding: 0.7rem 0.9rem;
+  border-radius: 10px; background: var(--ed-problema-fundo); color: var(--ed-erro); font-size: 0.84rem; }
+
+/* Cartões do tamanho de um cartão de visita, em grade que se ajusta sozinha. */
+.pr__grade { display: grid; gap: 1rem; max-width: var(--pr-largura); margin: 0 auto;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
+.pr__cartao, .pr__novo {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.6rem; aspect-ratio: 1 / 1; padding: 1rem; border-radius: 14px; cursor: pointer;
+  font: inherit; text-align: center; }
+.pr__cartao { position: relative; border: 1px solid var(--ed-linha); background: var(--ed-superficie);
+  color: var(--ed-texto); }
+.pr__cartao:hover { border-color: var(--ed-acento); box-shadow: 0 6px 18px rgba(16,24,40,0.08); }
+.pr__cartao-topo { position: absolute; top: 0.7rem; left: 0.7rem; right: 0.7rem;
+  display: flex; align-items: center; justify-content: center; min-height: 1.4rem; }
+/* "No ar" é informação de peso: diz qual destes chats está recebendo gente. */
+.pr__selo { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+  background: var(--ed-acento); color: #fff; }
+.pr__cartao-icone { font-size: 2.1rem; line-height: 1; }
+.pr__cartao-nome { font-weight: 600; overflow-wrap: anywhere; }
+
+/* Criar é a ação principal da tela: fica no azul do programa, não no cinza
+   dos cartões que já existem. */
+.pr__novo { border: none; background: var(--ed-acento); color: #fff; }
+.pr__novo:hover { filter: brightness(1.15); }
+.pr__novo-mais { font-size: 2.2rem; line-height: 1; font-weight: 300; }
+.pr__novo-rotulo { font-weight: 700; }
+.pr__vazio { grid-column: 1 / -1; align-self: center; margin: 0; color: var(--ed-suave); }
+
+/* --- a caixa de criar --- */
+.pr__fundo { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+  padding: 1.5rem; background: rgba(16, 24, 40, 0.35); }
+.pr__caixa { position: relative; width: min(34rem, 100%); display: grid; gap: 0.8rem;
+  padding: 1.6rem; border-radius: 16px; background: var(--ed-superficie);
+  box-shadow: 0 20px 50px rgba(16,24,40,0.22); }
+.pr__caixa-titulo { margin: 0 0 0.4rem; font-size: 1.1rem; }
+.pr__opcao { display: grid; gap: 0.15rem; padding: 0.9rem 1rem; border-radius: 12px;
+  border: 1px solid var(--ed-linha); background: var(--ed-superficie); color: var(--ed-texto);
+  font: inherit; text-align: left; cursor: pointer; }
+.pr__opcao:hover { border-color: var(--ed-acento); background: var(--ed-selecionado); }
+.pr__opcao-rotulo { font-weight: 600; }
+.pr__opcao-nota { font-size: 0.8rem; color: var(--ed-suave); }
+/* O campo de arquivo é feio em todo navegador e não se deixa estilizar: a
+   etiqueta inteira é o botão, e ele fica escondido atrás dela. */
+.pr__arquivo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.pr__fechar { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.8rem; height: 1.8rem;
+  border: none; border-radius: 50%; background: transparent; color: var(--ed-suave);
+  font: inherit; cursor: pointer; }
+.pr__fechar:hover { background: var(--ed-fundo); }
+
+/* --- a galeria de modelos --- */
+.pr__modelos { display: grid; grid-template-columns: 16rem 1fr; gap: 1rem;
+  max-width: var(--pr-largura); margin: 0 auto; min-height: 60vh; }
+.pr__modelos-lista { align-content: start; display: grid; gap: 0.2rem; padding: 0.8rem;
+  border: 1px solid var(--ed-linha); border-radius: 14px; background: var(--ed-superficie);
+  max-height: 70vh; overflow-y: auto; }
+.pr__categoria { margin: 0.6rem 0 0.3rem; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--ed-suave); }
+.pr__categoria:first-child { margin-top: 0; }
+.pr__modelo { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem;
+  border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--ed-texto);
+  font: inherit; text-align: left; cursor: pointer; }
+.pr__modelo:hover { background: var(--ed-fundo); }
+.pr__modelo--ativo { border-color: var(--ed-linha); background: var(--ed-selecionado); font-weight: 600; }
+.pr__modelo-icone { flex: none; font-size: 1.1rem; }
+/* A amostra é o chat de verdade rodando o modelo. */
+.pr__amostra { border: 1px solid var(--ed-linha); border-radius: 14px; overflow: hidden;
+  background: var(--ed-superficie); max-height: 70vh; }
+.pr__modelo-rodape { display: flex; align-items: center; gap: 0.8rem;
+  max-width: var(--pr-largura); margin: 1rem auto 0; padding: 1rem 1.2rem;
+  border: 1px solid var(--ed-linha); border-radius: 14px; background: var(--ed-superficie); }
+.pr__modelo-texto { flex: 1; min-width: 0; }
+.pr__modelo-titulo { margin: 0; font-size: 1rem; }
+.pr__modelo-descricao { margin: 0.15rem 0 0; color: var(--ed-suave); font-size: 0.84rem; }
+.pr__usar { flex: none; padding: 0.6rem 1.1rem; border: 1px solid var(--ed-acento); border-radius: 10px;
+  background: var(--ed-acento); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.pr__usar:hover { filter: brightness(1.15); }
+
+@media (max-width: 720px) {
+  .pr__modelos { grid-template-columns: 1fr; }
+  .pr__amostra { min-height: 24rem; }
+}

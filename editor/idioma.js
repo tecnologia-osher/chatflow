@@ -14,6 +14,29 @@ export const IDIOMAS = [
 export const PADRAO = "pt"
 
 export const EM_INGLES = {
+  // --- a primeira página ---
+  "Criar um chatflow": "Create a chatflow",
+  "Procurando os seus chats…": "Looking for your chats…",
+  "Nenhum chat ainda. Crie o primeiro aqui ao lado.": "No chats yet. Create the first one next to this.",
+  "No ar": "Live",
+  "Começar do zero": "Start from scratch",
+  "Um grupo vazio, e o fluxo é seu.": "An empty group, and the flow is yours.",
+  "Começar de um modelo": "Start from a template",
+  "Fluxos semiprontos, para ajustar em vez de escrever.":
+    "Half-built flows, to adjust instead of write.",
+  "Importar um arquivo": "Import a file",
+  "Um fluxo.json que você já tem.": "A fluxo.json you already have.",
+  "Modelos": "Templates",
+  "Voltar": "Back",
+  "Usar este modelo": "Use this template",
+  "Não consegui abrir este modelo.": "I couldn't open this template.",
+  "Este chatflow está aberto sem servidor para criar projetos.":
+    "This chatflow is open without a server to create projects.",
+  "Não consegui criar ({motivo}).": "Couldn't create it ({motivo}).",
+  "Não consegui importar ({motivo}).": "Couldn't import it ({motivo}).",
+  "Não consegui listar os projetos ({motivo}).": "Couldn't list the projects ({motivo}).",
+  "isto não parece um fluxo do chatflow": "this doesn't look like a chatflow flow",
+
   // --- barra e abas ---
   "Voltar aos projetos": "Back to projects",
   "Clique para renomear o projeto": "Click to rename the project",

@@ -1,6 +1,10 @@
-/* Editor do chatflow. Cores só por variável, como no tema do motor. */
+/* Editor do chatflow. Cores só por variável, como no tema do motor.
+ *
+ * As variáveis moram em `:root` e não em `.ed` porque a lista de chats é
+ * outra página, com outra raiz, e usa as mesmas cores: presas ao `.ed`, ela
+ * abria com os cartões sem cor nenhuma. */
 
-.ed {
+:root {
   --ed-fundo: #f3f4f6;
   --ed-superficie: #ffffff;
   --ed-linha: #e3e5e9;
@@ -33,7 +37,9 @@
      na largura da janela e nada nele se mexe quando a coluna da esquerda some. */
   --ed-lado: 17rem;
   --ed-flutua: 0.7rem;
+}
 
+.ed {
   display: grid;
   grid-template-rows: auto 1fr;
   height: 100vh;

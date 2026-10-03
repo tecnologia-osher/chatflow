@@ -30,10 +30,13 @@ test("nao usa nenhuma palavra proibida em preferencias.md", () => {
   }
 })
 
-test("nao usa emoji nem exclamacao", () => {
-  const texto = JSON.stringify(fluxo)
-  assert.ok(!texto.includes("!"), "o fluxo contém exclamação")
-  assert.ok(!/\p{Extended_Pictographic}/u.test(texto), "o fluxo contém emoji")
+test("nao usa emoji nem exclamacao no que o lead le", () => {
+  // A regra é sobre a voz da marca — o que a pessoa lê na conversa. O que o
+  // editor guarda sobre o projeto (o ícone do cartão na lista de chats, por
+  // exemplo) não é falado com ninguém e não entra nesta conta.
+  const falado = JSON.stringify({ grupos: fluxo.grupos, eventos: fluxo.eventos })
+  assert.ok(!falado.includes("!"), "o fluxo contém exclamação")
+  assert.ok(!/\p{Extended_Pictographic}/u.test(falado), "o fluxo contém emoji")
 })
 
 test("pergunta que pontua precisa discriminar entre as opcoes", () => {

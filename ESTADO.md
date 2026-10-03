@@ -1137,3 +1137,37 @@ roda saltar. O teto segura o clique da roda, e por baixo dele a pinça corre.
 Medido no Chrome: cada clique de roda leva a escala de 0,60 → 0,75 → 0,94 →
 1,17 (era ×1,197, agora ×1,25), e um gesto de pinça de doze eventos leva de
 1,17 para 1,68 — antes o mesmo gesto daria 1,30.
+
+### A primeira página: a lista de chats
+
+786 testes. O chatflow ganhou porta de entrada. Abrir o endereço sem
+`?cliente=` cai em **`projetos/`**: a lista dos chats que existem, cada um com
+o seu ícone, o seu nome e o selo **No ar** para quem está publicado. O `‹` do
+editor volta para lá, e clicar num cartão abre aquele projeto.
+
+O link do lead continua intocado: `?cliente=osher` segue direto para o chat,
+como sempre. A raiz só olha se há cliente na query.
+
+**Criar tem três caminhos**, no espírito do Typebot: começar do zero (um grupo
+com uma fala, que o validador aceita), começar de um modelo, ou importar um
+`fluxo.json` que você já tem. A galeria de modelos mostra as categorias à
+esquerda e **a conversa do modelo rodando de verdade** à direita — ler a
+conversa é a única maneira honesta de escolher um modelo. Por ora há um:
+"Captação simples". Os outros nascem com o Gustavo.
+
+**Onde os projetos moram, por enquanto:** `clientes/index.json` guarda os ids
+e cada `fluxo.json` diz como se chama. Um arquivo para saber o que existe, e
+cada projeto se descrevendo — em vez de um índice que repete o nome e
+envelhece. Criar é `POST /api/projetos` no `servir.py`, que abre a pasta,
+escreve o fluxo e põe o id no índice. **Publicado, não há quem crie**: a
+página só oferece criar em `localhost`, porque um botão que existe para falhar
+é pior que botão nenhum. No sub-projeto 3 isso vira tabela com dono, e a
+página não precisa saber da troca — quem lista e quem cria entram por fora.
+
+**As variáveis de cor saíram do `.ed` para o `:root`.** Presas ao editor, a
+lista de chats abria com os cartões sem cor nenhuma — foi o que o primeiro
+screenshot mostrou.
+
+E a regra da voz da Osher ficou mais precisa: ela vale para **o que o lead
+lê**, não para o arquivo inteiro. O ícone do projeto (🤝) não é falado com
+ninguém; emoji numa fala continua quebrando a suíte, conferido por mutação.

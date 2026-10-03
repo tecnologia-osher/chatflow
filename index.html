@@ -5,14 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>chatflow</title>
 <script>
-  // A raiz existe só para encurtar o link publicado. Repassa a query string
-  // e o fragmento inteiros, então ?cliente=osher e &teste=1 continuam
-  // valendo. replace() em vez de href para não empilhar no histórico do
-  // navegador — senão o botão Voltar fica preso num laço de redirecionamento.
-  location.replace("motor/player.html" + location.search + location.hash)
+  // A raiz tem dois públicos. Com `?cliente=`, é o link do chat que o lead
+  // abre: repassa a query e o fragmento inteiros, então ?cliente=osher e
+  // &teste=1 continuam valendo. Sem nada, é quem vem ver o produto — e cai na
+  // lista de chats, que é a porta de entrada do chatflow.
+  //
+  // replace() em vez de href para não empilhar no histórico do navegador —
+  // senão o botão Voltar fica preso num laço de redirecionamento.
+  const temCliente = new URLSearchParams(location.search).has("cliente")
+  location.replace(temCliente
+    ? "motor/player.html" + location.search + location.hash
+    : "projetos/" + location.search + location.hash)
 </script>
 </head>
 <body>
-<p>Abrindo o chat… <a href="motor/player.html">continuar</a></p>
+<p>Abrindo… <a href="projetos/">meus chats</a> · <a href="motor/player.html">chat de exemplo</a></p>
 </body>
 </html>

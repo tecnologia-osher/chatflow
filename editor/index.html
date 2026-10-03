@@ -90,8 +90,7 @@
       tema: await carregar(`${base}/tema.json`, {}),
       pastaDoCliente: base,
       aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
-      // A página de projetos ainda não existe; quando existir, é só apontar.
-      aoVoltar: () => alert("A lista de projetos ainda não existe."),
+      aoVoltar: () => { location.href = "../projetos/" },
       aoBuscarLeads: buscarLeads
     })
 

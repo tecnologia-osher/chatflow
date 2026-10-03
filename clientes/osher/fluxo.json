@@ -1,5 +1,8 @@
 {
   "versao": 2,
+  "nome": "Osher 01",
+  "icone": "🤝",
+  "publicado": true,
   "ritmo": {
     "piso": 1000,
     "porCaractere": 0,

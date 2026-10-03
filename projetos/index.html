@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chatflow — meus chats</title>
+<link rel="stylesheet" href="../motor/tema.css">
+<link rel="stylesheet" href="../editor/editor.css">
+<link rel="stylesheet" href="../editor/projetos.css">
+</head>
+<body>
+<div id="projetos"></div>
+<script type="module">
+  import { criarPaginaDeProjetos } from "../editor/pagina-projetos.js"
+  import { projetoDoFluxo } from "../editor/projetos.js"
+
+  const alvo = document.getElementById("projetos")
+
+  // Quais projetos existem: `clientes/index.json` guarda os ids, e cada fluxo
+  // diz como se chama. Um arquivo para saber o que existe, e cada projeto se
+  // descrevendo — em vez de um índice que repete o nome e envelhece.
+  async function listar() {
+    const resposta = await fetch("../clientes/index.json", { cache: "no-store" })
+    if (!resposta.ok) throw new Error(`index.json respondeu ${resposta.status}`)
+    const { projetos = [] } = await resposta.json()
+    const lidos = await Promise.all(projetos.map(async ({ id }) => {
+      try {
+        const fluxo = await (await fetch(`../clientes/${id}/fluxo.json`, { cache: "no-store" })).json()
+        return projetoDoFluxo(id, fluxo)
+      } catch {
+        // Pasta listada que não abre continua aparecendo: sumir com ela
+        // esconderia justamente o projeto que precisa de conserto.
+        return projetoDoFluxo(id, null)
+      }
+    }))
+    return lidos
+  }
+
+  // Criar é escrever pasta no disco: só o servidor de bancada faz. Aberto de
+  // outro jeito (GitHub Pages), não há quem crie, e a página diz isso.
+  async function criar({ nome, fluxo }) {
+    const resposta = await fetch("../api/projetos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, fluxo })
+    })
+    const corpo = await resposta.json().catch(() => ({}))
+    if (!resposta.ok) throw new Error(corpo.recado || `o servidor respondeu ${resposta.status}`)
+    return corpo.id
+  }
+
+  async function lerModelo(modelo) {
+    try {
+      const resposta = await fetch(`../modelos/${modelo.arquivo}`, { cache: "no-store" })
+      if (!resposta.ok) return null
+      return await resposta.json()
+    } catch {
+      return null
+    }
+  }
+
+  // Só oferece criar onde há quem grave: num servidor estático o botão
+  // existiria para falhar.
+  const naBancada = ["localhost", "127.0.0.1"].includes(location.hostname)
+
+  criarPaginaDeProjetos({
+    elemento: alvo,
+    aoListar: listar,
+    aoCriar: naBancada ? criar : null,
+    aoLerModelo: lerModelo,
+    aoAbrir: (id) => { location.href = `../editor/index.html?cliente=${encodeURIComponent(id)}` }
+  })
+</script>
+</body>
+</html>
