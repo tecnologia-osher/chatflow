@@ -43,6 +43,14 @@ INDICE = Path("clientes/index.json")
 
 
 class SemCache(SimpleHTTPRequestHandler):
+    # HTTP/1.1 com conexão reaproveitada. Em HTTP/1.0 o servidor fecha a
+    # conexão a cada resposta, e o Chrome — que abre seis de uma vez e
+    # pré-conecta outras tantas para carregar os módulos — levava
+    # ERR_CONNECTION_RESET em uma de cada quatro aberturas do editor: a página
+    # ficava em branco, sem erro nenhum na tela. Medido: 6 de 8 antes, 8 de 8
+    # depois. Exige Content-Length em toda resposta, e todas têm.
+    protocol_version = "HTTP/1.1"
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")

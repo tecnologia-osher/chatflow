@@ -1171,3 +1171,24 @@ screenshot mostrou.
 E a regra da voz da Osher ficou mais precisa: ela vale para **o que o lead
 lê**, não para o arquivo inteiro. O ícone do projeto (🤝) não é falado com
 ninguém; emoji numa fala continua quebrando a suíte, conferido por mutação.
+
+### O servidor de bancada derrubava uma abertura em quatro
+
+788 testes. O nome do projeto não estava sendo salvo — e o defeito não era do
+editor. Medido: abrindo o editor oito vezes seguidas, **duas falhavam** com
+`ERR_CONNECTION_RESET` num dos módulos. A página ficava em branco ou pela
+metade, sem erro nenhum na tela, e o que se fizesse nela não chegava a lugar
+nenhum.
+
+A causa é o `servir.py` falar **HTTP/1.0**, em que o servidor fecha a conexão a
+cada resposta. O Chrome abre seis conexões de uma vez e pré-conecta outras
+tantas para buscar os módulos ES; algumas morriam no meio. Uma linha —
+`protocol_version = "HTTP/1.1"` — e a medição passou a ser **8 de 8**, duas
+vezes seguidas.
+
+Com o servidor firme, renomear funciona inteiro, conferido no Chrome: clicar no
+nome, digitar, Enter, Salvar, e o `fluxo.json` no disco com o nome novo.
+
+A lição repete a de setembro por outro caminho: **quando a tela não faz o que
+deveria, medir quantas vezes em quantas** — "às vezes não funciona" é um dado,
+não um fantasma.
