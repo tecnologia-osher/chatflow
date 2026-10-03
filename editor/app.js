@@ -11,6 +11,7 @@ import {
   acrescentarBloco, criarGrupo, moverGrupo, definirCampo, definirTitulo,
   definirOpcao, acrescentarOpcao, removerOpcao, proximoIdDeOpcao,
   definirProximoDoEvento, moverEvento, definirProximo, limparOpcoesVazias, removerGrupo, duplicarGrupo,
+  removerBloco,
   nomeDoFluxo, definirNomeDoFluxo, moverBlocoEntreGrupos, blocoViraGrupo
 } from "./edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
@@ -354,6 +355,14 @@ export function criarEditor({
       } else {
         trocarFluxo(definirProximo(atual, { grupo: seta.de, valor: "" }))
       }
+      redesenhar()
+    },
+    aoApagarBloco: ({ grupo, bloco }) => {
+      trocarFluxo(removerBloco(atual, { grupo, bloco }))
+      // O bloco que se foi não pode continuar selecionado: a seleção fica no
+      // grupo, que é onde a pessoa está olhando.
+      if (selecao.bloco === bloco) selecao = { grupo, bloco: null }
+      detalhesAbertos = false
       redesenhar()
     },
     aoAbrirDetalhes: ({ grupo, bloco }) => {

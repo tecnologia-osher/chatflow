@@ -186,20 +186,23 @@ const CARTAO_CABECALHO = 44
 // acrescenta uma linha de altura, e o resumo quebra perto dos 36 caracteres.
 // A medida inclui a margem entre blocos: o cartão desenha cada bloco como uma
 // caixinha com respiro, e quem soma a altura precisa somar o respiro junto.
-const CARTAO_BLOCO = 28
-const CARTAO_LINHA = 16
-// O texto do bloco perdeu largura para o ícone e para a margem: cabem menos
-// letras por linha do que cabiam.
-const CARTAO_CARACTERES_POR_LINHA = 27
+// Medidos no Chrome depois que a linha do tipo entrou: a faixa fixa do bloco
+// (nome do tipo, margens e o respiro até o bloco seguinte) e cada linha de
+// texto embaixo dela.
+const CARTAO_BLOCO = 45.6
+const CARTAO_LINHA = 17.5
+// O texto saiu de dentro da linha do ícone e ganhou a largura inteira do
+// cartão, então cabem mais letras por linha do que cabiam.
+const CARTAO_CARACTERES_POR_LINHA = 36
 // Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais a
 // linha do "+ botão", que fecha a lista e ocupa altura como as outras.
-const CARTAO_OPCOES_TOPO = 43
-const CARTAO_OPCAO = 40
+const CARTAO_OPCOES_TOPO = 43.2
+const CARTAO_OPCAO = 39.6
 // O rodapé é a faixa onde mora a saída do grupo, em todo cartão: é a única
 // saída que existe, com botões ou sem.
-const CARTAO_RODAPE = 27
+const CARTAO_RODAPE = 32
 // Sem botões o rodapé não tem palavra nenhuma, só a bolinha: é mais baixo.
-const CARTAO_RODAPE_SO_BOLINHA = 17
+const CARTAO_RODAPE_SO_BOLINHA = 22.4
 // Onde fica o centro da bolinha, medido da borda direita do cartão. A linha
 // nasce nela, não na borda — nascendo na borda, ficava um vão entre a bolinha
 // e o começo do traço, e a linha parecia sair do cartão.

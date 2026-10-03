@@ -429,7 +429,7 @@ html, body { margin: 0; height: 100%; }
 /* Link não tem espaço onde quebrar: sem isto, a URL do WhatsApp saía pela
    direita do cartão e ficava escrita por cima do fundo. Quebra em qualquer
    letra — o cartão fica mais alto, mas a informação fica toda dentro dele. */
-.ed__bloco-resumo { flex: 1; min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
+.ed__bloco-resumo { min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
   line-height: 1.3; }
 /* A caixa de edição ocupa o lugar do resumo, sem mudar a altura do cartão
    mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
@@ -480,7 +480,13 @@ html, body { margin: 0; height: 100%; }
 
 /* Opções do bloco de botões, empilhadas dentro do cartão. O ponto à direita
    é o destino daquela opção: cheio quando leva a algum grupo. */
-.ed__bloco-topo { display: flex; align-items: flex-start; gap: 0.45rem; }
+.ed__bloco-topo { display: flex; align-items: center; gap: 0.4rem; }
+/* O nome do tipo na linha de cima: o ícone sozinho obriga a decorar catorze
+   formas. Fica miúdo e em caixa alta para não competir com o que o bloco diz,
+   que é o texto embaixo. */
+.ed__bloco-tipo { flex: 1; min-width: 0; font-size: 0.66rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--ed-suave);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed__bloco-mais { flex: none; width: 1.3rem; height: 1.3rem; display: grid; place-items: center;
   border: none; border-radius: 5px; background: transparent; color: var(--ed-suave);
   font: inherit; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; opacity: 0; }

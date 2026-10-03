@@ -4,8 +4,17 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, comConector, blocoEmCaixa, MEDIDAS
+  cartoes, setas, caixas, caixaDoBloco, caixaDaSaida, comConector, blocoEmCaixa,
+  alturaDoCartao, MEDIDAS
 } from "../editor/modelo.js"
+
+// As medidas saíram do Chrome e são fracionárias (0.3rem = 4,8px). Comparar
+// float por igualdade é brigar com a IEEE, não com o modelo: 79.2 calculado
+// por somas vira 79.19999999999999.
+function perto(a, b, recado, folga = 0.001) {
+  assert.ok(Math.abs(a - b) <= folga, `${recado} (${a} vs ${b})`)
+}
+
 
 const fluxo = {
   versao: 2,
@@ -144,7 +153,7 @@ test("a caixa conta cada opcao empilhada, e o padrao que fecha a lista", () => {
   const comQuatro = { ...comDuas, blocos: [
     { id: "b", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }, { id: "o3" }, { id: "o4" }] }] }
   const [a, b] = [caixas([comDuas]).get("g").altura, caixas([comQuatro]).get("g").altura]
-  assert.equal(b - a, 2 * MEDIDAS.CARTAO_OPCAO, "duas opções a mais, duas linhas a mais")
+  perto(b - a, 2 * MEDIDAS.CARTAO_OPCAO, "duas opções a mais, duas linhas a mais")
   assert.ok(a > MEDIDAS.CARTAO_CABECALHO + MEDIDAS.CARTAO_RODAPE + 2 * MEDIDAS.CARTAO_OPCAO,
     "a linha do + botão também ocupa altura")
 })
@@ -358,7 +367,7 @@ test("caixaDaSaida acha a linha da opcao, a faixa do bloco e o rodape", () => {
 
   const daOpcao2 = caixaDaSaida(caixa, { bloco: "b2", opcao: "o2" })
   const daOpcao1 = caixaDaSaida(caixa, { bloco: "b2", opcao: "o1" })
-  assert.equal(daOpcao2.y - daOpcao1.y, MEDIDAS.CARTAO_OPCAO,
+  perto(daOpcao2.y - daOpcao1.y, MEDIDAS.CARTAO_OPCAO,
     "cada opção uma linha abaixo da outra: é o que separa as setas")
   assert.ok(daOpcao1.y > caixa.y + MEDIDAS.CARTAO_CABECALHO, "a linha fica abaixo do cabeçalho")
 
@@ -472,4 +481,51 @@ test("caixa sem rodape, como a do Start, tambem nasce na bolinha", () => {
   const doStart = { x: 40, y: 40, largura: 190, altura: 48 }
   const daSaida = caixaDaSaida(doStart, null)
   assert.equal(daSaida.x + daSaida.largura, 40 + 190 + MEDIDAS.CARTAO_CONECTOR)
+})
+
+// --- o modelo preso à régua ------------------------------------------------
+// O modelo existe para prever a altura de um cartão sem desenhá-lo: é dele que
+// saem as âncoras das setas e a prova de que um cartão não cobre o outro.
+// Número chutado aqui vira seta apontando para o lugar errado, e nenhum teste
+// de relação entre constantes pega isso — só a régua pega.
+//
+// Medidas tiradas no Chrome em 03/10/2026, no fluxo da Osher a 1440px, já
+// divididas pela escala do mundo. "Passo" é o que o cartão anda de um bloco
+// para o começo do próximo, que é exatamente o que `alturaDoBloco` responde.
+const MEDIDO_NO_CHROME = [
+  { o: "bloco de uma linha curta", letras: 8, passo: 63.1 },
+  { o: "bloco de uma linha", letras: 16, passo: 63.1 },
+  { o: "bloco de uma linha cheia", letras: 31, passo: 63.1 },
+  { o: "bloco que ainda cabe numa linha", letras: 34, passo: 63.1 },
+  { o: "bloco de duas linhas", letras: 38, passo: 80.5 },
+  { o: "bloco de duas linhas cheias", letras: 55, passo: 80.5 }
+]
+
+test("a altura de cada bloco bate com a regua do navegador", () => {
+  for (const caso of MEDIDO_NO_CHROME) {
+    const cartao = { id: "g", titulo: "x", posicao: { x: 0, y: 0 },
+      blocos: [{ id: "b", tipo: "texto", resumo: "a".repeat(caso.letras) }] }
+    const previsto = caixas([cartao]).get("g").blocos[0].altura
+    assert.ok(Math.abs(previsto - caso.passo) <= 2,
+      `${caso.o} (${caso.letras} letras): modelo diz ${previsto}, o Chrome mediu ${caso.passo}`)
+  }
+})
+
+test("a altura de um cartao inteiro bate com a regua do navegador", () => {
+  // O cartão "Abertura" da Osher: três falas, sem botões. 275,2px no Chrome.
+  const abertura = { id: "g", titulo: "Abertura", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b1", tipo: "texto", resumo: "a".repeat(55) },
+    { id: "b2", tipo: "texto", resumo: "a".repeat(16) },
+    { id: "b3", tipo: "texto", resumo: "a".repeat(8) }
+  ] }
+  assert.ok(Math.abs(alturaDoCartao(abertura) - 275.2) <= 3,
+    `o modelo diz ${alturaDoCartao(abertura)}, o Chrome mediu 275.2`)
+
+  // O cartão "Idade": uma fala e um bloco de quatro botões. 380,6px.
+  const idade = { id: "g", titulo: "Idade", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b1", tipo: "texto", resumo: "a".repeat(15) },
+    { id: "b2", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }, { id: "o3" }, { id: "o4" }] }
+  ] }
+  assert.ok(Math.abs(alturaDoCartao(idade) - 380.6) <= 3,
+    `o modelo diz ${alturaDoCartao(idade)}, o Chrome mediu 380.6`)
 })

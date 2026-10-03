@@ -1461,3 +1461,74 @@ test("a copia nao leva os ouvintes do original", () => {
   document.disparar("mouseup", { clientX: 600, clientY: 400 })
   assert.equal(movidos.length <= 1, true, "clicar na cópia não pode começar outro arrasto")
 })
+
+// --- a caixa diz o que é, e o ⋯ dá conta dela ------------------------------
+
+// Um grupo com três tipos diferentes, para provar que o nome na caixa é o do
+// tipo e não uma palavra fixa.
+const fluxoDeTipos = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Abertura", posicao: { x: 300, y: 40 }, blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Olá" } },
+      { id: "b2", tipo: "imagem", conteudo: { url: "foto.png" } },
+      { id: "b3", tipo: "video", conteudo: { url: "https://youtu.be/abc" } }
+    ] }
+  ]
+}
+
+function montarComTipos() {
+  const hospedeiro = new Elemento("div")
+  const detalhes = []
+  const apagados = []
+  const canvas = criarCanvas({
+    elemento: hospedeiro,
+    aoAbrirDetalhes: (o) => detalhes.push(o),
+    aoApagarBloco: (o) => apagados.push(o)
+  })
+  canvas.desenhar(fluxoDeTipos)
+  return { hospedeiro, detalhes, apagados }
+}
+
+const porClasse = (no, classe) => no.porClasse(classe)
+
+test("cada bloco mostra o nome do tipo ao lado do icone", () => {
+  const { hospedeiro } = montarComTipos()
+  assert.deepEqual(porClasse(hospedeiro, "ed__bloco-tipo").map((e) => e.textContent),
+    ["Texto", "Imagem", "Vídeo"],
+    "o ícone sozinho obriga a decorar catorze formas")
+})
+
+test("o texto do bloco fica numa linha propria, embaixo do nome", () => {
+  const { hospedeiro } = montarComTipos()
+  const primeiro = porClasse(hospedeiro, "ed__bloco")[0]
+  assert.deepEqual(primeiro.filhos.map((f) => f.className), ["ed__bloco-topo", "ed__bloco-resumo"])
+  assert.equal(primeiro.porClasse("ed__bloco-resumo")[0].textContent, "Olá")
+  assert.equal(primeiro.porClasse("ed__bloco-topo")[0].porClasse("ed__bloco-resumo").length, 0,
+    "o texto ao lado do nome espremeria os dois")
+})
+
+test("o ⋯ do bloco abre as acoes dele, nao o painel", () => {
+  const { hospedeiro, detalhes } = montarComTipos()
+  porClasse(hospedeiro, "ed__bloco-mais")[0].disparar("click")
+  const menu = porClasse(hospedeiro, "ed__menu-acoes")[0]
+  assert.ok(menu, "o ⋯ precisa abrir a caixa de ações")
+  assert.deepEqual(menu.porClasse("ed__acao-dica").map((e) => e.textContent),
+    ["Mais opções", "Excluir"])
+  assert.deepEqual(detalhes, [], "abrir um painel inteiro para trocar uma palavra é caro demais")
+})
+
+test("Excluir no ⋯ apaga aquele bloco, e so ele", () => {
+  const { hospedeiro, apagados } = montarComTipos()
+  porClasse(hospedeiro, "ed__bloco-mais")[1].disparar("click")
+  porClasse(hospedeiro, "ed__acao--excluir")[0].disparar("click")
+  assert.deepEqual(apagados, [{ grupo: "g1", bloco: "b2" }])
+})
+
+test("Mais opcoes no ⋯ leva ao painel, que e onde mora o resto", () => {
+  const { hospedeiro, detalhes } = montarComTipos()
+  porClasse(hospedeiro, "ed__bloco-mais")[2].disparar("click")
+  porClasse(hospedeiro, "ed__acao--detalhes")[0].disparar("click")
+  assert.deepEqual(detalhes, [{ grupo: "g1", bloco: "b3" }])
+})

@@ -1075,3 +1075,25 @@ morrer na faixa.
 
 Na aba Resultados não existe painel, então ele não fica nem preso nem solto:
 pílula na beira de uma tela sem painel só faria perguntar o que é aquilo.
+
+### A caixa diz o que é, e o ⋯ dá conta dela
+
+773 testes. Cada bloco do cartão passou a mostrar **o nome do tipo** ao lado do
+ícone — TEXTO, IMAGEM, VÍDEO, BOTÕES —, com o que ele diz numa linha própria
+embaixo. O ícone sozinho obrigava a decorar catorze formas.
+
+**O ⋯ do bloco deixou de abrir o painel direto.** Agora abre as ações dele, no
+mesmo molde das do grupo: **Mais opções** (que leva ao painel, onde moram
+endereço da imagem, autoplay, link ao clicar, variável e as regras) e
+**Excluir**. Apagar um bloco não tinha caminho nenhum na tela até hoje —
+`removerBloco` existia no código, testado, sem botão. O texto se edita no
+próprio cartão, clicando nele.
+
+**O modelo foi recalibrado com régua.** A linha nova mudou a altura de todo
+bloco, e o modelo é quem diz onde as setas encostam: estava errando até 21px
+por cartão. Medido no Chrome e corrigido, o erro máximo caiu para **2px**.
+
+E as medições viraram teste: `MEDIDO_NO_CHROME` guarda o passo de um bloco de
+uma e de duas linhas e a altura de dois cartões inteiros da Osher, com folga de
+2 a 3px. Constante chutada passava por todos os testes de relação entre
+constantes — nenhum deles sabia qual é o tamanho de verdade. Esse sabe.

@@ -356,7 +356,7 @@ test("excluir pela lixeira do ... apaga o grupo", () => {
 
 test("fechar o painel some com ele", () => {
   const { hospedeiro } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__bloco-mais")[1].disparar("click")
+  maisOpcoesDoBloco(hospedeiro, 1)
   porClasse(hospedeiro, "ed__painel-fechar")[0].disparar("click")
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 0)
 })
@@ -403,9 +403,15 @@ test("Backspace numa opcao vazia a remove", () => {
   assert.deepEqual(editor.fluxo().grupos[0].blocos[1].conteudo.opcoes.map((o) => o.id), ["o2"])
 })
 
+// O ⋯ do bloco abre as ações dele; "Mais opções" é a que leva ao painel.
+function maisOpcoesDoBloco(h, indice = 0) {
+  porClasse(h, "ed__bloco-mais")[indice].disparar("click")
+  porClasse(h, "ed__acao--detalhes")[0].disparar("click")
+}
+
 test("o botao de detalhes abre o painel para pontos e destino", () => {
   const { hospedeiro } = montar(comBotoes())
-  porClasse(hospedeiro, "ed__bloco-mais")[1].disparar("click")
+  maisOpcoesDoBloco(hospedeiro, 1)
   assert.equal(porClasse(hospedeiro, "ed__painel").length, 1)
   assert.ok(porClasse(hospedeiro, "ed__opcao").length > 0, "pontos e destino continuam acessíveis")
 })
@@ -2281,4 +2287,31 @@ test("com o painel preso, ou sem painel, o mouse nao custa medicao nenhuma", () 
   abrirResultados(hospedeiro)
   mexer()
   assert.equal(medidas, 0, "nesta aba não existe painel para chamar de volta")
+})
+
+test("Excluir no ⋯ do bloco tira o bloco do fluxo, e cabe num desfazer", () => {
+  const { hospedeiro, editor } = montar(comBotoes())
+  const blocosAntes = editor.fluxo().grupos[0].blocos.map((b) => b.id)
+  assert.ok(blocosAntes.length > 1, "com um bloco só o teste não prova nada")
+
+  porClasse(hospedeiro, "ed__bloco-mais")[0].disparar("click")
+  porClasse(hospedeiro, "ed__acao--excluir")[0].disparar("click")
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), blocosAntes.slice(1))
+  assert.equal(editor.temMudancas(), true)
+
+  desfazerPasso(hospedeiro).disparar("click")
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.id), blocosAntes,
+    "apagar sem desfazer é uma armadilha")
+})
+
+test("apagar o bloco selecionado larga a selecao nele, nao num bloco fantasma", () => {
+  const { hospedeiro, editor } = montar(comBotoes())
+  const alvo = editor.fluxo().grupos[0].blocos[0].id
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  assert.equal(editor.selecao().bloco, alvo)
+
+  porClasse(hospedeiro, "ed__bloco-mais")[0].disparar("click")
+  porClasse(hospedeiro, "ed__acao--excluir")[0].disparar("click")
+  assert.equal(editor.selecao().bloco, null)
+  assert.equal(editor.selecao().grupo, "g1", "a seleção fica no grupo, que é onde a pessoa olha")
 })

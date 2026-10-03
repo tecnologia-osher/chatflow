@@ -37,7 +37,7 @@ export function criarCanvas({
   aoDuplicarGrupo = () => {}, aoMoverBloco = () => {}, aoSoltarBlocoNoQuadro = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
-  aoAbrirDetalhes = () => {}, aoLigarOpcao = () => {},
+  aoAbrirDetalhes = () => {}, aoApagarBloco = () => {}, aoLigarOpcao = () => {},
   aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
   // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
   // assim quem monta um canvas sozinho não precisa passar idioma nenhum.
@@ -254,6 +254,8 @@ export function criarCanvas({
     menuAberto = menu
   }
 
+  // Dois controles deslizantes: o que não cabe no cartão mora atrás deste.
+  const CONTROLES = "M2.5 5.5h3.5M9 5.5h4.5M2.5 10.5h6M11.5 10.5h2M7.5 4v3M10 9v3"
   const LIXEIRA = "M3 5h10M6.5 5V3.5h3V5M4.5 5l.6 7.5h5.8L11.5 5"
   const DUPLICAR = "M5.5 2.5h6a1 1 0 0 1 1 1v6M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"
 
@@ -294,6 +296,28 @@ export function criarCanvas({
     menu.append(
       iconeDeAcao("ed__acao--duplicar", DUPLICAR, t("Duplicar"), () => aoDuplicarGrupo({ grupo: cartao.id })),
       iconeDeAcao("ed__acao--excluir", LIXEIRA, t("Excluir"), () => aoApagarGrupo({ grupo: cartao.id }))
+    )
+    palco.append(menu)
+    menuAberto = menu
+  }
+
+  // As ações de um bloco, no mesmo molde das do grupo. O ⋯ deixou de abrir o
+  // painel direto: apagar um bloco não tinha caminho nenhum na tela, e abrir
+  // um painel inteiro para trocar uma palavra é caro demais — o texto se
+  // edita no próprio cartão.
+  function abrirAcoesDoBloco(ev, cartao, bloco) {
+    fecharMenu()
+    const onde = noPalco(ev)
+    const menu = el("div", "ed__menu-ligacao ed__menu-acoes")
+    menu.style.setProperty("left", `${onde.x}px`)
+    menu.style.setProperty("top", `${onde.y}px`)
+    menu.addEventListener("mousedown", (e) => e.stopPropagation?.())
+    menu.addEventListener("contextmenu", (e) => e.preventDefault?.())
+    menu.append(
+      iconeDeAcao("ed__acao--detalhes", CONTROLES, t("Mais opções"),
+        () => aoAbrirDetalhes({ grupo: cartao.id, bloco: bloco.id })),
+      iconeDeAcao("ed__acao--excluir", LIXEIRA, t("Excluir"),
+        () => aoApagarBloco({ grupo: cartao.id, bloco: bloco.id }))
     )
     palco.append(menu)
     menuAberto = menu
@@ -720,13 +744,13 @@ export function criarCanvas({
         noBloco.addEventListener("mousedown", (ev) => {
           iniciarArrastoDeBloco(ev, cartao.id, bloco.id)
         })
-        // A linha do bloco: ícone do tipo, o que ele diz, e o ⋯ no fim. O
-        // ícone no lugar da palavra — a forma conta o tipo, e o nome fica no
-        // title para quem passar o mouse.
+        // A linha do bloco: ícone e nome do tipo, com o ⋯ no fim. O ícone
+        // sozinho obrigava a decorar catorze formas; o nome ao lado dele diz
+        // o que a caixa é sem passar o mouse em nada.
         const topo = el("div", "ed__bloco-topo")
-        topo.setAttribute("title", t(bloco.rotulo))
         const icone = iconeDoTipo(bloco.tipo, "ed__bloco-icone")
         if (icone) topo.append(icone)
+        topo.append(el("span", "ed__bloco-tipo", t(bloco.rotulo)))
 
         let caixaDeTexto = null
         if (ativoB && bloco.campoPrincipal && !bloco.opcoes) {
@@ -739,23 +763,24 @@ export function criarCanvas({
           caixaDeTexto.addEventListener("input", () => aoEditarCampo({
             grupo: cartao.id, bloco: bloco.id, campo: bloco.campoPrincipal, valor: caixaDeTexto.value
           }))
-        } else if (!bloco.opcoes) {
-          topo.append(el("span", "ed__bloco-resumo", bloco.resumo))
         }
 
         // O que não cabe no cartão — pontuação, destino, texto do botão de
         // enviar — continua a um clique daqui, sem aparecer sozinho.
         const mais = el("button", "ed__bloco-mais", "⋯")
         mais.setAttribute("type", "button")
-        mais.setAttribute("title", t("Mais opções deste bloco"))
+        mais.setAttribute("title", t("Ações deste bloco"))
         mais.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
         mais.addEventListener("click", (ev) => {
           ev.stopPropagation?.()
-          aoAbrirDetalhes({ grupo: cartao.id, bloco: bloco.id })
+          abrirAcoesDoBloco(ev, cartao, bloco)
         })
         topo.append(mais)
         noBloco.append(topo)
+        // O que o bloco diz fica embaixo do nome, numa linha própria: é o
+        // texto que muda, e é nele que se escreve.
         if (caixaDeTexto) noBloco.append(caixaDeTexto)
+        else if (!bloco.opcoes) noBloco.append(el("span", "ed__bloco-resumo", bloco.resumo))
         if (bloco.opcoes) noBloco.append(listaDeOpcoes(cartao, bloco))
 
         noBloco.addEventListener("click", (ev) => {
