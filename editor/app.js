@@ -754,15 +754,12 @@ export function criarEditor({
         if (icone) botao.append(icone)
         botao.append(el("span", "ed__tipo-rotulo", t(definicao.rotulo)))
         botao.addEventListener("mousedown", (ev) => arrastarTipo(ev, definicao))
+        // Clicar não acrescenta nada. Um gesto só para pôr bloco no fluxo, e
+        // é o arrasto: clicando, o bloco caía no grupo que estava selecionado
+        // de antes — quase nunca o grupo em que a pessoa estava olhando.
         botao.addEventListener("click", () => {
-          if (!selecao.grupo) {
-            // Sem grupo escolhido não há onde pôr o bloco — e agora há um
-            // gesto melhor que escolher: arrastar até o quadro.
-            recado = t("Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.")
-            desenharPaleta()
-            return
-          }
-          acrescentarNoGrupo(selecao.grupo, definicao.tipo, selecao.bloco)
+          recado = t("Arraste o tipo até o quadro, ou solte sobre um cartão.")
+          desenharPaleta()
         })
         grade.append(botao)
       }

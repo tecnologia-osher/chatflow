@@ -67,25 +67,28 @@ test("a paleta oferece todos os tipos do catalogo, agrupados", () => {
   for (const c of ["Bolhas", "Entrada", "Lógica", "Conexão"]) assert.ok(categorias.includes(c), `faltou ${c}`)
 })
 
-test("clicar num tipo com grupo selecionado acrescenta o bloco nele", () => {
+test("clicar num tipo nao acrescenta bloco nenhum, nem com grupo selecionado", () => {
+  // Clicando, o bloco caía no grupo selecionado de antes — quase nunca o
+  // grupo em que a pessoa estava olhando. Um gesto só para pôr bloco no
+  // fluxo, e é o arrasto.
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__cabecalho")[1].disparar("click")        // seleciona g2
   porClasse(hospedeiro, "ed__tipo").find((t) => t.textContent.includes("Texto")).disparar("click")
-  assert.equal(editor.fluxo().grupos[1].blocos.length, 1)
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0])
 })
 
-test("clicar num tipo sem selecao avisa em vez de quebrar", () => {
+test("clicar num tipo diz como se faz, em vez de nao fazer nada em silencio", () => {
   const { hospedeiro, editor } = montar()
   porClasse(hospedeiro, "ed__tipo")[0].disparar("click")
   assert.equal(editor.fluxo().grupos[0].blocos.length, 1, "nada deve ser acrescentado")
-  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /selecione|grupo/i)
+  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste/i)
 })
 
-test("o bloco acrescentado ja vem selecionado, pronto para editar", () => {
+test("o bloco arrastado ja vem selecionado, pronto para editar", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho")[1].disparar("click")
-  porClasse(hospedeiro, "ed__tipo").find((t) => t.textContent.includes("Texto")).disparar("click")
-  assert.equal(editor.selecao().bloco, editor.fluxo().grupos[1].blocos[0].id)
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: 100, y: 300 }))
+  const novo = editor.fluxo().grupos.at(-1)
+  assert.equal(editor.selecao().bloco, novo.blocos[0].id)
 })
 
 test("editar na caixa do cartao nao recria a caixa a cada tecla", () => {
@@ -341,9 +344,8 @@ test("duplicar pelo ... cria a copia do grupo, ja selecionada", () => {
   assert.deepEqual(fluxo.grupos.at(-1).blocos.map((b) => b.tipo), ["texto"])
   assert.equal(porClasse(hospedeiro, "ed__cartao").length, 3)
 
-  // Selecionada: clicar num tipo da paleta acrescenta nela, não no original.
-  tipoDaPaleta(hospedeiro, "Texto").disparar("click")
-  assert.equal(editor.fluxo().grupos.at(-1).blocos.length, 2)
+  // A cópia nasce selecionada, e o original fica como estava.
+  assert.equal(editor.selecao().grupo, fluxo.grupos.at(-1).id)
   assert.equal(editor.fluxo().grupos[0].blocos.length, 1)
 })
 
@@ -558,11 +560,12 @@ test("nao existe mais botao de novo grupo: o quadro recebe o arrasto", () => {
   assert.equal(porClasse(hospedeiro, "ed__paleta-corpo")[0].filhos[0].className, "ed__lado-topo")
 })
 
-test("clicar no tipo continua valendo para quem ja tem grupo selecionado", () => {
+test("soltar um tipo sobre um cartao poe o bloco nele, sem clique nenhum", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
-  tipoDaPaleta(hospedeiro, "Texto").disparar("click")
+  const alvo = editor.fluxo().grupos[0]
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: alvo.posicao.x + 20, y: alvo.posicao.y + 20 }))
   assert.equal(editor.fluxo().grupos[0].blocos.length, 2)
+  assert.equal(editor.fluxo().grupos.length, 2, "soltar no cartão não cria grupo")
 })
 
 test("a barra diz Centralizar, e explica o que faz", () => {
@@ -641,9 +644,9 @@ test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma",
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g2"])
 
   // Com a seleção presa no grupo apagado, clicar num tipo tentaria acrescentar
-  // bloco nele e não diria nada: nem avisa, nem acrescenta.
+  // bloco nele. Hoje clique nenhum acrescenta: o recado só diz como se faz.
   tipoDaPaleta(hospedeiro, "Texto").disparar("click")
-  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste|selecione/i)
+  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste/i)
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [0])
 })
 
@@ -2404,11 +2407,11 @@ test("digitar na busca nao refaz a coluna: o cursor fica onde estava", () => {
   assert.equal(campoDeBusca(hospedeiro).value, "tel")
 })
 
-test("o tipo achado continua servindo para arrastar e para clicar", () => {
+test("o tipo achado continua servindo para arrastar", () => {
   const { hospedeiro, editor } = montar()
   procurar(hospedeiro, "video")
-  porClasse(hospedeiro, "ed__cabecalho")[0].disparar("click")
-  tipoDaPaleta(hospedeiro, "Vídeo").disparar("click")
-  const blocos = editor.fluxo().grupos[0].blocos
-  assert.equal(blocos.at(-1).tipo, "video", "achar e não poder usar seria pior que não achar")
+  const alvo = editor.fluxo().grupos[0]
+  arrastar(hospedeiro, "Vídeo", naJanela(hospedeiro, { x: alvo.posicao.x + 20, y: alvo.posicao.y + 20 }))
+  assert.equal(editor.fluxo().grupos[0].blocos.at(-1).tipo, "video",
+    "achar e não poder usar seria pior que não achar")
 })

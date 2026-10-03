@@ -63,8 +63,8 @@ export const EM_INGLES = {
     "Unpin the panel: it slides away when the mouse leaves",
   "Prender o painel no lugar": "Pin the panel in place",
   "Mostrar o painel": "Show the panel",
-  "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.":
-    "Drag the type onto the board to create a group, or select a group before clicking.",
+  "Arraste o tipo até o quadro, ou solte sobre um cartão.":
+    "Drag the type onto the board, or drop it on a card.",
 
   "Procurar": "Search",
   "Procurar um tipo": "Search for a type",

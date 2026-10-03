@@ -1315,3 +1315,17 @@ o que escolheu.
 O que não veio do print: o **"Wait for event?"**, que no Typebot espera um
 evento do site que hospeda o chat. O chatflow não tem esse canal ainda — o
 interruptor existiria para não fazer nada.
+
+### Só o arrasto põe bloco no fluxo
+
+871 testes. Clicar num tipo da paleta acrescentava o bloco no grupo que
+estivesse selecionado — e o grupo selecionado quase nunca é aquele em que a
+pessoa está olhando: ficou de um clique de meia hora atrás, de um cartão
+duplicado, de um bloco apagado. O bloco caía longe, e a pessoa só descobria
+rolando o quadro.
+
+Agora é um gesto só: **arrastar**. Solto no vazio, cria o grupo; solto sobre um
+cartão, entra nele. Clicar não acrescenta nada — diz como se faz, porque um
+botão que não reage parece quebrado. Conferido no Chrome: com um grupo
+selecionado, clicar em "Texto" deixou os quinze blocos como estavam e o Salvar
+em "Salvo".
