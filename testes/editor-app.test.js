@@ -2297,3 +2297,18 @@ test("apagar o bloco selecionado larga a selecao nele, nao num bloco fantasma", 
   assert.equal(editor.selecao().bloco, null)
   assert.equal(editor.selecao().grupo, "g1", "a seleção fica no grupo, que é onde a pessoa olha")
 })
+
+test("voltar aos projetos grava o que estava pendente", async () => {
+  // Renomear e sair pela seta perdia o nome: ele vivia só na tela, e a lista
+  // continuava mostrando o antigo.
+  const { hospedeiro, editor, salvos } = montarComServidor()
+  porClasse(hospedeiro, "ed__cabecalho-titulo")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__titulo-campo")[0]
+  campo.value = "Outro nome"
+  campo.disparar("input")
+  assert.equal(editor.temMudancas(), true)
+
+  await editor.salvar()
+  assert.equal(salvos.length, 1)
+  assert.equal(editor.temMudancas(), false, "depois de gravar, sair é seguro")
+})

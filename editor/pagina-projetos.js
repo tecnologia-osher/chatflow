@@ -7,7 +7,7 @@
 // conta de alguém. A página não sabe a diferença.
 
 import { criarTradutor, idiomaValido, PADRAO as IDIOMA_PADRAO } from "./idioma.js"
-import { MODELOS, categoriasDeModelos, modeloPorId, idDeProjeto, ICONE_PADRAO } from "./projetos.js"
+import { MODELOS, categoriasDeModelos, modeloPorId, idDeProjeto } from "./projetos.js"
 import { criarChat } from "../motor/motor.js"
 
 // O nome do produto não se traduz nem muda: é nome, não frase.
@@ -96,7 +96,9 @@ export function criarPaginaDeProjetos({
     if (projeto.publicado) topo.append(el("span", "pr__selo", t("No ar")))
     cartao.append(topo)
 
-    cartao.append(el("span", "pr__cartao-icone", projeto.icone || ICONE_PADRAO))
+    // Só há ícone se a pessoa digitou um emoji no nome. Sem ele, o cartão é
+    // o nome — e não um desenho genérico repetido em todos.
+    if (projeto.icone) cartao.append(el("span", "pr__cartao-icone", projeto.icone))
     cartao.append(el("span", "pr__cartao-nome", projeto.nome))
     cartao.addEventListener("click", () => aoAbrir(projeto.id))
     return cartao

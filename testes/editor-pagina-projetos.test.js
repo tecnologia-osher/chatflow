@@ -177,3 +177,25 @@ test("a seta volta da galeria para a lista", async () => {
   await assentar()
   assert.equal(cartoes(hospedeiro).length, 2)
 })
+
+test("o cartao mostra o emoji que a pessoa digitou, e so uma vez", () => {
+  // O emoji aparecia duas vezes: uma do campo `icone` e outra dentro do nome.
+  const hospedeiro = new Elemento("div")
+  criarPaginaDeProjetos({
+    elemento: hospedeiro,
+    armazenamento: criarArmazenamento(),
+    esperarNoTeste: async () => {},
+    aoListar: async () => [
+      { id: "a", nome: "Osher Capital", icone: "🤝", publicado: false },
+      { id: "b", nome: "Chatflow inicial", icone: "", publicado: false }
+    ],
+    aoAbrir: () => {}
+  })
+  return assentar().then(() => {
+    const cartoes = porClasse(hospedeiro, "pr__cartao")
+    assert.deepEqual(cartoes.map((c) => c.porClasse("pr__cartao-icone").length), [1, 0],
+      "sem emoji digitado, o cartão é só o nome")
+    assert.equal(cartoes[0].porClasse("pr__cartao-icone")[0].textContent, "🤝")
+    assert.equal(cartoes[0].porClasse("pr__cartao-nome")[0].textContent, "Osher Capital")
+  })
+})

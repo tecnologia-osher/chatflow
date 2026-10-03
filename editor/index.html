@@ -90,7 +90,15 @@
       tema: await carregar(`${base}/tema.json`, {}),
       pastaDoCliente: base,
       aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
-      aoVoltar: () => { location.href = "../projetos/" },
+      // Voltar guarda o que estiver pendente. Sem isto, renomear o projeto e
+      // sair pela seta perdia o nome: ele vivia só na tela, e a lista
+      // continuava mostrando o antigo. Se não deu para gravar, não sai — o
+      // recado na paleta diz por quê, e o trabalho fica onde está.
+      aoVoltar: async () => {
+        await editor.salvar()
+        if (editor.temMudancas()) return
+        location.href = "../projetos/"
+      },
       aoBuscarLeads: buscarLeads
     })
 

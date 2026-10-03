@@ -5,7 +5,7 @@ import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
   idDeProjeto, projetoDoFluxo, fluxoDoZero, fluxoDoModelo, modeloPorId,
-  categoriasDeModelos, MODELOS, ICONE_PADRAO
+  categoriasDeModelos, separarIcone, MODELOS
 } from "../editor/projetos.js"
 import { NOME_PADRAO } from "../editor/edicoes.js"
 import { validarFluxo } from "../motor/validar.js"
@@ -38,15 +38,47 @@ test("id nao fica gigante por causa de um nome gigante", () => {
 // --- o cartão --------------------------------------------------------------
 
 test("o cartao se descreve pelo proprio fluxo", () => {
-  assert.deepEqual(projetoDoFluxo("osher", { nome: "Osher 01", icone: "🤝", publicado: true }),
-    { id: "osher", nome: "Osher 01", icone: "🤝", publicado: true })
+  assert.deepEqual(projetoDoFluxo("osher", { nome: "🤝 Osher Capital", publicado: true }),
+    { id: "osher", nome: "Osher Capital", icone: "🤝", publicado: true })
 })
 
-test("fluxo sem nome nem icone ainda vira um cartao legivel", () => {
+test("so tem icone quem digitou um emoji no nome", () => {
+  assert.deepEqual(projetoDoFluxo("x", { nome: "Chatflow inicial" }),
+    { id: "x", nome: "Chatflow inicial", icone: "", publicado: false })
+})
+
+test("fluxo sem nome ainda vira um cartao legivel", () => {
   assert.deepEqual(projetoDoFluxo("novo", {}),
-    { id: "novo", nome: NOME_PADRAO, icone: ICONE_PADRAO, publicado: false })
+    { id: "novo", nome: NOME_PADRAO, icone: "", publicado: false })
   assert.deepEqual(projetoDoFluxo("novo", null),
-    { id: "novo", nome: NOME_PADRAO, icone: ICONE_PADRAO, publicado: false })
+    { id: "novo", nome: NOME_PADRAO, icone: "", publicado: false })
+})
+
+// --- o emoji do nome -------------------------------------------------------
+
+test("o emoji do comeco do nome vira o icone, e sai do nome", () => {
+  assert.deepEqual(separarIcone("🤝 Osher Capital"), { icone: "🤝", nome: "Osher Capital" })
+  assert.deepEqual(separarIcone("🧲Captação"), { icone: "🧲", nome: "Captação" })
+})
+
+test("emoji de varias partes conta como um so", () => {
+  // Família é três pessoas costuradas por ZWJ; cortar no meio deixaria metade
+  // do desenho no ícone e metade no nome.
+  assert.deepEqual(separarIcone("👨‍👩‍👧 Família"), { icone: "👨‍👩‍👧", nome: "Família" })
+  assert.deepEqual(separarIcone("☺️ Oi"), { icone: "☺️", nome: "Oi" })
+})
+
+test("sem emoji no comeco, nao ha icone", () => {
+  assert.deepEqual(separarIcone("Chatflow inicial"), { icone: "", nome: "Chatflow inicial" })
+  assert.deepEqual(separarIcone("Osher 🤝"), { icone: "", nome: "Osher 🤝" },
+    "emoji no fim é parte do nome, não ícone")
+  assert.deepEqual(separarIcone(""), { icone: "", nome: "" })
+  assert.deepEqual(separarIcone(null), { icone: "", nome: "" })
+})
+
+test("nome que e so o emoji continua sendo o nome", () => {
+  assert.deepEqual(separarIcone("🧲"), { icone: "", nome: "🧲" },
+    "o cartão ficaria com um desenho e nenhuma palavra")
 })
 
 // --- o fluxo que nasce ----------------------------------------------------
@@ -63,7 +95,7 @@ test("o fluxo do zero abre no editor e passa pelo validador", () => {
 
 test("o fluxo do zero nasce com nome padrao quando ninguem escolheu", () => {
   assert.equal(fluxoDoZero().nome, NOME_PADRAO)
-  assert.equal(fluxoDoZero().icone, ICONE_PADRAO)
+  assert.equal("icone" in fluxoDoZero(), false, "ícone é o que a pessoa digitar, não um campo")
 })
 
 // --- modelos ---------------------------------------------------------------
@@ -96,9 +128,9 @@ test("modeloPorId acha o modelo, e nao inventa um quando nao existe", () => {
 
 test("o fluxo do modelo leva o nome do modelo e deixa para tras o publicado", () => {
   const modelo = { id: "x", nome: "Captação", icone: "🧲" }
-  const gerado = fluxoDoModelo(modelo, { versao: 2, nome: "Osher 01", publicado: true, grupos: [] })
+  const gerado = fluxoDoModelo(modelo, { versao: 2, nome: "Osher 01", icone: "🤝", publicado: true, grupos: [] })
   assert.equal(gerado.nome, "Captação")
-  assert.equal(gerado.icone, "🧲")
   assert.equal("publicado" in gerado, false, "o projeto novo não nasce no ar porque o modelo estava")
+  assert.equal("icone" in gerado, false, "o ícone da galeria é da galeria")
   assert.equal(gerado.versao, 2)
 })

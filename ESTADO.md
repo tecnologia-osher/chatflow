@@ -1192,3 +1192,23 @@ nome, digitar, Enter, Salvar, e o `fluxo.json` no disco com o nome novo.
 A lição repete a de setembro por outro caminho: **quando a tela não faz o que
 deveria, medir quantas vezes em quantas** — "às vezes não funciona" é um dado,
 não um fantasma.
+
+### O nome que você digita é o nome que aparece
+
+795 testes. Duas coisas se juntavam para o nome do projeto parecer que não
+salvava:
+
+**A seta `‹` saía sem gravar.** Renomear e voltar para a lista pela seta
+deixava o nome só na tela — o arquivo continuava com o antigo, e a lista
+mostrava o antigo. Agora o `‹` grava antes de sair; se não der para gravar,
+ele não sai, e o recado na paleta diz por quê. Conferido no Chrome com mouse e
+teclado de verdade: renomeei, saí pela seta sem tocar no Salvar, e a lista já
+abriu com o nome novo.
+
+**O emoji era um campo, não uma escolha.** O cartão tinha um `icone` no fluxo,
+então o 🤝 aparecia em projeto que ninguém enfeitou — e aparecia duas vezes
+quando a pessoa também digitava o emoji no nome. O campo acabou: **o ícone é o
+emoji que você escrever no começo do nome**, e só. Sem emoji, o cartão é o
+nome. Emoji de várias partes (👨‍👩‍👧) conta como um só, e nome que é apenas um
+emoji continua sendo o nome — senão o cartão ficaria com um desenho e nenhuma
+palavra.

@@ -8,7 +8,23 @@
 
 import { NOME_PADRAO } from "./edicoes.js"
 
-export const ICONE_PADRAO = "💬"
+// Um emoji no começo do nome vira o ícone do cartão. É o único jeito de ter
+// ícone: quem quiser um, digita um no nome do projeto. Campo separado de
+// ícone dava um desenho que ninguém escolheu e que aparecia duas vezes quando
+// a pessoa também digitava o emoji.
+const EMOJI_NO_COMECO =
+  /^(\p{Extended_Pictographic}(\uFE0F|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic}(\uFE0F)?)*)\s*/u
+
+export function separarIcone(nome) {
+  const texto = String(nome || "").trim()
+  const achado = EMOJI_NO_COMECO.exec(texto)
+  if (!achado) return { icone: "", nome: texto }
+  const resto = texto.slice(achado[0].length).trim()
+  // Nome que é só o emoji continua sendo o nome: sem isso o cartão ficaria
+  // com um desenho e nenhuma palavra.
+  if (!resto) return { icone: "", nome: texto }
+  return { icone: achado[1], nome: resto }
+}
 
 // O id vira nome de pasta e entra na URL: só minúsculas, números e hífen.
 // Nome vazio ou que vire nada depois da limpeza cai num id genérico, em vez
@@ -34,21 +50,16 @@ export function idDeProjeto(nome, existentes = []) {
 // O retrato de um projeto na lista. O que o cartão mostra vem do próprio
 // fluxo — ele é quem sabe como se chama —, e o id vem da pasta.
 export function projetoDoFluxo(id, fluxo) {
-  return {
-    id,
-    nome: (fluxo?.nome || "").trim() || NOME_PADRAO,
-    icone: (fluxo?.icone || "").trim() || ICONE_PADRAO,
-    publicado: Boolean(fluxo?.publicado)
-  }
+  const { icone, nome } = separarIcone(fluxo?.nome)
+  return { id, nome: nome || NOME_PADRAO, icone, publicado: Boolean(fluxo?.publicado) }
 }
 
 // Fluxo de um projeto que nasce do zero: o mínimo que o editor sabe abrir e o
 // validador aceita — um começo ligado a um grupo com uma fala vazia.
-export function fluxoDoZero({ nome = NOME_PADRAO, icone = ICONE_PADRAO } = {}) {
+export function fluxoDoZero({ nome = NOME_PADRAO } = {}) {
   return {
     versao: 2,
     nome,
-    icone,
     eventos: [{ tipo: "inicio", posicao: { x: 40, y: 160 }, proximo: "g1" }],
     grupos: [{
       id: "g1",
@@ -87,9 +98,10 @@ export function modeloPorId(id, modelos = MODELOS) {
   return modelos.find((m) => m.id === id) || null
 }
 
-// O fluxo que o modelo gera: o arquivo dele, com o nome e o ícone do modelo,
-// menos o que é do projeto que o originou (quem publicou foi outro).
+// O fluxo que o modelo gera: o arquivo dele, com o nome do modelo, menos o
+// que é do projeto que o originou (quem publicou foi outro, e o ícone da
+// galeria é da galeria — no cartão, o ícone é o que a pessoa digitar).
 export function fluxoDoModelo(modelo, conteudo) {
-  const { publicado, ...resto } = conteudo || {}
-  return { ...resto, nome: modelo.nome, icone: modelo.icone }
+  const { publicado, icone, ...resto } = conteudo || {}
+  return { ...resto, nome: modelo.nome }
 }
