@@ -84,7 +84,7 @@ html, body { margin: 0; height: 100%; }
 .ed__corpo--espiando .ed__puxador-marca { opacity: 0; }
 
 /* Cadeado no alto da coluna, discreto até o mouse chegar. */
-.ed__trava { position: sticky; top: 0; float: right; margin: -0.2rem -0.2rem 0 0.4rem;
+.ed__trava { margin: 0 -0.3rem 0 0;
   width: 1.7rem; height: 1.7rem; display: grid; place-items: center; padding: 0;
   border: 1px solid transparent; border-radius: 8px; background: transparent;
   color: var(--ed-seta); cursor: pointer; }
@@ -92,7 +92,9 @@ html, body { margin: 0; height: 100%; }
 .ed__trava--presa { color: var(--ed-suave); }
 .ed__trava-icone { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor;
   stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.ed__paleta-corpo { padding: 1rem; }
+.ed__paleta-corpo { padding: 0.6rem 1rem 1rem; }
+/* O cadeado mora numa faixa só dele, encostado à direita. */
+.ed__lado-topo { display: flex; justify-content: flex-end; min-height: 1.7rem; }
 .ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
   color: var(--ed-suave); margin: 0; }
 

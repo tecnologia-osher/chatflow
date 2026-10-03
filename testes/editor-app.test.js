@@ -552,10 +552,10 @@ test("enquanto arrasta, um fantasma acompanha o cursor", () => {
 test("nao existe mais botao de novo grupo: o quadro recebe o arrasto", () => {
   const { hospedeiro } = montar()
   assert.equal(porClasse(hospedeiro, "ed__criar-grupo").length, 0)
-  // Gesto escondido é gesto que não existe: a paleta precisa dizer qual é.
-  const dica = porClasse(hospedeiro, "ed__dica")[0]
-  assert.ok(dica, "sem dica, ninguém descobre que se arrasta")
-  assert.match(dica.textContent, /arraste/i)
+  // A coluna começa nas seções, sem recado nenhum no alto: o arrasto se
+  // descobre arrastando, e o aviso fixo só ocupava a tela.
+  assert.equal(porClasse(hospedeiro, "ed__dica").length, 0)
+  assert.equal(porClasse(hospedeiro, "ed__paleta-corpo")[0].filhos[0].className, "ed__lado-topo")
 })
 
 test("clicar no tipo continua valendo para quem ja tem grupo selecionado", () => {

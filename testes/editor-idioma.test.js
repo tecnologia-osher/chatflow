@@ -170,7 +170,6 @@ test("escolher English troca a paleta e o que esta no quadro", () => {
     ["Bubbles", "Input", "Logic", "Connection"])
   assert.ok(porClasse(hospedeiro, "ed__tipo").some((b) => b.textContent.includes("Video")),
     "o nome do tipo de bloco também é do editor")
-  assert.match(porClasse(hospedeiro, "ed__dica")[0].textContent, /Drag a type/)
   assert.equal(porClasse(hospedeiro, "ed__cabecalho-titulo")[0].atributos.title, "Click to rename")
 })
 

@@ -1244,3 +1244,14 @@ até 2 MB. Sem servidor, a aba Upload diz isso e o link continua valendo.
 era com o retrato do tema: o fluxo guarda `imagens/foto.png` e o player, o
 preview e a aba Tema resolvem contra a pasta do cliente. Gravar um caminho já
 resolvido quebraria o projeto assim que ele mudasse de endereço.
+
+### A coluna da esquerda começa nas seções
+
+834 testes. O recado fixo "Arraste um tipo até o quadro…" saiu, e com ele o da
+aba Tema: aviso que não muda nunca vira paisagem, e ocupava a parte mais cara
+da coluna. O arrasto se descobre arrastando — e quem não descobrir ainda tem a
+dica do mouse em cada caixa.
+
+O cadeado ganhou uma faixa só dele no alto. Flutuando à direita, como estava,
+o título da primeira seção subiria para o lado dele e a coluna começaria
+torta. Medido no Chrome: o cadeado em y=76 e BOLHAS em y=116, nas duas abas.

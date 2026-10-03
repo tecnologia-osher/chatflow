@@ -63,8 +63,6 @@ export const EM_INGLES = {
     "Unpin the panel: it slides away when the mouse leaves",
   "Prender o painel no lugar": "Pin the panel in place",
   "Mostrar o painel": "Show the panel",
-  "Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele.":
-    "Drag a type onto the board to create a group. Drop it on a card to put the block inside it.",
   "Arraste o tipo até o quadro para criar um grupo, ou selecione um grupo antes de clicar.":
     "Drag the type onto the board to create a group, or select a group before clicking.",
 
@@ -149,8 +147,6 @@ export const EM_INGLES = {
   // --- aba Tema ---
   "A conversa do seu jeito": "Your conversation, your way",
   "Reiniciar a conversa": "Restart the conversation",
-  "O que mudar aqui vale para a conversa de todos os leads deste projeto.":
-    "What you change here applies to every lead's conversation in this project.",
   "Voltar ao padrão": "Reset to default",
   "Conversa": "Conversation",
   "O quadro onde a conversa acontece.": "The frame the conversation happens in.",

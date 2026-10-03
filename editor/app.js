@@ -677,14 +677,18 @@ export function criarEditor({
   }
 
   // --- paleta ----------------------------------------------------------
+  // O cadeado numa faixa própria, no alto: flutuando, o título da primeira
+  // seção subia para o lado dele e a coluna começava torta.
+  function topoDoLado() {
+    const topo = el("div", "ed__lado-topo")
+    topo.append(cadeadoDoLado())
+    return topo
+  }
+
   function desenharPaleta() {
     const caixa = el("div", "ed__paleta-corpo")
-    caixa.append(cadeadoDoLado())
+    caixa.append(topoDoLado())
     caixa.append(el("div", "ed__recado", recado))
-    // O gesto não se descobre sozinho: sem o botão "Novo grupo", alguém tem
-    // de dizer que é arrastando daqui que um grupo nasce.
-    caixa.append(el("p", "ed__dica",
-      t("Arraste um tipo até o quadro para criar um grupo. Solte sobre um cartão para pôr o bloco nele.")))
 
     const porCategoria = new Map()
     for (const definicao of todos()) {
@@ -921,10 +925,8 @@ export function criarEditor({
     camposDeCor.clear()
     camposDeTexto.clear()
     const caixa = el("div", "ed__paleta-corpo")
-    caixa.append(cadeadoDoLado())
+    caixa.append(topoDoLado())
     caixa.append(el("div", "ed__recado", recado))
-    caixa.append(el("p", "ed__dica",
-      t("O que mudar aqui vale para a conversa de todos os leads deste projeto.")))
 
     for (const secao of SECOES_DO_TEMA) {
       const bloco = secaoDobravel({
