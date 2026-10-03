@@ -339,3 +339,38 @@ test("sem recuo, enquadrar nao muda de comportamento", () => {
     enquadrar(caixa, { largura: 800, altura: 600 }),
     "recuo negativo é medida que não existe: vale como nenhum")
 })
+
+// --- o compasso do zoom ----------------------------------------------------
+
+test("a pinça do trackpad anda de verdade: evento pequeno muda a escala", () => {
+  // Deltas de 1 a 10 são o que o trackpad manda, às dezenas por gesto. Com um
+  // fator pensado só para a roda, cada um movia 0,15% e a pinça não saía do
+  // lugar.
+  const um = aplicarZoom(criarVista(), { delta: -5, ponto: { x: 0, y: 0 } })
+  assert.ok(um.escala >= 1.02, `um evento de pinça mudou só ${um.escala}`)
+})
+
+test("nenhum evento sozinho dá um salto de escala", () => {
+  // O clique da roda manda 120 de uma vez. Sem teto, o fluxo saltaria 70% de
+  // tamanho num clique só.
+  const grande = aplicarZoom(criarVista(), { delta: -120, ponto: { x: 0, y: 0 } })
+  const enorme = aplicarZoom(criarVista(), { delta: -600, ponto: { x: 0, y: 0 } })
+  assert.ok(grande.escala <= 1.25 + 0.001, `um clique de roda pulou para ${grande.escala}`)
+  assert.equal(enorme.escala, grande.escala, "o teto não depende de quão grande é o delta")
+})
+
+test("o teto vale para os dois lados, afastando tambem", () => {
+  const perto = aplicarZoom(criarVista(), { delta: 600, ponto: { x: 0, y: 0 } })
+  assert.ok(perto.escala >= 1 / 1.25 - 0.001, `afastou de uma vez para ${perto.escala}`)
+  assert.ok(perto.escala < 1, "afastar tem de afastar")
+})
+
+test("zoom continua ancorado no cursor, por mais rapido que seja", () => {
+  const vista = { x: 0, y: 0, escala: 1 }
+  const ponto = { x: 400, y: 300 }
+  const antes = paraMundo(vista, ponto)
+  const depois = aplicarZoom(vista, { delta: -120, ponto })
+  const agora = paraMundo(depois, ponto)
+  assert.ok(Math.abs(agora.x - antes.x) < 0.001 && Math.abs(agora.y - antes.y) < 0.001,
+    "o ponto sob o ponteiro tem de continuar sob o ponteiro")
+})

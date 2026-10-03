@@ -3,7 +3,14 @@
 
 export const ESCALA_MIN = 0.25
 export const ESCALA_MAX = 2.5
-const PASSO = 1.0015   // por unidade de deslocamento da roda
+// Quanto a escala muda por unidade de deslocamento. A pinça do trackpad manda
+// dezenas de eventos pequenos (deltas de 1 a 10) e a roda manda poucos e
+// grandes (120 por clique): um fator que serve para a roda deixa a pinça
+// lenta de doer, e um que serve para a pinça faz a roda saltar.
+const PASSO = 1.005
+// Por isso o teto: nenhum evento sozinho muda a escala mais que isto. É ele
+// que segura o clique da roda, e é por baixo dele que a pinça corre solta.
+const SALTO_MAXIMO = 1.25
 
 export function criarVista() {
   return { x: 0, y: 0, escala: 1 }
@@ -25,7 +32,8 @@ export function paraTela(vista, ponto) {
 // Zoom ancorado no cursor: o ponto do fluxo que está sob o ponteiro continua
 // sob o ponteiro depois. Sem isso o canvas "foge" da mão de quem usa.
 export function aplicarZoom(vista, { delta, ponto }) {
-  const bruta = vista.escala * Math.pow(PASSO, -delta)
+  const fator = Math.min(SALTO_MAXIMO, Math.max(1 / SALTO_MAXIMO, Math.pow(PASSO, -delta)))
+  const bruta = vista.escala * fator
   const escala = Math.min(ESCALA_MAX, Math.max(ESCALA_MIN, bruta))
   if (escala === vista.escala) return { ...vista }
 

@@ -1124,3 +1124,16 @@ editáveis antes.
 
 O caminho natural é o do Typebot: esses campos descem para dentro do próprio
 cartão, abaixo do texto, aparecendo só no bloco selecionado.
+
+### O zoom ganhou passo
+
+761 testes. O fator por unidade de roda foi de 1,0015 para **1,005**, com um
+**teto de 1,25 por evento**. Os dois números existem porque os dois gestos são
+muito diferentes: a pinça do trackpad manda dezenas de eventos pequenos
+(deltas de 1 a 10) e a roda manda poucos e grandes (120 por clique). Um fator
+calibrado para a roda deixa a pinça parada; um calibrado para a pinça faz a
+roda saltar. O teto segura o clique da roda, e por baixo dele a pinça corre.
+
+Medido no Chrome: cada clique de roda leva a escala de 0,60 → 0,75 → 0,94 →
+1,17 (era ×1,197, agora ×1,25), e um gesto de pinça de doze eventos leva de
+1,17 para 1,68 — antes o mesmo gesto daria 1,30.
