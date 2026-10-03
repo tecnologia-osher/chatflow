@@ -10,6 +10,8 @@ import {
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
 import { iconeDoTipo } from "./icones.js"
 import { preencher } from "./idioma.js"
+import { temCaixa } from "./midia.js"
+import { criarCaixaDeMidia } from "./caixa-midia.js"
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
 } from "./vista.js"
@@ -37,7 +39,7 @@ export function criarCanvas({
   aoDuplicarGrupo = () => {}, aoMoverBloco = () => {}, aoSoltarBlocoNoQuadro = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
   aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
-  aoApagarBloco = () => {}, aoLigarOpcao = () => {},
+  aoApagarBloco = () => {}, aoSubirImagem = null, aoLigarOpcao = () => {},
   aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
   // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
   // assim quem monta um canvas sozinho não precisa passar idioma nenhum.
@@ -77,6 +79,31 @@ export function criarCanvas({
     return false
   }
 
+  // A caixa de uma bolha de mídia. Fica no palco, em pixel de tela, e não
+  // dentro do mundo: lá ela encolheria junto com o zoom e o link viraria
+  // letra de seis pixels.
+  let caixaDeMidia = null
+
+  function fecharCaixaDeMidia() {
+    caixaDeMidia?.no.remove()
+    caixaDeMidia = null
+  }
+
+  function posicionarCaixaDeMidia() {
+    if (!caixaDeMidia) return
+    const alvo = caixaDeMidia.ancora.getBoundingClientRect?.()
+    const area = palco.getBoundingClientRect?.()
+    if (!alvo || !area || !(alvo.width > 0)) return
+    const largura = caixaDeMidia.no.getBoundingClientRect?.()?.width || 280
+    const folga = 12
+    // Abre à direita do bloco; se não couber, abre à esquerda. Caixa cortada
+    // pela beira do quadro é caixa que não dá para preencher.
+    const cabeNaDireita = alvo.right + folga + largura <= area.right
+    const x = cabeNaDireita ? alvo.right - area.left + folga : alvo.left - area.left - folga - largura
+    caixaDeMidia.no.style.setProperty("left", `${Math.max(folga, x)}px`)
+    caixaDeMidia.no.style.setProperty("top", `${alvo.top - area.top}px`)
+  }
+
   let vista = criarVista()
   let fluxoAtual = null
   let selecao = { grupo: null, bloco: null }
@@ -101,6 +128,7 @@ export function criarCanvas({
   }
 
   function aplicarVista() {
+    posicionarCaixaDeMidia()
     mundo.style.setProperty("transform",
       `translate(${vista.x}px, ${vista.y}px) scale(${vista.escala})`)
   }
@@ -757,7 +785,11 @@ export function criarCanvas({
         topo.append(el("span", "ed__bloco-tipo", t(bloco.rotulo)))
 
         let caixaDeTexto = null
-        if (ativoB && bloco.campoPrincipal && !bloco.opcoes) {
+        // Imagem e vídeo têm caixa própria, ao lado do cartão: o que se edita
+        // neles é link, arquivo e interruptor, não texto corrido.
+        if (ativoB && temCaixa(bloco.tipo)) {
+          aBrirCaixaDepois = { ancora: noBloco, cartao, bloco }
+        } else if (ativoB && bloco.campoPrincipal && !bloco.opcoes) {
           // Edita ali mesmo. Para o caso comum — a fala do chat — é tudo o
           // que a pessoa precisa, e não tira os olhos do fluxo.
           caixaDeTexto = el("textarea", "ed__bloco-campo")
@@ -928,8 +960,14 @@ export function criarCanvas({
     return saida
   }
 
+  // Qual bolha de mídia pede caixa neste desenho. Só se sabe depois que o
+  // cartão existe na tela, porque a caixa se ancora no bloco.
+  let aBrirCaixaDepois = null
+
   function desenhar(fluxo) {
     fluxoAtual = fluxo
+    aBrirCaixaDepois = null
+    fecharCaixaDeMidia()
     const lista = cartoes(fluxo)
     const mapa = caixas(lista)
     const listaEventos = eventosDoCanvas(fluxo)
@@ -949,6 +987,25 @@ export function criarCanvas({
       // Nome inteiro selecionado: quem clica para renomear quer trocar o nome,
       // não acrescentar letra no fim de "Grupo #1".
       campo?.select?.()
+    }
+
+    // A caixa da bolha de mídia nasce com o cartão já na tela: ela se ancora
+    // no bloco, e bloco que ainda não foi medido não tem onde ancorar.
+    if (aBrirCaixaDepois) {
+      const { ancora, cartao, bloco } = aBrirCaixaDepois
+      const no = criarCaixaDeMidia({
+        tipo: bloco.tipo,
+        conteudo: bloco.conteudo || {},
+        t,
+        aoEditar: (campo, valor) =>
+          aoEditarCampo({ grupo: cartao.id, bloco: bloco.id, campo, valor }),
+        aoSubir: aoSubirImagem
+      })
+      if (no) {
+        palco.append(no)
+        caixaDeMidia = { no, ancora }
+        posicionarCaixaDeMidia()
+      }
     }
   }
 

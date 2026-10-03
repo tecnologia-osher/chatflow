@@ -24,6 +24,7 @@ import {
 } from "./tema.js"
 import { FONTES, fonteDoTema, definirFonte, urlDaAmostra } from "./fontes.js"
 import { criarChat, aplicarTema } from "../motor/motor.js"
+import { resolverMidia } from "../motor/midia.js"
 import { criarTradutor, idiomaValido, IDIOMAS, PADRAO as IDIOMA_PADRAO } from "./idioma.js"
 
 
@@ -52,6 +53,10 @@ export function criarEditor({
   esperarNoTeste = undefined,
   // Busca os leads do cliente. Recebe a chave de leitura e devolve as linhas.
   aoBuscarLeads = null,
+  // Guarda uma imagem que a pessoa subiu e devolve o caminho dela dentro da
+  // pasta do cliente. Nulo quando não há quem guarde — e aí a bolha de imagem
+  // só aceita link.
+  aoSubirImagem = null,
   // O tema do chat deste cliente, e onde gravá-lo. Sem gravador, a aba Tema
   // ainda edita e mostra — só não salva, e diz isso.
   tema = {},
@@ -256,6 +261,7 @@ export function criarEditor({
     elemento: palcoCanvas, t,
     // O quadro ocupa a tela inteira; a paleta flutua sobre a esquerda dele.
     tapado: () => (paleta.className.includes("ed__oculto") ? null : paleta.getBoundingClientRect?.()),
+    aoSubirImagem,
     aoSelecionar: (nova) => {
       selecao = nova
       recado = ""
@@ -366,7 +372,8 @@ export function criarEditor({
   })
   const preview = criarPreview({
     tema: () => temaParaOChat(),
-    elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste, t
+    elemento: areaPreview, aoFechar: () => sincronizarTestar(), esperar: esperarNoTeste, t,
+    pasta: pastaDoCliente
   })
   // --- barra -----------------------------------------------------------
   const ajustar = el("button", "ed__ajustar")
@@ -858,7 +865,7 @@ export function criarEditor({
     if (!palcoDoTema) return
     chatDoTema = criarChat({
       elemento: palcoDoTema,
-      fluxo: atual,
+      fluxo: resolverMidia(atual, pastaDoCliente),
       tema: temaParaOChat(),
       modo: "teste",
       armazenamento: undefined,

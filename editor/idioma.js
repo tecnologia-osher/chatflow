@@ -83,6 +83,27 @@ export const EM_INGLES = {
   "Redirecionar": "Redirect",
   "Webhook": "Webhook",
 
+  // --- a caixa da bolha de mídia ---
+  "Link": "Link",
+  "Upload": "Upload",
+  "Cole o link da imagem…": "Paste the image link…",
+  "Cole o link do vídeo…": "Paste the video link…",
+  "Abrir link ao clicar": "On click link",
+  "Para onde a imagem leva…": "Where the image leads…",
+  "Começar sozinho": "Enable autoplay",
+  "Funciona com YouTube, Vimeo e arquivos de vídeo (.mp4).":
+    "Works with YouTube, Vimeo and video files (.mp4).",
+  "Escolher uma imagem": "Choose an image",
+  "Subindo…": "Uploading…",
+  "Não consegui subir ({motivo}).": "Couldn't upload it ({motivo}).",
+  "Subir arquivo precisa de servidor. Aberto assim, use o link.":
+    "Uploading needs a server. Opened like this, use the link.",
+  "Formato que a conversa não mostra. Use PNG, JPG, GIF, WEBP ou SVG.":
+    "A format the conversation can't show. Use PNG, JPG, GIF, WEBP or SVG.",
+  "Imagem grande demais: o limite é 2 MB, que já é muito para um celular.":
+    "Image too large: the limit is 2 MB, which is already a lot for a phone.",
+  "Nenhum arquivo escolhido.": "No file chosen.",
+
   // --- quadro ---
   "Testar do início": "Test from the start",
   "Arraste até o primeiro grupo": "Drag to the first group",

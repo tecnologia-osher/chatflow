@@ -16,6 +16,10 @@ Igual ao `python3 -m http.server`, com duas diferenças:
    `clientes/<id>/`, escreve o `fluxo.json` e põe o id no `clientes/index.json`,
    que é a lista que a primeira página lê.
 
+4. Aceita `POST /api/imagens` para guardar uma imagem que a pessoa subiu pela
+   bolha de imagem. Ela vai para `clientes/<id>/imagens/`, e o fluxo guarda o
+   caminho de dentro da pasta — assim a imagem viaja junto com o projeto.
+
 Só grava em `clientes/<nome>/fluxo.json`, `clientes/<nome>/tema.json` e
 `exemplos/<nome>.json`, com o nome sem barra nem ponto-ponto, e só se o corpo
 for JSON válido. É servidor de
@@ -24,6 +28,8 @@ deixar aberto, mesmo em casa.
 
     python3 servir.py [porta]
 """
+import base64
+import binascii
 import json
 import re
 import sys
@@ -39,6 +45,14 @@ LIMITE = 2 * 1024 * 1024
 # A pasta de um projeto novo. O id vem da página já limpo, mas quem confere é
 # quem escreve: este padrão é o que separa um nome de pasta de um caminho.
 ID_DE_PROJETO = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
+# Imagem de conversa: estes formatos e nada maior que 2 MB, que já é muito
+# para quem abre o chat num celular.
+TIPOS_DE_IMAGEM = {
+    "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif",
+    "image/webp": "webp", "image/svg+xml": "svg",
+}
+LIMITE_DA_IMAGEM = 2 * 1024 * 1024
+NOME_DE_ARQUIVO = re.compile(r"^[a-z0-9][a-z0-9._-]{0,49}$")
 INDICE = Path("clientes/index.json")
 
 
@@ -71,6 +85,8 @@ class SemCache(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         caminho = self.path.split("?")[0]
+        if caminho == "/api/imagens":
+            return self.guardar_imagem()
         if caminho != "/api/projetos":
             return self.responder(404, f"Não atendo {caminho}.")
 
@@ -101,6 +117,53 @@ class SemCache(SimpleHTTPRequestHandler):
         indice["projetos"].append({"id": identificador})
         gravar(INDICE, indice)
         self.responder(200, f"Criei clientes/{identificador}.", id=identificador)
+
+    def guardar_imagem(self):
+        tamanho = int(self.headers.get("Content-Length") or 0)
+        if tamanho <= 0 or tamanho > LIMITE + LIMITE // 2:
+            return self.responder(413, "Corpo vazio ou grande demais.")
+        try:
+            pedido = json.loads(self.rfile.read(tamanho))
+        except ValueError as falha:
+            return self.responder(400, f"Isso não é JSON: {falha}")
+
+        cliente = str(pedido.get("cliente") or "")
+        if not ID_DE_PROJETO.match(cliente):
+            return self.responder(400, f"Cliente inválido: {cliente}.")
+        pasta = Path("clientes") / cliente
+        if not pasta.is_dir():
+            return self.responder(404, f"O projeto {cliente} não existe.")
+
+        tipo = str(pedido.get("tipo") or "")
+        if tipo not in TIPOS_DE_IMAGEM:
+            return self.responder(415, f"Formato que a conversa não mostra: {tipo}.")
+
+        nome = str(pedido.get("nome") or "")
+        if not NOME_DE_ARQUIVO.match(nome) or ".." in nome:
+            return self.responder(400, f"Nome de arquivo inválido: {nome}.")
+
+        try:
+            dados = base64.b64decode(str(pedido.get("dados") or ""), validate=True)
+        except (ValueError, binascii.Error) as falha:
+            return self.responder(400, f"Conteúdo ilegível: {falha}")
+        if not dados or len(dados) > LIMITE_DA_IMAGEM:
+            return self.responder(413, "Imagem vazia ou maior que 2 MB.")
+
+        imagens = pasta / "imagens"
+        imagens.mkdir(exist_ok=True)
+        destino = imagens / nome
+        # Arquivo com o mesmo nome não é sobrescrito: a imagem de outro bloco
+        # sumiria da conversa sem ninguém ter pedido.
+        if destino.exists():
+            raiz, ponto, extensao = nome.rpartition(".")
+            base = raiz if ponto else nome
+            numero = 2
+            while destino.exists():
+                nome = f"{base}-{numero}.{extensao}" if ponto else f"{base}-{numero}"
+                destino = imagens / nome
+                numero += 1
+        destino.write_bytes(dados)
+        self.responder(200, f"Guardei {destino}.", caminho=f"imagens/{nome}")
 
     def do_PUT(self):
         caminho = self.path.split("?")[0]

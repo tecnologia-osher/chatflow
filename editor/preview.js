@@ -2,6 +2,7 @@
 // tela inteira, e abre pelo botão Testar — da origem ou de uma etapa.
 
 import { criarChat } from "../motor/motor.js"
+import { resolverMidia } from "../motor/midia.js"
 import { preencher } from "./idioma.js"
 
 const EVENTO_DE_ORIGEM = "origem_do_fluxo"
@@ -35,7 +36,11 @@ export function fluxoComecandoEm(fluxo, grupoId) {
   }
 }
 
-export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = () => ({}), t = preencher } = {}) {
+export function criarPreview({
+  elemento, aoFechar = () => {}, esperar, tema = () => ({}), t = preencher,
+  // Onde mora a pasta do cliente: a imagem que ele subiu está lá dentro.
+  pasta = ""
+} = {}) {
   let aberto = false
   let fluxoAtual = null
   let comecarEm = null
@@ -79,7 +84,7 @@ export function criarPreview({ elemento, aoFechar = () => {}, esperar, tema = ()
 
     chat = criarChat({
       elemento: palco,
-      fluxo: fluxoComecandoEm(fluxoAtual, comecarEm),
+      fluxo: resolverMidia(fluxoComecandoEm(fluxoAtual, comecarEm), pasta),
       // O tema é do cliente: testar com as cores do motor mostraria um chat
       // que não existe em lugar nenhum.
       tema: tema(),

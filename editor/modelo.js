@@ -90,6 +90,9 @@ export function cartoes(fluxo) {
           }))
           : null,
         valorPrincipal: (bloco.conteudo || {})[campoPrincipal(bloco.tipo)] ?? "",
+        // O conteúdo inteiro, para quem edita no cartão mais de um campo —
+        // a bolha de imagem tem link, upload e abrir-ao-clicar na mesma caixa.
+        conteudo: { ...(bloco.conteudo || {}) },
         salvar_em: bloco.salvar_em || null
       }
     })

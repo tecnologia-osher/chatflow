@@ -1555,3 +1555,36 @@ test("Excluir no ⋯ apaga aquele bloco, e so ele", () => {
 })
 
 
+
+test("bolha de imagem abre a caixa ao lado, nao uma caixa de texto", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTipos)
+  canvas.selecionar({ grupo: "g1", bloco: "b2" })
+
+  assert.equal(hospedeiro.porClasse("ed__bloco-campo").length, 0,
+    "imagem não se edita escrevendo: o que se tem na mão é um link ou um arquivo")
+  const caixa = hospedeiro.porClasse("ed__midia")[0]
+  assert.ok(caixa, "a bolha de imagem precisa da caixa")
+  assert.deepEqual(caixa.porClasse("ed__midia-aba").map((a) => a.textContent), ["Link", "Upload"])
+})
+
+test("bolha de texto continua se editando no proprio cartao", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTipos)
+  canvas.selecionar({ grupo: "g1", bloco: "b1" })
+  assert.equal(hospedeiro.porClasse("ed__midia").length, 0)
+  assert.equal(hospedeiro.porClasse("ed__bloco-campo").length, 1)
+})
+
+test("trocar de bloco troca a caixa, sem deixar a antiga pendurada", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTipos)
+  canvas.selecionar({ grupo: "g1", bloco: "b2" })
+  canvas.selecionar({ grupo: "g1", bloco: "b3" })
+  assert.equal(hospedeiro.porClasse("ed__midia").length, 1)
+  assert.equal(hospedeiro.porClasse("ed__midia")[0].porClasse("ed__midia-abas").length, 0,
+    "a caixa agora é a do vídeo, que tem uma aba só")
+})

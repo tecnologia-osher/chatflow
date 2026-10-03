@@ -176,6 +176,46 @@ html, body { margin: 0; height: 100%; }
 .ed__config-secao { margin: 1rem 0 0.1rem; font-size: 0.7rem; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--ed-suave); }
 
+/* --- a caixa da bolha de mídia --- */
+/* Flutua ao lado do bloco, em pixel de tela: dentro do mundo ela encolheria
+   com o zoom e o link viraria letra de seis pixels. */
+.ed__midia { position: absolute; z-index: 18; width: 19rem; display: grid; gap: 0.6rem;
+  padding: 0.8rem; border: 1px solid var(--ed-linha); border-radius: 12px;
+  background: var(--ed-superficie); box-shadow: 0 10px 30px rgba(16,24,40,0.16);
+  font-size: 0.85rem; cursor: default; }
+.ed__midia-abas { display: flex; gap: 0.2rem; }
+.ed__midia-aba { padding: 0.35rem 0.7rem; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--ed-suave); font: inherit; font-weight: 600;
+  font-size: 0.82rem; cursor: pointer; }
+.ed__midia-aba:hover { color: var(--ed-texto); background: var(--ed-fundo); }
+.ed__midia-aba--ativa { border-color: var(--ed-linha); background: var(--ed-superficie);
+  color: var(--ed-texto); box-shadow: 0 1px 2px rgba(16,24,40,0.06); }
+.ed__midia-corpo { display: grid; gap: 0.4rem; }
+.ed__midia-campo { width: 100%; box-sizing: border-box; padding: 0.5rem 0.6rem;
+  border: 1px solid var(--ed-linha); border-radius: 9px; background: var(--ed-superficie);
+  color: var(--ed-texto); font: inherit; font-size: 0.82rem; }
+.ed__midia-campo:focus { outline: none; border-color: var(--ed-acento); }
+.ed__midia-nota { margin: 0; color: var(--ed-suave); font-size: 0.76rem; line-height: 1.35; }
+.ed__midia-recado:not(:empty) { margin: 0; padding: 0.4rem 0.55rem; border-radius: 8px;
+  background: var(--ed-problema-fundo); color: var(--ed-erro); font-size: 0.78rem; }
+/* O campo de arquivo é feio em todo navegador: a etiqueta inteira é o botão. */
+.ed__midia-subir { display: grid; place-items: center; padding: 1rem 0.6rem; cursor: pointer;
+  border: 1px dashed var(--ed-linha); border-radius: 10px; color: var(--ed-suave); }
+.ed__midia-subir:hover { border-color: var(--ed-acento); color: var(--ed-texto);
+  background: var(--ed-selecionado); }
+.ed__midia-subir-rotulo { font-weight: 600; font-size: 0.82rem; }
+.ed__midia-arquivo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ed__midia-interruptor { display: grid; gap: 0.4rem; }
+.ed__midia-linha { display: flex; align-items: center; gap: 0.5rem; }
+.ed__midia-rotulo { font-size: 0.82rem; }
+.ed__midia-chave { flex: none; width: 2.2rem; height: 1.2rem; padding: 0; border-radius: 999px;
+  border: 1px solid var(--ed-linha); background: var(--ed-fundo); cursor: pointer;
+  display: flex; align-items: center; }
+.ed__midia-chave-bola { width: 0.9rem; height: 0.9rem; margin: 0 0.1rem; border-radius: 50%;
+  background: var(--ed-seta); transition: transform 0.12s ease, background 0.12s ease; }
+.ed__midia-chave--ligado { background: var(--ed-acento); border-color: var(--ed-acento); }
+.ed__midia-chave--ligado .ed__midia-chave-bola { background: #fff; transform: translateX(1rem); }
+
 /* A aba Tema: os controles do lado esquerdo, a conversa de verdade ao lado.
    Os controles são do programa, não da conversa — azul do editor, nunca o
    laranja da paleta. Quem mostra a cor do cliente é o quadradinho do

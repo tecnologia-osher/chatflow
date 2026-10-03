@@ -1212,3 +1212,35 @@ emoji que você escrever no começo do nome**, e só. Sem emoji, o cartão é o
 nome. Emoji de várias partes (👨‍👩‍👧) conta como um só, e nome que é apenas um
 emoji continua sendo o nome — senão o cartão ficaria com um desenho e nenhuma
 palavra.
+
+### As bolhas de imagem e de vídeo ganharam caixa própria
+
+834 testes. Imagem e vídeo não se editam escrevendo — o que a pessoa tem na
+mão é um link, um arquivo e um interruptor. Agora, selecionar uma dessas
+bolhas (ou arrastá-la para um grupo) abre **uma caixa flutuante ao lado do
+bloco**, no espírito do Typebot:
+
+- **Imagem:** abas **Link** e **Upload**, e o interruptor **Abrir link ao
+  clicar** — que, ligado, pergunta para onde a imagem leva. Interruptor que
+  liga e não pergunta o destino não liga nada.
+- **Vídeo:** uma aba só (uma aba sozinha não é escolha), o campo do link e o
+  **Começar sozinho**. A nota diz o que o motor abre de verdade — YouTube,
+  Vimeo e arquivos .mp4. O Typebot promete TikTok e Gumlet; prometer o que o
+  motor não sabe abrir seria mentir na própria tela.
+
+**A caixa fica no palco, em pixel de tela**, e não dentro do mundo: lá ela
+encolheria com o zoom e o link viraria letra de seis pixels. Ela se ancora no
+bloco e acompanha o quadro quando ele se move; se não couber à direita, abre à
+esquerda.
+
+**O upload grava na pasta do cliente.** `POST /api/imagens` no `servir.py`
+escreve em `clientes/<id>/imagens/` e devolve o caminho de dentro da pasta,
+que é o que o fluxo guarda — assim a imagem viaja junto com o projeto. Nome de
+arquivo é limpo nos dois lados, arquivo repetido ganha sufixo em vez de
+sobrescrever a imagem de outro bloco, e só entram PNG, JPG, GIF, WEBP e SVG
+até 2 MB. Sem servidor, a aba Upload diz isso e o link continua valendo.
+
+**Quem resolve o caminho é quem carrega o fluxo** (`motor/midia.js`), como já
+era com o retrato do tema: o fluxo guarda `imagens/foto.png` e o player, o
+preview e a aba Tema resolvem contra a pasta do cliente. Gravar um caminho já
+resolvido quebraria o projeto assim que ele mudasse de endereço.

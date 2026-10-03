@@ -11,6 +11,7 @@
 <div id="editor"></div>
 <script type="module">
   import { criarEditor } from "./app.js"
+  import { nomeDeArquivo } from "./midia.js"
 
   const parametros = new URLSearchParams(location.search)
   const cliente = parametros.get("cliente")
@@ -44,6 +45,26 @@
   }
 
   const salvar = (texto) => gravar(arquivo, texto)
+
+  // A imagem que a pessoa sobe vai para a pasta do cliente, e o fluxo guarda
+  // o caminho de dentro dela: assim a imagem viaja junto com o projeto. Em
+  // base64 porque é um JSON como os outros — multipart aqui seria um parser
+  // inteiro para guardar um arquivo.
+  async function subirImagem(arquivo) {
+    const bytes = new Uint8Array(await arquivo.arrayBuffer())
+    let bruto = ""
+    for (const b of bytes) bruto += String.fromCharCode(b)
+    const resposta = await fetch("../api/imagens", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cliente, tipo: arquivo.type, nome: nomeDeArquivo(arquivo.name), dados: btoa(bruto)
+      })
+    })
+    const corpo = await resposta.json().catch(() => ({}))
+    if (!resposta.ok) throw new Error(corpo.recado || `o servidor respondeu ${resposta.status}`)
+    return corpo.caminho
+  }
   // O tema é do cliente, e o exemplo não tem pasta própria para ele: aberto
   // sem `?cliente=`, a aba Tema edita e mostra, mas não tem onde gravar.
   const salvarTema = cliente ? (texto) => gravar(`${base}/tema.json`, texto) : null
@@ -90,6 +111,9 @@
       tema: await carregar(`${base}/tema.json`, {}),
       pastaDoCliente: base,
       aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
+      // Subir arquivo é coisa de servidor: sem cliente (e sem `servir.py`),
+      // a bolha de imagem oferece só o link, e diz por quê.
+      aoSubirImagem: cliente ? subirImagem : null,
       // Voltar guarda o que estiver pendente. Sem isto, renomear o projeto e
       // sair pela seta perdia o nome: ele vivia só na tela, e a lista
       // continuava mostrando o antigo. Se não deu para gravar, não sai — o

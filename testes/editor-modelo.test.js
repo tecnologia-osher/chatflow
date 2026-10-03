@@ -529,3 +529,19 @@ test("a altura de um cartao inteiro bate com a regua do navegador", () => {
   assert.ok(Math.abs(alturaDoCartao(idade) - 380.6) <= 3,
     `o modelo diz ${alturaDoCartao(idade)}, o Chrome mediu 380.6`)
 })
+
+test("o cartao leva o conteudo do bloco, para a caixa de midia editar", () => {
+  const [cartao] = cartoes({
+    versao: 2,
+    grupos: [{ id: "g", titulo: "x", blocos: [
+      { id: "b", tipo: "imagem", conteudo: { url: "foto.png", link_ao_clicar: "https://osher" } }] }]
+  })
+  assert.deepEqual(cartao.blocos[0].conteudo, { url: "foto.png", link_ao_clicar: "https://osher" })
+})
+
+test("bloco sem conteudo nao quebra quem le o conteudo", () => {
+  const [cartao] = cartoes({
+    versao: 2, grupos: [{ id: "g", titulo: "x", blocos: [{ id: "b", tipo: "imagem" }] }]
+  })
+  assert.deepEqual(cartao.blocos[0].conteudo, {})
+})

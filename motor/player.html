@@ -14,6 +14,7 @@
 <div id="chat"></div>
 <script type="module">
   import { criarChat } from "./motor.js"
+  import { resolverMidia } from "./midia.js"
 
   const parametros = new URLSearchParams(location.search)
   const cliente = parametros.get("cliente")
@@ -53,7 +54,10 @@
   } else {
     const chat = criarChat({
       elemento: document.getElementById("chat"),
-      fluxo, tema, destinos, modo,
+      // A imagem e o vídeo que o cliente subiu moram na pasta dele; o motor
+      // recebe o caminho pronto, como já recebe o do retrato.
+      fluxo: resolverMidia(fluxo, base),
+      tema, destinos, modo,
       // O compasso da digitação é do cliente, não do motor: cada fluxo
       // pode declarar o seu. Sem isso, vale o padrão proporcional.
       ritmo: fluxo.ritmo,
