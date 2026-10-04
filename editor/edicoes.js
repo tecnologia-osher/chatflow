@@ -88,6 +88,10 @@ function blocoNovo(fluxo, tipo) {
   const conteudo = {}
   for (const campo of definicao?.campos || []) {
     if (campo.padrao !== undefined) conteudo[campo.nome] = campo.padrao
+    // Lista nasce vazia, e não ausente: é a lista vazia que faz o cartão
+    // desenhar a linha do "+ botão". Sem a chave, o bloco chegava sem nenhum
+    // lugar onde acrescentar a primeira opção.
+    else if (campo.tipo === "lista") conteudo[campo.nome] = []
   }
   const bloco = { id: idNovo(fluxo, "b"), tipo, conteudo }
   // Entrada sem `salvar_em` é erro de validação na hora de rodar. Nascer já

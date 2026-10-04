@@ -65,7 +65,8 @@ test("a paleta oferece todos os tipos do catalogo, agrupados", () => {
   const itens = porClasse(hospedeiro, "ed__tipo")
   assert.equal(itens.length, todos().length)
   const categorias = porClasse(hospedeiro, "ed__categoria").map((c) => c.textContent)
-  for (const c of ["Bolhas", "Entrada", "Lógica", "Conexão"]) assert.ok(categorias.includes(c), `faltou ${c}`)
+  assert.deepEqual(categorias, ["Bolhas", "Entrada", "Lógica"],
+    "três seções: Redirecionar e Webhook são decisões de para onde o fluxo vai, e isso é lógica")
 })
 
 test("clicar num tipo nao acrescenta bloco nenhum, nem com grupo selecionado", () => {
@@ -2079,7 +2080,7 @@ test("cada grupo da paleta e uma secao com seta, aberta de inicio", () => {
   const { hospedeiro } = montar()
   const secoes = porClasse(hospedeiro, "ed__secao")
   assert.deepEqual(secoes.map((s) => s.porClasse("ed__categoria")[0].textContent),
-    ["Bolhas", "Entrada", "Lógica", "Conexão"])
+    ["Bolhas", "Entrada", "Lógica"])
   for (const s of secoes) {
     assert.equal(s.porClasse("ed__secao-topo")[0].atributos["aria-expanded"], "true")
     assert.ok(s.porClasse("ed__secao-corpo").length, "seção que já abre dobrada esconde o que ninguém viu ainda")
@@ -2516,4 +2517,74 @@ test("enquanto a mao esta no ar, a marca mostra onde o bloco vai entrar", () => 
   assert.deepEqual(porClasse(hospedeiro, "ed__bloco")
     .filter((n) => /ed__bloco--acima/.test(n.className)), [],
     "desistindo, a marca tem de apagar junto com o fantasma")
+})
+
+// --- as entradas que carregam mais que texto --------------------------------
+
+const fluxoDeEscolhas = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [{ id: "g1", titulo: "Planos", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b1", tipo: "entrada_imagens", salvar_em: "plano", conteudo: {
+      opcoes: [{ id: "o1", label: "Carro" }, { id: "o2", label: "Imóvel" }] } }] }]
+})
+
+test("escrever na caixa de uma opcao grava no fluxo, na opcao certa", () => {
+  const { hospedeiro, editor } = montar(fluxoDeEscolhas())
+  porClasse(hospedeiro, "ed__opcao-editar")[1].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__midia--opcao")[0].porClasse("ed__midia-campo")[0]
+  campo.value = "casa.png"
+  campo.disparar("input")
+  const opcoes = editor.fluxo().grupos[0].blocos[0].conteudo.opcoes
+  assert.equal(opcoes[1].imagem, "casa.png")
+  assert.equal(opcoes[0].imagem, undefined, "escreveu na opção errada")
+  assert.equal(opcoes[1].label, "Imóvel", "o texto do botão não pode ser atropelado")
+})
+
+test("editar a figura de uma opcao nao redesenha o cartao debaixo do cursor", () => {
+  const { hospedeiro } = montar(fluxoDeEscolhas())
+  porClasse(hospedeiro, "ed__opcao-editar")[0].disparar("click")
+  const campo = porClasse(hospedeiro, "ed__midia--opcao")[0].porClasse("ed__midia-campo")[0]
+  campo.value = "c"
+  campo.disparar("input")
+  assert.equal(porClasse(hospedeiro, "ed__midia--opcao").length, 1,
+    "redesenhar fecharia a caixa a cada letra digitada")
+})
+
+test("a avaliacao se edita numa caixa: o texto e quantas estrelas", () => {
+  const fluxo = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "Nota", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b1", tipo: "entrada_avaliacao", salvar_em: "nota", conteudo: {} }] }]
+  }
+  const { hospedeiro, editor } = montar(fluxo)
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const caixa = porClasse(hospedeiro, "ed__midia")[0]
+  assert.ok(caixa, "sem caixa, não há onde dizer quantas estrelas")
+  const numero = caixa.porClasse("ed__midia-numero-campo")[0]
+  assert.equal(numero.value, "5", "cinco é o padrão, e a caixa tem de mostrá-lo")
+  numero.value = "8"
+  numero.disparar("input")
+  numero.disparar("change")
+  assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.maximo, 8)
+})
+
+test("a caixa da avaliacao prende o numero entre tres e dez", () => {
+  const fluxo = {
+    versao: 2,
+    eventos: [{ tipo: "inicio", proximo: "g1" }],
+    grupos: [{ id: "g1", titulo: "Nota", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b1", tipo: "entrada_avaliacao", salvar_em: "nota", conteudo: {} }] }]
+  }
+  const { hospedeiro, editor } = montar(fluxo)
+  porClasse(hospedeiro, "ed__bloco")[0].disparar("click")
+  const numero = porClasse(hospedeiro, "ed__midia")[0].porClasse("ed__midia-numero-campo")[0]
+  for (const [digitado, guardado] of [["99", 10], ["1", 3], ["0", 3]]) {
+    numero.value = digitado
+    numero.disparar("input")
+    numero.disparar("change")
+    assert.equal(editor.fluxo().grupos[0].blocos[0].conteudo.maximo, guardado,
+      `digitou ${digitado}`)
+  }
 })

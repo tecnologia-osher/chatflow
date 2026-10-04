@@ -179,10 +179,15 @@ class Elemento {
     this.selectionEnd = String(this.value ?? "").length
   }
 
-  focus() {
+  focus(opcoes) {
     // Quem está com o cursor. Sem isto, "a caixa nova recebe o foco" não teria
     // como falhar num teste.
     if (globalThis.document) globalThis.document.focado = this
+    // E com que pedido. No navegador de verdade, focar um elemento dentro de
+    // um container `overflow: hidden` rola esse container — sem barra para
+    // desfazer. Guardar o argumento é o que permite provar que o editor pede
+    // `preventScroll`.
+    this.focadoCom = opcoes
   }
 
   // Cópia funda, como `cloneNode(true)`: mesma marcação, mesmos atributos,

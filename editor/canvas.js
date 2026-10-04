@@ -8,10 +8,19 @@ import {
   eventosDoCanvas, caixasDeEventos
 } from "./modelo.js"
 import { partesDoDestino, montarDestino } from "../motor/destino.js"
-import { iconeDoTipo } from "./icones.js"
+import { iconeDoTipo, iconeDaAcao } from "./icones.js"
 import { preencher } from "./idioma.js"
 import { temCaixa } from "./midia.js"
 import { criarCaixaDeMidia } from "./caixa-midia.js"
+import { criarCaixaDeOpcao, camposDaOpcao } from "./caixa-opcao.js"
+import { ondeAbrirACaixa } from "./onde-abrir.js"
+
+// Focar um elemento dentro de um container `overflow: hidden` faz o navegador
+// rolar esse container para mostrá-lo — e sem barra de rolagem não há como
+// voltar. Medido no Chrome: clicar num campo de opção de um cartão à direita
+// rolava o quadro 734px para o lado. O quadro se move por transform, nunca
+// por scroll.
+const SEM_ROLAR = { preventScroll: true }
 import {
   criarVista, arrastar, aplicarZoom, paraMundo, ancoras, enquadrar, caixaEm, pontaDaSeta
 } from "./vista.js"
@@ -38,7 +47,8 @@ export function criarCanvas({
   aoSelecionarLigacao = () => {}, aoApagarLigacao = () => {}, aoApagarGrupo = () => {},
   aoDuplicarGrupo = () => {}, aoMoverBloco = () => {}, aoSoltarBlocoNoQuadro = () => {},
   aoEditarCampo = () => {}, aoRenomearGrupo = () => {},
-  aoEditarOpcao = () => {}, aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
+  aoEditarOpcao = () => {}, aoEditarCampoDaOpcao = () => {},
+  aoAcrescentarOpcao = () => {}, aoRemoverOpcao = () => {},
   aoApagarBloco = () => {}, aoSubirImagem = null, aoLigarOpcao = () => {},
   aoLigarEvento = () => {}, aoMoverEvento = () => {}, aoLigarGrupo = () => {},
   // Tradutor do editor. O padrão é o português, com os buracos preenchidos —
@@ -89,19 +99,44 @@ export function criarCanvas({
     caixaDeMidia = null
   }
 
+  // A caixa de uma opção abre no clique, e não no próximo desenho: a linha
+  // já está na tela e já foi medida, então há onde ancorar agora.
+  function abrirCaixaDaOpcao(ancora, cartao, bloco, opcao) {
+    fecharCaixaDeMidia()
+    const no = criarCaixaDeOpcao({
+      tipo: bloco.tipo,
+      // O conteúdo vem do fluxo, não do modelo do cartão: o cartão só leva
+      // para cima `label`, `pontos` e `proximo`, que é o que ele desenha.
+      opcao: opcaoDoFluxo(cartao.id, bloco.id, opcao.id) || opcao,
+      t,
+      aoEditar: (campo, valor) => aoEditarCampoDaOpcao({
+        grupo: cartao.id, bloco: bloco.id, opcao: opcao.id, campo, valor
+      }),
+      aoSubir: aoSubirImagem
+    })
+    if (!no) return
+    palco.append(no)
+    caixaDeMidia = { no, ancora }
+    posicionarCaixaDeMidia()
+  }
+
+  function opcaoDoFluxo(grupo, bloco, opcao) {
+    const g = (fluxoAtual?.grupos || []).find((x) => x && x.id === grupo)
+    const b = (g?.blocos || []).find((x) => x && x.id === bloco)
+    return (b?.conteudo?.opcoes || []).find((o) => o && o.id === opcao) || null
+  }
+
   function posicionarCaixaDeMidia() {
     if (!caixaDeMidia) return
     const alvo = caixaDeMidia.ancora.getBoundingClientRect?.()
     const area = palco.getBoundingClientRect?.()
     if (!alvo || !area || !(alvo.width > 0)) return
-    const largura = caixaDeMidia.no.getBoundingClientRect?.()?.width || 280
-    const folga = 12
-    // Abre à direita do bloco; se não couber, abre à esquerda. Caixa cortada
-    // pela beira do quadro é caixa que não dá para preencher.
-    const cabeNaDireita = alvo.right + folga + largura <= area.right
-    const x = cabeNaDireita ? alvo.right - area.left + folga : alvo.left - area.left - folga - largura
-    caixaDeMidia.no.style.setProperty("left", `${Math.max(folga, x)}px`)
-    caixaDeMidia.no.style.setProperty("top", `${alvo.top - area.top}px`)
+    const propria = caixaDeMidia.no.getBoundingClientRect?.() || {}
+    const onde = ondeAbrirACaixa({
+      alvo, area, caixa: { largura: propria.width || 280, altura: propria.height || 0 }
+    })
+    caixaDeMidia.no.style.setProperty("left", `${onde.x}px`)
+    caixaDeMidia.no.style.setProperty("top", `${onde.y}px`)
   }
 
   let vista = criarVista()
@@ -128,6 +163,12 @@ export function criarCanvas({
   }
 
   function aplicarVista() {
+    // O quadro se move por transform, nunca por scroll. Se alguma rolagem
+    // apareceu na área, foi o navegador que a pôs ali — ao focar um campo
+    // dentro de um container `overflow: hidden`, por exemplo — e, sem barra
+    // de rolagem, ninguém consegue desfazer. Desfazemos nós.
+    if (elemento.scrollLeft) elemento.scrollLeft = 0
+    if (elemento.scrollTop) elemento.scrollTop = 0
     posicionarCaixaDeMidia()
     mundo.style.setProperty("transform",
       `translate(${vista.x}px, ${vista.y}px) scale(${vista.escala})`)
@@ -928,6 +969,24 @@ export function criarCanvas({
       })
       linhaOpcao.append(campo)
 
+      // A opção que carrega mais do que texto — figura, título, descrição —
+      // ganha um lápis que abre a caixa dela. Quem só tem texto não ganha:
+      // um botão que abre uma caixa vazia é um clique que não leva a nada.
+      if (camposDaOpcao(bloco.tipo)) {
+        const lapis = el("button", "ed__opcao-editar")
+        lapis.setAttribute("type", "button")
+        lapis.setAttribute("title", t("Editar esta opção"))
+        lapis.dadosOpcao = opcao.id
+        const desenho = iconeDaAcao("lapis", "ed__opcao-editar-icone")
+        if (desenho) lapis.append(desenho)
+        lapis.addEventListener("mousedown", (ev) => ev.stopPropagation?.())
+        lapis.addEventListener("click", (ev) => {
+          ev.stopPropagation?.()
+          abrirCaixaDaOpcao(linhaOpcao, cartao, bloco, opcao)
+        })
+        linhaOpcao.append(lapis)
+      }
+
       // O círculo fica para fora do cartão e é a alça da ligação: arrasta-se
       // dele até o grupo para onde essa resposta deve levar.
       const ponto = el("span", `ed__opcao-ponto${opcao.proximo ? " ed__opcao-ponto--ligado" : ""}`)
@@ -999,7 +1058,7 @@ export function criarCanvas({
     // isso, então quem prova este pedaço é o navegador.
     if (editandoTitulo) {
       const campo = acharNaCamada("ed__titulo-campo")[0]
-      campo?.focus?.()
+      campo?.focus?.(SEM_ROLAR)
       // Nome inteiro selecionado: quem clica para renomear quer trocar o nome,
       // não acrescentar letra no fim de "Grupo #1".
       campo?.select?.()
@@ -1054,7 +1113,7 @@ export function criarCanvas({
     focarOpcao(blocoId, opcaoId) {
       const campo = acharNaCamada("ed__opcao-campo")
         .find((c) => c.dadosBloco === blocoId && c.dadosOpcao === opcaoId)
-      if (campo) campo.focus()
+      if (campo) campo.focus(SEM_ROLAR)
     },
     // Onde um ponto da janela cai no fluxo. Quem arrasta um tipo da paleta
     // precisa saber se soltou no palco, em que ponto do fluxo foi, e se havia

@@ -30,7 +30,7 @@ import { filtrar, palavrasDe } from "./busca.js"
 
 
 const NOME_DA_CATEGORIA = {
-  fala: "Bolhas", entrada: "Entrada", logica: "Lógica", conexao: "Conexão"
+  fala: "Bolhas", entrada: "Entrada", logica: "Lógica"
 }
 
 function el(tag, classe, texto) {
@@ -283,6 +283,14 @@ export function criarEditor({
         `opcao:${grupo}:${bloco}:${opcao}`)
       semRedesenharCartoes()
     },
+    // A figura, o título e a descrição de uma opção. Mesma edição do texto do
+    // botão, outro campo — e sem redesenhar os cartões, senão a caixa fecharia
+    // a cada letra.
+    aoEditarCampoDaOpcao: ({ grupo, bloco, opcao, campo, valor }) => {
+      trocarFluxo(definirOpcao(atual, { grupo, bloco, opcao, campo, valor }),
+        `opcao:${grupo}:${bloco}:${opcao}:${campo}`)
+      semRedesenharCartoes()
+    },
     aoAcrescentarOpcao: ({ grupo, bloco, apos }) => {
       // Varre antes de criar: se a linha anterior ficou vazia, ela sai agora.
       // Depois não pode varrer — a recém-nascida está vazia de propósito.
@@ -508,7 +516,7 @@ export function criarEditor({
         if (ev.key === "Enter" || ev.key === "Escape") { editandoNome = false; desenharNome() }
       })
       nome.append(campo)
-      campo.focus?.()
+      campo.focus?.({ preventScroll: true })
       campo.select?.()
       return
     }
@@ -1191,7 +1199,7 @@ export function criarEditor({
       // já vai para ele.
       if (retratoAberto && !temaAtual.avatar) {
         const campo = camposDeTexto.get("avatar")
-        campo?.focus?.()
+        campo?.focus?.({ preventScroll: true })
       }
     })
     return botao

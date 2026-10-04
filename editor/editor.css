@@ -14,7 +14,6 @@
   --ed-fala: #64748b;
   --ed-entrada: #ea7b3c;
   --ed-logica: #8b5cf6;
-  --ed-conexao: #0ea5e9;
   --ed-erro: #b4453a;
   --ed-recado-fundo: #fff5ec;
   --ed-recado-texto: #8a4a1d;
@@ -137,12 +136,10 @@ html, body { margin: 0; height: 100%; }
 .ed__tipo--fala .ed__tipo-icone { color: var(--ed-fala); }
 .ed__tipo--entrada .ed__tipo-icone { color: var(--ed-entrada); }
 .ed__tipo--logica .ed__tipo-icone { color: var(--ed-logica); }
-.ed__tipo--conexao .ed__tipo-icone { color: var(--ed-conexao); }
 .ed__tipo-rotulo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ed__tipo--fala { border-left: 3px solid var(--ed-fala); }
 .ed__tipo--entrada { border-left: 3px solid var(--ed-entrada); }
 .ed__tipo--logica { border-left: 3px solid var(--ed-logica); }
-.ed__tipo--conexao { border-left: 3px solid var(--ed-conexao); }
 .ed__recado:not(:empty) { background: var(--ed-recado-fundo); border: 1px solid var(--ed-entrada);
   color: var(--ed-recado-texto); padding: 0.6rem; border-radius: 8px; margin-bottom: 0.8rem; font-size: 0.82rem; }
 
@@ -691,3 +688,24 @@ html, body { margin: 0; height: 100%; }
      e a lista rola — ler o que se arrasta vale mais que ver tudo de uma vez. */
   .ed__grade { grid-template-columns: 1fr; }
 }
+
+/* O lápis de uma opção: abre a caixa com a figura, o título e a descrição.
+   Fica dentro da linha, à direita do texto do botão, e some do caminho — só
+   aparece quando o mouse passa pela linha ou a caixa dela está aberta, como o
+   ⋯ do bloco. Sem isso, cada opção ganharia um botão sempre aceso e a lista
+   viraria uma barra de ferramentas. */
+.ed__opcao-editar { flex: none; width: 1.6rem; height: 1.6rem; margin-left: 0.25rem;
+  display: grid; place-items: center; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--ed-suave); cursor: pointer; opacity: 0; }
+.ed__opcao-cartao:hover .ed__opcao-editar,
+.ed__opcao-editar:focus-visible { opacity: 1; }
+.ed__opcao-editar:hover { background: var(--ed-fundo); color: var(--ed-texto); }
+.ed__opcao-editar-icone { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* A caixa de uma opção é a mesma caixa das bolhas de mídia, com um rótulo
+   acima de cada campo: aqui há mais de um campo, e sem o nome em cima
+   ninguém sabe qual é o título e qual é a descrição. */
+.ed__midia--opcao .ed__midia-corpo { gap: 0.25rem; }
+.ed__midia--opcao .ed__midia-rotulo { font-size: 0.76rem; color: var(--ed-suave); }
+.ed__midia--opcao .ed__midia-subir { padding: 0.55rem; }

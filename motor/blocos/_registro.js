@@ -1,4 +1,7 @@
-const CATEGORIAS = ["fala", "entrada", "logica", "conexao"]
+// Três categorias. "conexao" existiu até 03/10/2026 com Redirecionar e
+// Webhook dentro; os dois decidem para onde o fluxo vai, que é lógica, e uma
+// seção de dois itens era um título a mais para a mesma ideia.
+const CATEGORIAS = ["fala", "entrada", "logica"]
 
 const catalogo = new Map()
 

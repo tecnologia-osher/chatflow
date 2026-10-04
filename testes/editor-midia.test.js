@@ -129,3 +129,12 @@ test("especie desconhecida cai nas regras da imagem, em vez de aceitar tudo", ()
   assert.match(problemaNoArquivo({ type: "application/pdf", size: 10 }, "sei-la"), /PNG/,
     "na dúvida, a regra mais apertada: a da imagem")
 })
+
+test("o mais e o menos andam no passo do que estao contando", () => {
+  const altura = caixaDoTipo("incorporar")
+  const estrelas = caixaDoTipo("entrada_avaliacao")
+  assert.equal(altura.numero.passo, 20, "altura em pixel de 1 em 1 seriam 320 cliques")
+  assert.equal(estrelas.numero.passo, undefined, "estrela anda de uma em uma: é o padrão")
+  assert.equal(estrelas.numero.minimo, 3)
+  assert.equal(estrelas.numero.maximo, 10)
+})

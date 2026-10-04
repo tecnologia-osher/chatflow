@@ -1,6 +1,6 @@
 export default {
   tipo: "redirecionar",
-  categoria: "conexao",
+  categoria: "logica",
   rotulo: "Redirecionar",
   ramifica: false,
   salva_variavel: false,

@@ -1719,3 +1719,122 @@ test("mirar o vazio do quadro apaga a marca, como mirar coisa nenhuma", () => {
     .filter((n) => /ed__bloco--acima/.test(n.className)), [])
   assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 0)
 })
+
+// --- a caixa de uma opção ---------------------------------------------------
+
+const fluxoComEscolhas = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Planos", posicao: { x: 300, y: 40 }, blocos: [
+      { id: "b1", tipo: "entrada_imagens", salvar_em: "plano", conteudo: {
+        opcoes: [{ id: "o1", label: "Carro" }, { id: "o2", label: "Imóvel" }] } },
+      { id: "b2", tipo: "entrada_botoes", conteudo: { opcoes: [{ id: "x1", label: "Sim" }] } }
+    ] }
+  ]
+}
+
+test("so a opcao que carrega mais que texto ganha o botao de editar", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoComEscolhas)
+  const lapis = hospedeiro.porClasse("ed__opcao-editar")
+  assert.equal(lapis.length, 2, "uma por opção da escolha com imagem, nenhuma nos botões")
+  assert.deepEqual(lapis.map((b) => b.dadosOpcao), ["o1", "o2"])
+})
+
+test("clicar no lapis abre a caixa daquela opcao, ancorada na linha dela", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoComEscolhas)
+  hospedeiro.porClasse("ed__opcao-editar")[1].disparar("click")
+  const abertas = hospedeiro.porClasse("ed__midia--opcao")
+  assert.equal(abertas.length, 1)
+  assert.deepEqual(abertas[0].porClasse("ed__midia-rotulo").map((e) => e.textContent), ["Imagem"])
+})
+
+test("a caixa abre com a figura que a opcao ja tinha", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  const comFigura = JSON.parse(JSON.stringify(fluxoComEscolhas))
+  comFigura.grupos[0].blocos[0].conteudo.opcoes[0].imagem = "carro.png"
+  canvas.desenhar(comFigura)
+  hospedeiro.porClasse("ed__opcao-editar")[0].disparar("click")
+  assert.equal(
+    hospedeiro.porClasse("ed__midia--opcao")[0].porClasse("ed__midia-campo")[0].value,
+    "carro.png",
+    "abrir em branco faz a pessoa achar que o que ela escreveu se perdeu")
+})
+
+test("abrir a caixa de outra opcao fecha a primeira", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoComEscolhas)
+  hospedeiro.porClasse("ed__opcao-editar")[0].disparar("click")
+  hospedeiro.porClasse("ed__opcao-editar")[1].disparar("click")
+  assert.equal(hospedeiro.porClasse("ed__midia--opcao").length, 1,
+    "duas caixas abertas é a pessoa editando uma e olhando a outra")
+})
+
+test("escrever na caixa da opcao avisa qual opcao e qual campo", () => {
+  const hospedeiro = new Elemento("div")
+  const editados = []
+  const canvas = criarCanvas({ elemento: hospedeiro,
+    aoEditarCampoDaOpcao: (o) => editados.push(o) })
+  canvas.desenhar(fluxoComEscolhas)
+  hospedeiro.porClasse("ed__opcao-editar")[1].disparar("click")
+  const campo = hospedeiro.porClasse("ed__midia--opcao")[0].porClasse("ed__midia-campo")[0]
+  campo.value = "casa.png"
+  campo.disparar("input")
+  assert.deepEqual(editados,
+    [{ grupo: "g1", bloco: "b1", opcao: "o2", campo: "imagem", valor: "casa.png" }])
+})
+
+test("o lapis nao seleciona nem arrasta o cartao atras dele", () => {
+  const hospedeiro = new Elemento("div")
+  const selecoes = []
+  const canvas = criarCanvas({ elemento: hospedeiro, aoSelecionar: (o) => selecoes.push(o) })
+  canvas.desenhar(fluxoComEscolhas)
+  let parou = false
+  hospedeiro.porClasse("ed__opcao-editar")[0].disparar("mousedown",
+    { stopPropagation: () => { parou = true } })
+  assert.equal(parou, true, "sem isto, pegar o lápis começa a arrastar o cartão")
+})
+
+// Focar um elemento dentro de um container `overflow: hidden` faz o navegador
+// rolar o container — e sem barra de rolagem não há como voltar. Medido no
+// Chrome: clicar num campo de opção de um cartão à direita rolava o quadro
+// 734px para o lado, e o fluxo inteiro saía do lugar de vez. O quadro se move
+// por transform, nunca por scroll.
+test("o editor nunca pede foco que role o quadro", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoComEscolhas)
+
+  // Renomear um grupo põe o cursor no nome.
+  hospedeiro.porClasse("ed__cabecalho-titulo")[0].disparar("click")
+  const nome = hospedeiro.porClasse("ed__titulo-campo")[0]
+  assert.ok(nome, "o campo do nome sumiu — este teste precisa dele")
+  assert.deepEqual(nome.focadoCom, { preventScroll: true })
+
+  // E acrescentar uma opção põe o cursor na nova.
+  canvas.desenhar(fluxoComEscolhas)
+  canvas.focarOpcao("b1", "o2")
+  const opcao = hospedeiro.porClasse("ed__opcao-campo").find((c) => c.dadosOpcao === "o2")
+  assert.deepEqual(opcao.focadoCom, { preventScroll: true })
+})
+
+test("o quadro se move por transform: rolagem que apareca nele e desfeita", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoComEscolhas)
+  // O hospedeiro é a própria área do quadro: é ele que tem `overflow: hidden`.
+  // O navegador rolou por conta própria — foi o que o Chrome fez ao pôr o
+  // cursor num campo de um cartão à direita.
+  hospedeiro.scrollLeft = 734
+  hospedeiro.scrollTop = 268
+  canvas.desenhar(fluxoComEscolhas)
+
+  assert.equal(hospedeiro.scrollLeft, 0, "734px para o lado, e sem barra para voltar")
+  assert.equal(hospedeiro.scrollTop, 0)
+})

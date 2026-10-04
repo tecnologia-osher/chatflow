@@ -149,7 +149,7 @@ test("input sem salvar_em", () => {
 test("webhook apontando para destino inexistente", () => {
   prepararCatalogo()
   registrar({
-    tipo: "webhook", categoria: "conexao", rotulo: "Webhook",
+    tipo: "webhook", categoria: "logica", rotulo: "Webhook",
     ramifica: false, salva_variavel: false, campos: []
   })
   const f = fluxoValido()

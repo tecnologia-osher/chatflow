@@ -4,6 +4,7 @@ import { validarFluxo } from "./validar.js"
 import { interpolar } from "./interpolar.js"
 import { fonteDeVideo } from "./video.js"
 import { enderecoIncorporado, alturaIncorporada } from "./incorporar.js"
+import { quantasEstrelas } from "./avaliacao.js"
 import { criarEnviador } from "./destinos.js"
 import { criarSessao } from "./sessao.js"
 import {
@@ -441,6 +442,88 @@ export function criarChat({
     oferecer(botoes, "cf__opcoes")
   }
 
+  function pedirNota(bloco) {
+    const quantas = quantasEstrelas(bloco.conteudo?.maximo)
+    const rotulo = interpolar(bloco.conteudo?.rotulo || "", contexto(fluxo, estado)).trim()
+    const estrelas = []
+    for (let i = 1; i <= quantas; i++) {
+      const botao = elementoCom("button", "cf__estrela", "★")
+      botao.type = "button"
+      botao.setAttribute("aria-label", `${i} de ${quantas}`)
+      // Passar o mouse acende até ali: sem isso a pessoa só descobre o que
+      // escolheu depois de clicar, e nota é coisa que se mira antes.
+      botao.addEventListener("mouseenter", () => acender(i))
+      botao.addEventListener("focus", () => acender(i))
+      // Responde com o número, não com a estrela: quem lê a planilha depois
+      // quer 4, não "★★★★".
+      botao.addEventListener("click", () => responder(String(i), "★".repeat(i)))
+      estrelas.push(botao)
+    }
+    const acender = (ate) => estrelas.forEach((e, i) => {
+      e.className = i < ate ? "cf__estrela cf__estrela--cheia" : "cf__estrela"
+    })
+    const caixa = elementoCom("div", "cf__estrelas")
+    caixa.append(...estrelas)
+    caixa.addEventListener("mouseleave", () => acender(0))
+    oferecer(rotulo ? [elementoCom("span", "cf__estrelas-rotulo", rotulo), caixa] : [caixa],
+      "cf__notas")
+  }
+
+  function pedirEscolhaComImagem(bloco) {
+    const ctx = contexto(fluxo, estado)
+    const escolhas = (bloco.conteudo?.opcoes || []).filter(Boolean).map((opcao) => {
+      const label = interpolar(opcao.label || "", ctx)
+      const botao = elementoCom("button", "cf__botao cf__escolha")
+      botao.type = "button"
+      const endereco = interpolar(opcao.imagem || "", ctx).trim()
+      // Só põe <img> quando há endereço: um src vazio pinta o ícone de
+      // imagem quebrada, que parece defeito do chat e não opção sem figura.
+      if (endereco) {
+        const figura = document.createElement("img")
+        figura.src = endereco
+        figura.className = "cf__escolha-img"
+        figura.alt = label
+        botao.append(figura)
+      }
+      botao.append(elementoCom("span", "cf__escolha-texto", label))
+      botao.addEventListener("click", () => responder(label))
+      return botao
+    })
+    oferecer(escolhas, "cf__escolhas")
+  }
+
+  function pedirCartoes(bloco) {
+    const ctx = contexto(fluxo, estado)
+    const cartoes = (bloco.conteudo?.opcoes || []).filter(Boolean).map((opcao) => {
+      const cartao = elementoCom("div", "cf__cartao")
+      const endereco = interpolar(opcao.imagem || "", ctx).trim()
+      const titulo = interpolar(opcao.titulo || "", ctx).trim()
+      const descricao = interpolar(opcao.descricao || "", ctx).trim()
+      const label = interpolar(opcao.label || "", ctx).trim()
+      if (endereco) {
+        const figura = document.createElement("img")
+        figura.src = endereco
+        figura.className = "cf__cartao-img"
+        figura.alt = titulo
+        cartao.append(figura)
+      }
+      // Campo em branco não vira linha em branco: um cartão só com botão é um
+      // cartão legítimo, e um parágrafo vazio abriria um buraco nele.
+      if (titulo) cartao.append(elementoCom("div", "cf__cartao-titulo", titulo))
+      if (descricao) cartao.append(elementoCom("div", "cf__cartao-texto", descricao))
+      // Sem texto no botão sobraria um retângulo sem nada escrito, que
+      // ninguém reconhece como clicável.
+      const botao = elementoCom("button", "cf__botao cf__cartao-botao", label || "Escolher")
+      botao.type = "button"
+      // A resposta é o texto do botão, como nos Botões: é o que identifica a
+      // opção escolhida, e é o que o grupo usa para saber por onde seguir.
+      botao.addEventListener("click", () => responder(label || titulo || "Escolher"))
+      cartao.append(botao)
+      return cartao
+    })
+    oferecer(cartoes, "cf__cartoes")
+  }
+
   function mostrarLink(bloco) {
     const url = interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado))
     const link = elementoCom("a", "cf__botao cf__botao--opcao", bloco.conteudo?.rotulo_botao || "Continuar")
@@ -596,6 +679,9 @@ export function criarChat({
         return
       }
       if (bloco.tipo === "entrada_botoes") { pedirOpcao(bloco); return }
+      if (bloco.tipo === "entrada_imagens") { pedirEscolhaComImagem(bloco); return }
+      if (bloco.tipo === "entrada_cartoes") { pedirCartoes(bloco); return }
+      if (bloco.tipo === "entrada_avaliacao") { pedirNota(bloco); return }
       pedirTexto(bloco)
       return
     }

@@ -16,6 +16,13 @@ export const ICONE_DO_TIPO = {
   entrada_telefone: "M5.6 2.8h4.8v10.4H5.6zM7.4 11.6h1.2",
   entrada_data: "M2.8 4.3h10.4v9H2.8zM2.8 7h10.4M5.6 2.6v2.4M10.4 2.6v2.4",
   entrada_botoes: "M2.8 3.6h10.4v3.2H2.8zM2.8 9.2h10.4v3.2H2.8z",
+  // Elo de corrente, relógio, estrela, figura na moldura e um cartão entre
+  // dois pela metade: os mesmos desenhos do Typebot, que se reconhecem sem ler.
+  entrada_url: "M6.6 9.4a2.6 2.6 0 0 1 0-3.7l2-2a2.6 2.6 0 1 1 3.7 3.7l-.9.9M9.4 6.6a2.6 2.6 0 0 1 0 3.7l-2 2a2.6 2.6 0 1 1-3.7-3.7l.9-.9",
+  entrada_hora: "M8 3.4a4.6 4.6 0 1 1 0 9.2 4.6 4.6 0 0 1 0-9.2zM8 5.6V8l1.8 1.1",
+  entrada_avaliacao: "M8 2.8l1.7 3.4 3.7.6-2.7 2.6.6 3.7L8 11.4l-3.3 1.7.6-3.7-2.7-2.6 3.7-.6z",
+  entrada_imagens: "M2.8 3.6h10.4v8.8H2.8zM2.8 10.2l2.8-2.6 2.2 2 2-1.8 3.4 3M6.1 6.3a.9.9 0 1 1-1.8 0 .9.9 0 0 1 1.8 0",
+  entrada_cartoes: "M5.6 3.4h4.8v9.2H5.6zM2.8 5h1.4v6H2.8zM11.8 5h1.4v6h-1.4z",
   condicao: "M8 2.6l3.4 3.4L8 9.4 4.6 6zM8 9.4v4",
   definir_variavel: "M4.4 3.2C3 5 3 11 4.4 12.8M11.6 3.2C13 5 13 11 11.6 12.8M6.4 6.4l3.2 3.2M9.6 6.4l-3.2 3.2",
   ir_para: "M3 8h9M8.6 4.6L12 8l-3.4 3.4",
@@ -50,6 +57,9 @@ export const ICONE_DA_ACAO = {
   // aberta fica solta de um deles.
   cadeado: { viewBox: "0 0 24 24", d: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" },
   cadeado_aberto: { viewBox: "0 0 24 24", d: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0" },
+  // Lápis: o traço do corpo e a ponta. Abre a caixa de uma opção — figura,
+  // título, descrição.
+  lapis: { viewBox: "0 0 24 24", d: "M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z M14.5 6.5l3 3" },
   // Quatro cantos apontando para dentro: pôr tudo na tela.
   centralizar: "M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3",
   // Disquete, que ainda é o que todo mundo lê como "guardar".

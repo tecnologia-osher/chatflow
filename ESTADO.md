@@ -1458,3 +1458,64 @@ devolvia o tipo colado no cursor, e eram o mesmo gesto em dois tempos.
 empurrava a coluna para fora do painel em vez de encolher; e a 15rem, na tela
 estreita, duas colunas só cabem cortando os nomes — ali a paleta virou uma
 coluna só. Catorze mutações no código novo, catorze pegas.
+
+### Cinco entradas novas, e a paleta em três seções
+
+968 testes. A paleta de Entrada tinha seis caixas; o Typebot tem treze. Entraram
+cinco, e duas ficaram de fora por motivo, não por esquecimento.
+
+**Site e Hora não custaram nada ao motor.** O motor já era genérico: tudo que
+não é botão cai num campo de texto, e quem diz os atributos do campo e como
+validar é a própria definição do tipo. Os dois são um arquivo cada. O Site não
+exige `https://` — ninguém digita o protocolo ao dizer onde fica o site da
+empresa, e um campo que recusa "osher.com.br" é pegadinha. A Hora usa o campo
+nativo, que no celular abre o relógio do sistema.
+
+**Avaliação, Escolha visual e Cartões o motor precisou aprender a desenhar.**
+A avaliação é uma fileira de estrelas que acende até onde o dedo está, guarda o
+número (4, não "★★★★") e **não ramifica** — cinco estrelas não são cinco saídas
+do grupo; quem quiser tratar nota alta e baixa diferente põe uma Condição
+depois. A escolha visual é um botão com figura em cima do texto. Os cartões
+correm na horizontal, com figura, título, descrição e um botão cada: **um botão
+por cartão**, porque vários seriam saídas dentro de uma saída, e nem o modelo do
+quadro nem as setas sabem disso hoje.
+
+**O que custou foi editar isso.** Uma opção passou a carregar mais do que texto,
+e não havia onde escrever a figura de cada uma. Cada linha de opção ganhou um
+lápis que abre uma caixa flutuante, montada a partir do `campos_da_opcao` que o
+próprio tipo declara — um tipo novo ganha caixa sem o editor saber o nome dele.
+A caixa da avaliação é a mesma das bolhas de mídia, com o número de estrelas no
+lugar da altura: a linha de número passou a trazer o próprio limite e o próprio
+passo, porque 80 a 1200 estrelas de 20 em 20 não faria sentido.
+
+**Redirecionar e Webhook foram para Lógica, e Conexão deixou de existir.** Os
+dois decidem para onde o fluxo vai, que é lógica; uma seção de dois itens era um
+título a mais para a mesma ideia.
+
+**Três defeitos antigos que só apareceram agora:**
+
+Um bloco de lista arrastado da paleta — Botões, inclusive — nascia **sem a
+lista**. Sem a chave `opcoes`, o cartão não desenhava linha nenhuma, e sem linha
+não há "+ botão": o bloco chegava morto, e o único jeito de dar vida a ele era
+editar o JSON na mão. Agora campo de lista nasce vazio, e não ausente.
+
+A caixa flutuante já se cuidava na horizontal e **não na vertical**: num bloco
+perto do pé do quadro, metade dela ficava inalcançável. A conta saiu do canvas
+para `onde-abrir.js` e virou teste de verdade — no dublê a caixa não tem tamanho
+até alguém medi-la, e forçar um tamanho nela provaria o dublê, não a regra.
+
+E o pior: **focar um campo dentro do quadro rolava o quadro**. O quadro tem
+`overflow: hidden` e se move por transform, mas o navegador, ao pôr o cursor
+num campo, rola o container para mostrá-lo — medido no Chrome, 734px para o
+lado — e sem barra de rolagem ninguém desfaz. Agora todo foco pede
+`preventScroll`, e o desenho desfaz qualquer rolagem que apareça: duas travas,
+porque a primeira depende de eu ter achado todos os `focus()` e a segunda não.
+
+**Pagamento e Arquivo ficaram de fora.** Pagamento precisa de um provedor
+(Stripe, Mercado Pago) e de um servidor que guarde a chave; Arquivo precisa de
+onde pôr o arquivo que o lead sobe — os dois são sub-projeto 3. No Typebot o
+Arquivo tem cadeado pelo mesmo motivo. Pôr a caixa na paleta sem isso seria uma
+caixa que o cliente arrasta e descobre quebrada no ar.
+
+Vinte e nove mutações no código novo, vinte e nove pegas — duas delas acharam
+testes meus que não sabiam falhar.

@@ -3,7 +3,6 @@
 // a pessoa tem na mão é um link, um arquivo, e um interruptor.
 
 import { caixaDoTipo, problemaNoArquivo, ARQUIVOS } from "./midia.js"
-import { ALTURA_MINIMA, ALTURA_MAXIMA } from "../motor/incorporar.js"
 import { preencher } from "./idioma.js"
 
 function el(tag, classe, texto) {
@@ -64,7 +63,7 @@ export function criarCaixaDeMidia({
   // Altura: menos, mais, e o número no meio — como no print, e como qualquer
   // campo de medida. Digitar também vale.
   function linhaDoNumero() {
-    const { campo, rotulo, sufixo, padrao } = molde.numero
+    const { campo, rotulo, sufixo, padrao, minimo, maximo, passo: salto = 1 } = molde.numero
     const linha = el("div", "ed__midia-linha ed__midia-linha--numero")
     linha.append(el("span", "ed__midia-rotulo", t(rotulo)))
 
@@ -75,13 +74,13 @@ export function criarCaixaDeMidia({
     const grupo = el("div", "ed__midia-numero")
     const entrada = el("input", "ed__midia-numero-campo")
     entrada.setAttribute("type", "number")
-    entrada.setAttribute("min", String(ALTURA_MINIMA))
-    entrada.setAttribute("max", String(ALTURA_MAXIMA))
+    entrada.setAttribute("min", String(minimo))
+    entrada.setAttribute("max", String(maximo))
     entrada.setAttribute("aria-label", t(rotulo))
     entrada.value = String(valor())
 
     const gravar = (novo) => {
-      const preso = Math.min(ALTURA_MAXIMA, Math.max(ALTURA_MINIMA, novo))
+      const preso = Math.min(maximo, Math.max(minimo, novo))
       entrada.value = String(preso)
       conteudo = { ...conteudo, [campo]: preso }
       aoEditar(campo, preso)
@@ -103,7 +102,7 @@ export function criarCaixaDeMidia({
     // saída, sim: é quando o valor vira definitivo.
     entrada.addEventListener("change", () => gravar(valor()))
 
-    grupo.append(passo(-20), entrada, passo(20))
+    grupo.append(passo(-salto), entrada, passo(salto))
     linha.append(grupo)
     if (sufixo) linha.append(el("span", "ed__midia-sufixo", sufixo))
     return linha

@@ -120,3 +120,12 @@ test("na tela estreita a paleta vira uma coluna, para o nome caber inteiro", () 
   assert.match(estreita[1], /\.ed__grade \{[^}]*grid-template-columns:\s*1fr\s*;/,
     "em duas colunas de 15rem os nomes saem cortados")
 })
+
+// O tema do chat não passa pelo dublê de DOM pelo mesmo motivo que o do editor.
+test("a fileira de cartoes usa a largura inteira da conversa", () => {
+  const tema = readFileSync(new URL("../motor/tema.css", import.meta.url), "utf8")
+  assert.match(tema, /\.cf__linha:has\(>\s*\.cf__cartoes\)\s*\{[^}]*max-width:\s*100%/,
+    "parada em 88%, a fileira perde meio cartão de largura no celular")
+  assert.match(tema, /\.cf__linha \{[^}]*max-width:\s*88%/,
+    "a linha comum continua em 88%: é o que distingue quem fala de quem responde")
+})

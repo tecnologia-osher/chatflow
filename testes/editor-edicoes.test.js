@@ -569,3 +569,24 @@ test("antesDe de um bloco que nao existe cai no fim, em vez de sumir", () => {
   assert.deepEqual(grupo(f, "g1").blocos.map((b) => b.tipo),
     ["texto", "entrada_texto", "video"])
 })
+
+// Arrastado da paleta, um bloco de lista nascia sem lista nenhuma: o cartão
+// não desenhava linha de opção, e sem linha não há "+ botão" — o bloco chegava
+// morto, e o único jeito de dar vida a ele era editar o JSON na mão.
+test("bloco de lista nasce com a lista vazia, e nao sem a lista", () => {
+  for (const tipo of ["entrada_botoes", "entrada_imagens", "entrada_cartoes"]) {
+    const f = acrescentarBloco(base(), { grupo: "g2", tipo })
+    assert.deepEqual(f.grupos[1].blocos[0].conteudo.opcoes, [], `${tipo} chegou sem lista`)
+  }
+})
+
+test("a condicao tambem nasce com as regras dela", () => {
+  const f = acrescentarBloco(base(), { grupo: "g2", tipo: "condicao" })
+  assert.deepEqual(f.grupos[1].blocos[0].conteudo.regras, [])
+})
+
+test("campo de lista nao atropela o padrao declarado pelo tipo", () => {
+  const f = acrescentarBloco(base(), { grupo: "g2", tipo: "entrada_botoes" })
+  assert.equal(f.grupos[1].blocos[0].conteudo.multipla, false,
+    "o padrão do tipo continua valendo ao lado da lista")
+})

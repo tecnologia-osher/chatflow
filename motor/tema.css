@@ -290,3 +290,118 @@
   .cf__ponto { animation: none; opacity: 0.5; }
   .cf__botao--opcao::before { animation: none; }
 }
+
+/* --- avaliação, escolha com imagem e cartões ------------------------------ */
+/* As três entradas que não são campo de texto. Ficam do lado de quem responde,
+   como os botões, e usam as mesmas cores de botão do tema: um tipo novo não
+   pode inventar cor própria, senão o tema do cliente deixa de valer. */
+
+.cf__notas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  max-width: min(100%, 22rem);
+}
+.cf__estrelas-rotulo { font-size: 0.9rem; opacity: 0.85; text-align: right; }
+.cf__estrelas { display: flex; gap: 0.15rem; }
+/* A estrela vazia fica com o contorno da cor do botão; cheia, preenchida.
+   Tamanho de dedo: 2,2rem é o alvo mínimo confortável num celular. */
+.cf__estrela {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--cf-botao-opcao);
+  opacity: 0.35;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.cf__estrela--cheia { opacity: 1; transform: scale(1.08); }
+
+.cf__escolhas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  max-width: min(100%, 22rem);
+}
+/* A figura manda na largura; o texto fica embaixo dela, como no Typebot. */
+.cf__escolha {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: calc(50% - 0.25rem);
+  min-width: 7rem;
+  padding: 0.5rem;
+  border-color: var(--cf-botao-opcao);
+  background: var(--cf-botao-opcao);
+  color: var(--cf-sobre-botao-opcao);
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.cf__escolha-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.cf__escolha-texto { text-align: center; }
+
+/* Os cartões correm na horizontal: numa tela de celular não cabem dois lado a
+   lado, e empilhar na vertical esconderia o resto da conversa. */
+/* A fileira de cartões usa a largura inteira da conversa. A linha comum para
+   em 88% para que bolha de um lado e do outro se distingam pela forma; uma
+   fileira que rola não é fala de ninguém, e 12% a menos custa meio cartão
+   numa tela de celular. Navegador sem :has volta ao 88%, que funciona. */
+.cf__linha:has(> .cf__cartoes) { max-width: 100%; }
+.cf__cartoes {
+  display: flex;
+  gap: 0.6rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.cf__cartao {
+  flex: none;
+  width: 13rem;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: var(--cf-botao-opcao);
+  color: var(--cf-sobre-botao-opcao);
+  text-align: left;
+}
+.cf__cartao-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.cf__cartao-titulo { font-weight: 700; line-height: 1.25; }
+.cf__cartao-texto { font-size: 0.9rem; opacity: 0.9; line-height: 1.3; }
+/* O botão do cartão é o último da coluna, colado no pé dele mesmo quando o
+   cartão ao lado é mais alto — senão a fileira fica com botões em alturas
+   diferentes e parece desalinhada. */
+.cf__cartao-botao {
+  margin-top: auto;
+  width: 100%;
+  border-color: var(--cf-sobre-botao-opcao);
+  background: transparent;
+  color: var(--cf-sobre-botao-opcao);
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

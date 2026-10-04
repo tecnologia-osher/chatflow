@@ -167,7 +167,7 @@ test("escolher English troca a paleta e o que esta no quadro", () => {
   const { hospedeiro } = montar()
   escolherIdioma(hospedeiro, "en")
   assert.deepEqual(porClasse(hospedeiro, "ed__categoria").map((h) => h.textContent),
-    ["Bubbles", "Input", "Logic", "Connection"])
+    ["Bubbles", "Input", "Logic"])
   assert.ok(porClasse(hospedeiro, "ed__tipo").some((b) => b.textContent.includes("Video")),
     "o nome do tipo de bloco também é do editor")
   assert.equal(porClasse(hospedeiro, "ed__cabecalho-titulo")[0].atributos.title, "Click to rename")

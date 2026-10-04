@@ -1,6 +1,6 @@
 export default {
   tipo: "webhook",
-  categoria: "conexao",
+  categoria: "logica",
   rotulo: "Webhook",
   ramifica: false,
   salva_variavel: false,

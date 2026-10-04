@@ -8,17 +8,21 @@ function preparar() {
   registrarTodos()
 }
 
-test("registra os dezesseis tipos do catalogo", () => {
+test("registra os vinte e um tipos do catalogo", () => {
   preparar()
-  assert.equal(todos().length, 16)
+  assert.equal(todos().length, 21)
   assert.deepEqual(todos().filter((d) => d.categoria === "fala").map((d) => d.tipo),
     ["texto", "imagem", "video", "audio", "incorporar"], "as cinco bolhas")
 })
 
-test("so tres tipos ramificam", () => {
+test("so ramifica quem oferece caminhos, e nota nao e caminho", () => {
   preparar()
   const ramificam = todos().filter((d) => d.ramifica).map((d) => d.tipo).sort()
-  assert.deepEqual(ramificam, ["condicao", "entrada_botoes", "ir_para"])
+  assert.deepEqual(ramificam,
+    ["condicao", "entrada_botoes", "entrada_cartoes", "entrada_imagens", "ir_para"])
+  // Cinco estrelas não são cinco saídas do grupo: quem quer tratar nota alta
+  // e baixa de formas diferentes põe uma Condição depois.
+  assert.equal(todos().find((d) => d.tipo === "entrada_avaliacao").ramifica, false)
 })
 
 test("todo bloco de categoria entrada salva variavel", () => {
@@ -113,4 +117,13 @@ test("todo tipo declara campos com nome e rotulo", () => {
       assert.equal(typeof campo.rotulo, "string", `${d.tipo}: campo sem rotulo`)
     }
   }
+})
+
+test("redirecionar e webhook moram na logica, e nao existe mais conexao", () => {
+  const porTipo = Object.fromEntries(todos().map((d) => [d.tipo, d]))
+  assert.equal(porTipo.redirecionar.categoria, "logica")
+  assert.equal(porTipo.webhook.categoria, "logica")
+  assert.deepEqual([...new Set(todos().map((d) => d.categoria))].sort(),
+    ["entrada", "fala", "logica"],
+    "uma categoria sem nenhum bloco é uma seção vazia na paleta")
 })

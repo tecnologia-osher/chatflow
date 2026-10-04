@@ -4,6 +4,9 @@
 // é um link ou um arquivo, e no vídeo ainda há o autoplay. A caixa é descrita
 // aqui como dado — aba por aba, campo por campo — e desenhada pelo editor.
 
+import { ALTURA_MINIMA, ALTURA_MAXIMA } from "../motor/incorporar.js"
+import { ESTRELAS_PADRAO, ESTRELAS_MIN, ESTRELAS_MAX } from "../motor/avaliacao.js"
+
 export const TIPOS_DE_IMAGEM = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"]
 export const TIPOS_DE_AUDIO = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/ogg"]
 // Imagem maior que isto não é imagem de conversa: é um arquivo que alguém
@@ -73,7 +76,19 @@ export const CAIXAS = {
     nota: "Funciona com PDFs, iframes e sites.",
     // Altura em vez de interruptor: uma página incorporada não tem tamanho
     // próprio dentro da conversa, alguém precisa dizer o dela.
-    numero: { campo: "altura", rotulo: "Altura", sufixo: "px", padrao: 400 }
+    // Os limites vêm no molde, e não de uma constante dentro da caixa: a
+    // avaliação usa a mesma linha de número para contar estrelas, e 80 a 1200
+    // estrelas não faria sentido nenhum.
+    numero: { campo: "altura", rotulo: "Altura", sufixo: "px", padrao: 400,
+      minimo: ALTURA_MINIMA, maximo: ALTURA_MAXIMA, passo: 20 }
+  },
+  entrada_avaliacao: {
+    // Uma aba só: aqui não há arquivo nenhum para subir, e uma tira de abas
+    // com um item é moldura à toa.
+    abas: [{ chave: "texto", rotulo: "Texto" }],
+    campo: { nome: "rotulo", dica: "Texto acima das estrelas…" },
+    numero: { campo: "maximo", rotulo: "Quantas estrelas", padrao: ESTRELAS_PADRAO,
+      minimo: ESTRELAS_MIN, maximo: ESTRELAS_MAX }
   }
 }
 

@@ -539,6 +539,19 @@ test("a altura de um cartao inteiro bate com a regua do navegador", () => {
     `o modelo diz ${alturaDoCartao(idade)}, o Chrome mediu 381.8`)
 })
 
+test("o lapis da opcao nao engorda a linha dela", () => {
+  // A escolha visual ganhou um botão dentro de cada linha de opção. Medidos no
+  // Chrome, os dois cartões dão 317,52px — o lápis é mais baixo que o campo e
+  // não empurra nada. Se um dia empurrar, o modelo passa a mentir sobre a
+  // altura e as setas chegam no lugar errado.
+  const quatro = (tipo) => ({ id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b", tipo, opcoes: [1, 2, 3, 4].map((k) => ({ id: `o${k}` })) }] })
+  for (const tipo of ["entrada_botoes", "entrada_imagens", "entrada_cartoes"]) {
+    assert.ok(Math.abs(alturaDoCartao(quatro(tipo)) - 317.5) <= 3,
+      `${tipo}: o modelo diz ${alturaDoCartao(quatro(tipo))}, o Chrome mediu 317.5`)
+  }
+})
+
 test("o cartao leva o conteudo do bloco, para a caixa de midia editar", () => {
   const [cartao] = cartoes({
     versao: 2,
