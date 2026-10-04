@@ -106,8 +106,11 @@ html, body { margin: 0; height: 100%; }
 .ed__busca::-webkit-search-cancel-button { cursor: pointer; }
 .ed__tipos { display: block; }
 .ed__sem-tipo { margin: 1rem 0 0; color: var(--ed-suave); font-size: 0.82rem; }
+/* Preto e em negrito: o título da seção é a âncora de quem varre a coluna com
+   o olho. Em cinza ele pesava menos que os próprios tipos embaixo dele, e a
+   lista virava uma lista só. */
 .ed__categoria { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--ed-suave); margin: 0; font-weight: 700; }
+  color: var(--ed-texto); margin: 0; font-weight: 700; }
 
 /* Cada grupo da coluna da esquerda abre e fecha pelo próprio título. A linha
    entre um e outro é o que diz onde um acaba e o outro começa — sem ela, a

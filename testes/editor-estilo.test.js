@@ -130,8 +130,10 @@ test("a fileira de cartoes usa a largura inteira da conversa", () => {
     "a linha comum continua em 88%: é o que distingue quem fala de quem responde")
 })
 
-test("o nome de cada secao da paleta vem em negrito", () => {
+test("o nome de cada secao da paleta vem em negrito e na cor do texto", () => {
   const regra = regras.find((r) => r.seletor === ".ed__categoria")
   assert.ok(regra, "a regra do título de seção sumiu — este teste precisa dela")
   assert.match(regra.corpo, /font-weight:\s*(700|bold)\b/)
+  assert.match(regra.corpo, /color:\s*var\(--ed-texto\)/,
+    "no cinza dos rótulos, o título pesa menos que os tipos embaixo dele")
 })
