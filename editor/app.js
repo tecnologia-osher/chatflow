@@ -826,12 +826,8 @@ export function criarEditor({
       fantasma.style.setProperty("height", `${Math.round(caixa.height)}px`)
     }
     let visivel = false
-    let andou = false
-    const inicio = { x: ev.clientX, y: ev.clientY }
 
     function mover(e) {
-      if (Math.abs(e.clientX - inicio.x) > FOLGA_DO_CLIQUE ||
-          Math.abs(e.clientY - inicio.y) > FOLGA_DO_CLIQUE) andou = true
       if (!visivel) { raiz.append(fantasma); visivel = true }
       fantasma.style.setProperty("left", `${e.clientX - presoEm.x}px`)
       fantasma.style.setProperty("top", `${e.clientY - presoEm.y}px`)
@@ -866,17 +862,7 @@ export function criarEditor({
     function desligar() {
       document.removeEventListener("mousemove", mover)
       document.removeEventListener("mouseup", soltar)
-      document.removeEventListener("mousedown", largarPreso, true)
       document.removeEventListener("keydown", desistir, true)
-    }
-
-    // Clique no quadro com o tipo preso: é aqui que ele desce. Na captura e
-    // parando a propagação, senão o mesmo clique começaria a arrastar o
-    // quadro por baixo.
-    function largarPreso(e) {
-      e.preventDefault?.()
-      e.stopPropagation?.()
-      largar(e)
     }
 
     function desistir(e) {
@@ -886,17 +872,21 @@ export function criarEditor({
       canvas.mirar(null)
     }
 
+    // Enquanto o botão está apertado, o tipo anda com o cursor; soltando, ele
+    // desce onde a mão largou. Soltar dentro do próprio menu é desistir —
+    // `alvoDe` diz que não foi no quadro e nada acontece.
+    //
+    // Houve uma versão em que o clique seco deixava o tipo pendurado no cursor
+    // até o clique seguinte. Era um modo invisível: quem clicava sem querer
+    // saía arrastando um bloco pela tela sem saber por quê.
     function soltar(e) {
-      // Arrastou e soltou: o bloco desce onde a mão largou.
-      if (andou) return largar(e)
-      // Clique seco: o tipo descola do menu e passa a seguir o cursor até o
-      // próximo clique. Quem não quer arrastar a mão inteira pela tela pega
-      // assim — e o Esc devolve.
-      document.removeEventListener("mouseup", soltar)
-      document.addEventListener("mousedown", largarPreso, true)
-      mover(e)
+      largar(e)
     }
 
+    // O fantasma nasce no apertar, não no primeiro movimento: "segurei e
+    // descolou" é o que a mão espera, e esperar o movimento deixava o primeiro
+    // instante sem retorno nenhum.
+    mover(ev)
     document.addEventListener("mousemove", mover)
     document.addEventListener("mouseup", soltar)
     // O Esc desiste, arrastando ou carregando: são o mesmo gesto em dois

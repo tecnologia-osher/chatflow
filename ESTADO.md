@@ -1347,6 +1347,9 @@ Conferido no Chrome: cliquei em "Texto", a caixinha grudou no cursor e o
 acompanhou até (500, 800); o clique lá criou o sexto cartão com o bloco
 dentro. Depois peguei outro e o Esc devolveu, sem deixar nada no quadro.
 
+_Desfeito em 03/10/2026 — ver "Segurar descola, soltar larga" no fim deste
+arquivo._
+
 ### A seta encosta na altura do nome do grupo
 
 878 testes. A seta que chega a um grupo encostava no **meio do cartão**. Num
@@ -1519,3 +1522,26 @@ caixa que o cliente arrasta e descobre quebrada no ar.
 
 Vinte e nove mutações no código novo, vinte e nove pegas — duas delas acharam
 testes meus que não sabiam falhar.
+
+
+### Segurar descola, soltar larga
+
+970 testes. O clique seco que deixava o tipo **pendurado no cursor até o
+clique seguinte** saiu. Era um modo invisível: quem clicava sem querer na
+coluna saía arrastando um bloco pela tela sem saber por quê, e o único jeito
+de descobrir que existia um modo era apertar Esc por acaso.
+
+Agora é um gesto só, e é o que a mão já espera: **segurar descola, soltar
+larga**. O fantasma nasce no apertar — não no primeiro movimento — porque
+"segurei e descolou" é o retorno que se espera no mesmo instante; esperar o
+mouse andar deixava o começo do gesto sem resposta nenhuma. Soltar dentro do
+próprio menu é desistir, e o Esc continua desistindo no meio do caminho.
+
+Isto apagou a última diferença entre clique e arrasto na paleta: não há mais
+folga de 3px separando dois gestos, porque só existe um.
+
+Conferido no Chrome com o mouse de verdade: apertar sem mexer já põe a
+caixinha no cursor; andar leva ela junto; soltar sobre um cartão acrescentou o
+bloco ali (nove viraram dez); e depois de soltar, mexer e clicar no quadro não
+larga mais nada. Clique seco na coluna não faz nada — que é o que ele deve
+fazer.

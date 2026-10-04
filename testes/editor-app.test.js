@@ -79,38 +79,49 @@ test("clicar num tipo nao acrescenta bloco nenhum, nem com grupo selecionado", (
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0])
 })
 
-test("clicar num tipo descola ele do menu e nao acrescenta nada ainda", () => {
+test("segurar o botao descola o tipo do menu, na hora", () => {
   const { hospedeiro, editor } = montar()
   const tipo = porClasse(hospedeiro, "ed__tipo")[0]
   tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
-  document.disparar("mouseup", { clientX: 40, clientY: 120 })
 
-  assert.equal(editor.fluxo().grupos[0].blocos.length, 1, "nada deve ser acrescentado ainda")
   assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 1,
-    "o tipo precisa descolar do menu e seguir o cursor")
-
-  // Esc devolve o tipo ao menu: carregar um bloco que não se quer mais, sem
-  // jeito de largar, seria uma armadilha.
-  document.disparar("keydown", { key: "Escape" })
-  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0)
-  assert.equal(editor.fluxo().grupos[0].blocos.length, 1)
+    "enquanto o botão está apertado, o tipo anda com o cursor")
+  assert.equal(editor.fluxo().grupos[0].blocos.length, 1, "nada é acrescentado enquanto se segura")
 })
 
-test("com o tipo descolado, o clique no quadro e que poe o bloco", () => {
+test("soltar o botao larga o tipo: ele nao fica colado no cursor", () => {
   const { hospedeiro, editor } = montar()
-  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
-  const tipo = tipoDaPaleta(hospedeiro, "Texto")
+  const tipo = porClasse(hospedeiro, "ed__tipo")[0]
   tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
-  document.disparar("mouseup", { clientX: 40, clientY: 120 })
+  // Soltando ainda em cima do menu — é por onde o evento passa que o editor
+  // sabe que foi ali, e não pela coordenada.
+  document.disparar("mouseup", { clientX: 40, clientY: 120, target: tipo })
 
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0,
+    "largou dentro do menu: o tipo volta para o lugar dele")
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0],
+    "largar no próprio menu é desistir: nada é acrescentado e nenhum grupo nasce")
+
+  // E o cursor fica livre: um clique no quadro depois disso não larga nada.
   const onde = naJanela(hospedeiro, { x: 100, y: 300 })
   document.disparar("mousemove", onde)
   document.disparar("mousedown", { ...onde, button: 0 })
+  document.disparar("mouseup", onde)
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0],
+    "o tipo não podia ter ficado pendurado no cursor")
+})
 
-  const novos = gruposNovos(editor, antes)
-  assert.equal(novos.length, 1, "o clique no quadro é que larga o bloco")
-  assert.deepEqual(novos[0].blocos.map((b) => b.tipo), ["texto"])
-  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0, "largou: o fantasma some")
+test("Esc devolve o tipo ao menu no meio do caminho", () => {
+  const { hospedeiro, editor } = montar()
+  const tipo = porClasse(hospedeiro, "ed__tipo")[0]
+  tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
+  document.disparar("mousemove", { clientX: 400, clientY: 300 })
+  document.disparar("keydown", { key: "Escape" })
+
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0)
+  // Soltar o botão depois de desistir não pode largar bloco nenhum.
+  document.disparar("mouseup", { clientX: 400, clientY: 300 })
+  assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0])
 })
 
 test("o bloco arrastado ja vem selecionado, pronto para editar", () => {
@@ -689,7 +700,7 @@ test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma",
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g2"])
 
   // Com a seleção presa no grupo apagado, clicar num tipo tentaria acrescentar
-  // bloco nele. Hoje clique nenhum acrescenta: ele só descola do menu.
+  // bloco nele. Hoje clique nenhum acrescenta: só o arrasto põe bloco no fluxo.
   tipoDaPaleta(hospedeiro, "Texto").disparar("click")
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [0])
 })
