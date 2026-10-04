@@ -1346,3 +1346,24 @@ distinguir clique de arrasto nos cartões.
 Conferido no Chrome: cliquei em "Texto", a caixinha grudou no cursor e o
 acompanhou até (500, 800); o clique lá criou o sexto cartão com o bloco
 dentro. Depois peguei outro e o Esc devolveu, sem deixar nada no quadro.
+
+### A seta encosta na altura do nome do grupo
+
+878 testes. A seta que chega a um grupo encostava no **meio do cartão**. Num
+cartão alto isso deixa a ponta apontando para o vão entre dois blocos, e de
+longe não se vê em qual grupo ela entra. Agora ela encosta **na altura do
+nome**: pela esquerda, pela direita, e pelo topo centralizada quando vem de
+cima — os três casos dos prints do Typebot.
+
+Quem manda é o cartão: a caixa dele passou a declarar um `ancoraY`, e a
+geometria obedece. A faixa de um bloco não declara nada e continua sendo
+atingida no meio dela — é onde a seta deve chegar quando o destino é aquele
+bloco, e continua exigindo passar o mouse exatamente em cima dele.
+
+O fio que se arrasta usa a mesma caixa que a seta pronta, então ele já gruda na
+altura certa enquanto a pessoa arrasta — o ímã mostra onde a linha vai ficar
+antes de soltar.
+
+Medido no Chrome, no fluxo da Osher: as quatro setas laterais encostam a 22px
+do topo do cartão (cartões de 273 a 380px de altura), e a que desce para o Fim
+encosta a 0px, no meio da largura.

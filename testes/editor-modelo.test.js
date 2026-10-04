@@ -545,3 +545,18 @@ test("bloco sem conteudo nao quebra quem le o conteudo", () => {
   })
   assert.deepEqual(cartao.blocos[0].conteudo, {})
 })
+
+test("a caixa do cartao diz onde a seta encosta: a altura do nome", () => {
+  const caixa = caixas([{ id: "g", titulo: "Abertura", posicao: { x: 100, y: 200 },
+    blocos: [{ id: "b", tipo: "texto", resumo: "Oi" }] }]).get("g")
+  assert.equal(caixa.ancoraY, 200 + MEDIDAS.CARTAO_CABECALHO / 2)
+  assert.ok(caixa.ancoraY < caixa.y + caixa.altura / 2,
+    "a âncora fica no cabeçalho, acima do meio do cartão")
+})
+
+test("a faixa de um bloco nao diz altura: ali o meio e o lugar certo", () => {
+  const caixa = caixas([{ id: "g", titulo: "x", posicao: { x: 0, y: 0 }, blocos: [
+    { id: "b1", tipo: "texto", resumo: "Oi" },
+    { id: "b2", tipo: "texto", resumo: "Tchau" }] }]).get("g")
+  assert.equal(caixaDoBloco(caixa, "b2").ancoraY, undefined)
+})

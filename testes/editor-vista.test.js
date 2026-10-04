@@ -374,3 +374,41 @@ test("zoom continua ancorado no cursor, por mais rapido que seja", () => {
   assert.ok(Math.abs(agora.x - antes.x) < 0.001 && Math.abs(agora.y - antes.y) < 0.001,
     "o ponto sob o ponteiro tem de continuar sob o ponteiro")
 })
+
+// --- onde a seta encosta no cartão -----------------------------------------
+
+test("a seta que chega pela lateral encosta na altura que o cartao mandar", () => {
+  // Num cartão alto, encostar no meio deixa a seta apontando para o vão entre
+  // dois blocos; de longe não se vê em qual cartão ela chega.
+  const origem = { x: 0, y: 500, largura: 200, altura: 40 }
+  const alto = { x: 400, y: 100, largura: 260, altura: 600, ancoraY: 122 }
+  const { para, ladoPara } = ancoras(origem, alto)
+  assert.equal(ladoPara, "esquerda")
+  assert.equal(para.y, 122, "sem a âncora, encostaria em 400 — o meio do cartão")
+  assert.equal(para.x, 400)
+})
+
+test("vindo da direita, encosta na mesma altura, do outro lado", () => {
+  const origem = { x: 900, y: 500, largura: 200, altura: 40 }
+  const alto = { x: 100, y: 100, largura: 260, altura: 600, ancoraY: 122 }
+  const { para, ladoPara } = ancoras(origem, alto)
+  assert.equal(ladoPara, "direita")
+  assert.equal(para.y, 122)
+  assert.equal(para.x, 360, "a borda direita do cartão")
+})
+
+test("vindo de cima, encosta no topo, centralizado — nao na altura do nome", () => {
+  const origem = { x: 100, y: 0, largura: 260, altura: 60 }
+  const abaixo = { x: 100, y: 300, largura: 260, altura: 600, ancoraY: 322 }
+  const { para, ladoPara } = ancoras(origem, abaixo)
+  assert.equal(ladoPara, "cima")
+  assert.equal(para.y, 300, "o topo do cartão")
+  assert.equal(para.x, 230, "o meio da largura")
+})
+
+test("caixa que nao diz altura nenhuma continua encostando no meio", () => {
+  // É o caso da faixa de um bloco: ali o meio é o lugar certo.
+  const origem = { x: 0, y: 0, largura: 200, altura: 40 }
+  const faixa = { x: 400, y: 200, largura: 260, altura: 60 }
+  assert.equal(ancoras(origem, faixa).para.y, 230)
+})

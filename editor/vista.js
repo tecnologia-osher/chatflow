@@ -47,8 +47,13 @@ const centro = (c) => ({ x: c.x + c.largura / 2, y: c.y + c.altura / 2 })
 
 function pontoNoLado(caixa, lado) {
   const meio = centro(caixa)
-  if (lado === "direita") return { x: caixa.x + caixa.largura, y: meio.y, lado }
-  if (lado === "esquerda") return { x: caixa.x, y: meio.y, lado }
+  // `ancoraY` é onde a seta encosta quando chega pela lateral. O cartão manda
+  // a altura do nome do grupo: num cartão alto, encostar no meio deixava a
+  // seta apontando para o nada entre dois blocos, e de longe não se via em
+  // qual cartão ela chegava. Quem não diz nada continua sendo o meio.
+  const naLateral = caixa.ancoraY ?? meio.y
+  if (lado === "direita") return { x: caixa.x + caixa.largura, y: naLateral, lado }
+  if (lado === "esquerda") return { x: caixa.x, y: naLateral, lado }
   if (lado === "baixo") return { x: meio.x, y: caixa.y + caixa.altura, lado }
   return { x: meio.x, y: caixa.y, lado }
 }

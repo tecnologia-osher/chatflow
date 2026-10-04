@@ -255,6 +255,9 @@ export function caixas(listaDeCartoes) {
       y: cartao.posicao.y,
       largura: CARTAO_LARGURA,
       altura: alturaDoCartao(cartao),
+      // A seta que chega pela lateral encosta na altura do nome do grupo, não
+      // no meio do cartão: é o nome que diz em qual grupo ela entra.
+      ancoraY: cartao.posicao.y + CARTAO_CABECALHO / 2,
       blocos: linhas,
       rodape: {
         y: topo,
