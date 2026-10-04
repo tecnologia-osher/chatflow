@@ -129,3 +129,9 @@ test("a fileira de cartoes usa a largura inteira da conversa", () => {
   assert.match(tema, /\.cf__linha \{[^}]*max-width:\s*88%/,
     "a linha comum continua em 88%: é o que distingue quem fala de quem responde")
 })
+
+test("o nome de cada secao da paleta vem em negrito", () => {
+  const regra = regras.find((r) => r.seletor === ".ed__categoria")
+  assert.ok(regra, "a regra do título de seção sumiu — este teste precisa dela")
+  assert.match(regra.corpo, /font-weight:\s*(700|bold)\b/)
+})
