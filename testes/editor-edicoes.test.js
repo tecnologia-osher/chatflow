@@ -542,3 +542,30 @@ test("bloco que nao existe nao vira grupo nenhum", () => {
   assert.equal(grupo, null)
   assert.equal(fluxo, base)
 })
+
+// Arrastar da paleta e soltar entre dois blocos fala a mesma língua de mover
+// um bloco de lugar: `antesDe` é quem vai ficar logo abaixo do novo. Sem isso
+// o bloco caía no fim do grupo e a pessoa tinha de arrastá-lo de novo.
+test("acrescentarBloco entra acima do bloco indicado", () => {
+  const f = acrescentarBloco(base(), { grupo: "g1", tipo: "texto", antesDe: "b2" })
+  assert.deepEqual(grupo(f, "g1").blocos.map((b) => b.tipo),
+    ["texto", "texto", "entrada_texto"])
+  assert.equal(grupo(f, "g1").blocos[1].id !== "b2", true)
+})
+
+test("antesDe do primeiro bloco poe o novo no topo", () => {
+  const f = acrescentarBloco(base(), { grupo: "g1", tipo: "video", antesDe: "b1" })
+  assert.deepEqual(grupo(f, "g1").blocos.map((b) => b.tipo),
+    ["video", "texto", "entrada_texto"])
+})
+
+test("antesDe vence apos: quem arrasta aponta um lugar so", () => {
+  const f = acrescentarBloco(base(), { grupo: "g1", tipo: "video", apos: "b2", antesDe: "b1" })
+  assert.equal(grupo(f, "g1").blocos[0].tipo, "video")
+})
+
+test("antesDe de um bloco que nao existe cai no fim, em vez de sumir", () => {
+  const f = acrescentarBloco(base(), { grupo: "g1", tipo: "video", antesDe: "fantasma" })
+  assert.deepEqual(grupo(f, "g1").blocos.map((b) => b.tipo),
+    ["texto", "entrada_texto", "video"])
+})

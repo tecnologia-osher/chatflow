@@ -199,7 +199,7 @@ const MARGEM = 48
 // `recuoEsquerda` é o pedaço do quadro que está tapado por algo flutuando por
 // cima — a paleta. Enquadrar sem ele centraliza o fluxo na tela inteira e põe
 // a metade esquerda embaixo do painel.
-export function enquadrar(caixas, { largura, altura, margem = MARGEM, recuoEsquerda = 0 } = {}) {
+export function enquadrar(caixas, { largura, altura, margem = MARGEM, recuoEsquerda = 0, piso = 0 } = {}) {
   const lista = (caixas || []).filter(Boolean)
   if (lista.length === 0) return criarVista()
 
@@ -218,14 +218,26 @@ export function enquadrar(caixas, { largura, altura, margem = MARGEM, recuoEsque
 
   // Nunca amplia além do tamanho natural: um fluxo de um cartão só ficaria
   // gigante e desorientado no meio da tela.
-  const escala = Math.max(ESCALA_MIN, Math.min(1,
+  const couber = Math.max(ESCALA_MIN, Math.min(1,
     util.largura / conteudo.largura, util.altura / conteudo.altura))
 
-  return {
-    escala,
-    x: recuo + visivel / 2 - (minX + conteudo.largura / 2) * escala,
-    y: (altura || 0) / 2 - (minY + conteudo.altura / 2) * escala
+  // Caber não serve de nada se ninguém consegue ler o que coube: o fluxo da
+  // Osher cabia inteiro a 0,6, com a letra do bloco a 8px na tela. Quem pede
+  // um piso prefere ver menos fluxo e enxergar o que vê — e sai do piso
+  // tirando o zoom. O piso não amplia: no máximo segura a queda.
+  const escala = Math.min(1, Math.max(couber, Math.min(piso, 1)))
+  if (escala === couber) {
+    return {
+      escala,
+      x: recuo + visivel / 2 - (minX + conteudo.largura / 2) * escala,
+      y: (altura || 0) / 2 - (minY + conteudo.altura / 2) * escala
+    }
   }
+
+  // Acima do que caberia, centrar mostraria o miolo do fluxo. O começo é o
+  // lugar de chegar: o fluxo se lê a partir do Start, da esquerda para a
+  // direita.
+  return { escala, x: recuo + margem - minX * escala, y: margem - minY * escala }
 }
 
 // Qual grupo está sob um ponto do fluxo. Serve para saber onde a ligação foi

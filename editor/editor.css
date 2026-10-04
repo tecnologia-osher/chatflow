@@ -35,7 +35,10 @@
 
   /* A paleta flutua por cima do quadro, como no Typebot: o header fica inteiro
      na largura da janela e nada nele se mexe quando a coluna da esquerda some. */
-  --ed-lado: 17rem;
+  /* 21rem, não 20: medido no Chrome, a 20rem a coluna aperta "Definir
+     variável" e o nome vira reticências. O painel existe para se ler o nome
+     do que se arrasta. */
+  --ed-lado: 21rem;
   --ed-flutua: 0.7rem;
 }
 
@@ -124,12 +127,12 @@ html, body { margin: 0; height: 100%; }
 .ed__secao-corpo { padding-bottom: 0.9rem; display: grid; gap: 0.25rem; }
 .ed__dica { margin: 0 0 0.9rem; font-size: 0.74rem; line-height: 1.35; color: var(--ed-suave); }
 .ed__grade { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-.ed__tipo { display: flex; align-items: center; gap: 0.45rem;
-  cursor: grab; padding: 0.55rem 0.6rem; border: 1px solid var(--ed-linha); border-radius: 8px;
-  background: var(--ed-superficie); color: var(--ed-texto); font: inherit; font-size: 0.82rem;
+.ed__tipo { display: flex; align-items: center; gap: 0.45rem; min-width: 0;
+  cursor: grab; padding: 0.62rem 0.7rem; border: 1px solid var(--ed-linha); border-radius: 8px;
+  background: var(--ed-superficie); color: var(--ed-texto); font: inherit; font-size: 0.88rem;
   text-align: left; }
 .ed__tipo:hover { border-color: var(--ed-acento); }
-.ed__tipo-icone { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor;
+.ed__tipo-icone { flex: none; width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor;
   stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; color: var(--ed-suave); }
 .ed__tipo--fala .ed__tipo-icone { color: var(--ed-fala); }
 .ed__tipo--entrada .ed__tipo-icone { color: var(--ed-entrada); }
@@ -508,7 +511,7 @@ html, body { margin: 0; height: 100%; }
 /* Link não tem espaço onde quebrar: sem isto, a URL do WhatsApp saía pela
    direita do cartão e ficava escrita por cima do fundo. Quebra em qualquer
    letra — o cartão fica mais alto, mas a informação fica toda dentro dele. */
-.ed__bloco-resumo { min-width: 0; font-size: 0.84rem; overflow-wrap: anywhere;
+.ed__bloco-resumo { min-width: 0; font-size: 0.9rem; overflow-wrap: anywhere;
   line-height: 1.3; }
 /* Bolha de mídia vazia: o convite fica apagado, para não se confundir com o
    que a pessoa escreveu de verdade. */
@@ -517,7 +520,7 @@ html, body { margin: 0; height: 100%; }
    mais do que o necessário — o fluxo não deve dançar enquanto se digita. */
 .ed__bloco-campo { width: 100%; min-height: 3.2rem; resize: vertical; box-sizing: border-box;
   border: 1px solid var(--ed-acento); border-radius: 6px; padding: 0.3rem 0.4rem;
-  font: inherit; font-size: 0.84rem; background: var(--ed-superficie); color: var(--ed-texto); }
+  font: inherit; font-size: 0.9rem; background: var(--ed-superficie); color: var(--ed-texto); }
 .ed__titulo-campo { flex: 1; min-width: 0; border: 1px solid var(--ed-acento); border-radius: 6px;
   padding: 0.15rem 0.35rem; font: inherit; font-weight: 600; background: var(--ed-superficie);
   color: var(--ed-texto); }
@@ -682,5 +685,9 @@ html, body { margin: 0; height: 100%; }
    LINHAS, e abaixo de 1100px o header era espremido em 13rem e transbordava.
    O que esta tela quer é um painel mais estreito, não uma coluna. */
 @media (max-width: 1100px) {
-  .ed { --ed-lado: 13rem; }
+  .ed { --ed-lado: 15rem; }
+  /* Numa coluna estreita, duas colunas de tipo só cabem cortando os nomes:
+     "Definir variável" virava "Defini…". Uma coluna só mostra o nome inteiro
+     e a lista rola — ler o que se arrasta vale mais que ver tudo de uma vez. */
+  .ed__grade { grid-template-columns: 1fr; }
 }

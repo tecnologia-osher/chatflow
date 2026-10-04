@@ -412,3 +412,46 @@ test("caixa que nao diz altura nenhuma continua encostando no meio", () => {
   const faixa = { x: 400, y: 200, largura: 260, altura: 60 }
   assert.equal(ancoras(origem, faixa).para.y, 230)
 })
+
+// --- o piso de legibilidade na abertura -------------------------------------
+//
+// Medido no Chrome: o fluxo da Osher cabia inteiro a 0,6 de escala, e a letra
+// de um bloco saía a 8,1px na tela. Caber não serve de nada se ninguém
+// consegue ler o que coube. Na abertura há um piso; o botão Centralizar
+// continua sem piso, porque a tarefa dele é justamente mostrar tudo.
+
+test("abrindo, a escala nao desce abaixo do piso pedido", () => {
+  const grande = [caixa(0, 0), caixa(4000, 2000)]
+  const semPiso = enquadrar(grande, { largura: 1000, altura: 800 })
+  const comPiso = enquadrar(grande, { largura: 1000, altura: 800, piso: 0.8 })
+  assert.ok(semPiso.escala < 0.8, "este caso precisa de um fluxo que não caiba")
+  assert.equal(comPiso.escala, 0.8)
+})
+
+test("abaixo do piso, a vista ancora no comeco do fluxo e nao no meio dele", () => {
+  // Longe da origem de propósito: um fluxo que começa em (0,0) não distingue
+  // "ancorar no conteúdo" de "ancorar no zero", e o teste passaria pelos dois.
+  const grande = [caixa(600, 300), caixa(4600, 2300)]
+  const v = enquadrar(grande, { largura: 1000, altura: 800, piso: 0.8, margem: 48 })
+  const canto = paraTela(v, { x: 600, y: 300 })
+  perto(canto.x, 48, 1)
+  perto(canto.y, 48, 1)
+})
+
+test("o piso ancora a partir do recuo da paleta, nao da borda da janela", () => {
+  const grande = [caixa(0, 0), caixa(4000, 2000)]
+  const v = enquadrar(grande, { largura: 1000, altura: 800, piso: 0.8, margem: 48, recuoEsquerda: 280 })
+  perto(paraTela(v, { x: 0, y: 0 }).x, 328, 1)
+})
+
+test("o que ja cabe nao e mexido pelo piso: continua cabendo e centrado", () => {
+  const cabe = [caixa(0, 0), caixa(300, 200)]
+  const sem = enquadrar(cabe, { largura: 1000, altura: 800 })
+  const com = enquadrar(cabe, { largura: 1000, altura: 800, piso: 0.8 })
+  assert.deepEqual(com, sem)
+})
+
+test("o piso nunca passa por cima do chao duro da escala", () => {
+  const v = enquadrar([caixa(0, 0), caixa(20000, 20000)], { largura: 800, altura: 600, piso: 5 })
+  assert.ok(v.escala <= 1, "piso absurdo não pode ampliar um fluxo gigante")
+})

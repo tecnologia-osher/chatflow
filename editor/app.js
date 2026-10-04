@@ -383,6 +383,8 @@ export function criarEditor({
   if (icArruma) ajustar.append(icArruma)
   const palavraDoAjustar = el("span", null)
   ajustar.append(palavraDoAjustar)
+  // Centralizar não leva piso: quem aperta esse botão quer ver o fluxo
+  // inteiro, e aceita o tamanho que isso der.
   ajustar.addEventListener("click", () => canvas.enquadrar())
 
   const testar = el("button", "ed__testar")
@@ -765,15 +767,25 @@ export function criarEditor({
 
   // O mesmo caminho para o clique e para o arrasto: o bloco entra no grupo e
   // nasce selecionado, pronto para escrever.
-  function acrescentarNoGrupo(grupoId, tipo, apos = null, assinatura = null) {
+  function acrescentarNoGrupo(grupoId, tipo, onde = null, assinatura = null) {
+    // `onde` é ou `{ apos }` (quem clica numa linha) ou `{ antesDe }` (quem
+    // arrasta e solta em cima de um bloco). Um id solto continua valendo como
+    // `apos`, que era a única forma antes disto.
+    const lugar = typeof onde === "string" || onde === null ? { apos: onde } : onde
     const antes = new Set((atual.grupos.find((g) => g.id === grupoId)?.blocos || []).map((b) => b.id))
-    trocarFluxo(acrescentarBloco(atual, { grupo: grupoId, tipo, apos }), assinatura)
+    trocarFluxo(acrescentarBloco(atual, { grupo: grupoId, tipo, ...lugar }), assinatura)
     const grupo = atual.grupos.find((g) => g.id === grupoId)
     const novo = (grupo?.blocos || []).find((b) => !antes.has(b.id))
     selecao = { grupo: grupoId, bloco: novo ? novo.id : null }
     recado = ""
     redesenhar()
   }
+
+  // Abrindo, a escala não desce abaixo disto. Medido no Chrome: o fluxo da
+  // Osher cabia inteiro a 0,6 e a letra do bloco saía a 8px — cabia e não se
+  // lia. A 0,8 ela sai a 11px, e quem quer ver tudo tira o zoom ou aperta
+  // Centralizar.
+  const PISO_DE_ABERTURA = 0.8
 
   // Tremida de mão não é arrasto. O mesmo número que o canvas usa para
   // separar clique de arrasto nos cartões.
@@ -814,6 +826,9 @@ export function criarEditor({
       if (!visivel) { raiz.append(fantasma); visivel = true }
       fantasma.style.setProperty("left", `${e.clientX - presoEm.x}px`)
       fantasma.style.setProperty("top", `${e.clientY - presoEm.y}px`)
+      // A marca acende no bloco que vai ficar logo abaixo: onde o bloco cai é
+      // decisão que se toma antes de soltar, não depois.
+      canvas.mirar(canvas.alvoDe(e))
     }
 
     // Pôr o bloco onde o gesto terminou. Fora do palco não faz nada: largar
@@ -822,8 +837,12 @@ export function criarEditor({
       desligar()
       fantasma.remove()
       const alvo = canvas.alvoDe(e)
+      canvas.mirar(null)
       if (!alvo.dentro) return
-      if (alvo.grupo) { acrescentarNoGrupo(alvo.grupo, definicao.tipo); return }
+      if (alvo.grupo) {
+        acrescentarNoGrupo(alvo.grupo, definicao.tipo, { antesDe: alvo.antesDe })
+        return
+      }
 
       // Criar o grupo e pôr o bloco dentro são duas edições, mas um gesto só:
       // a mesma assinatura junta as duas num passo de desfazer. Sem isso, o
@@ -855,6 +874,7 @@ export function criarEditor({
       if (e.key !== "Escape") return
       desligar()
       fantasma.remove()
+      canvas.mirar(null)
     }
 
     function soltar(e) {
@@ -865,12 +885,14 @@ export function criarEditor({
       // assim — e o Esc devolve.
       document.removeEventListener("mouseup", soltar)
       document.addEventListener("mousedown", largarPreso, true)
-      document.addEventListener("keydown", desistir, true)
       mover(e)
     }
 
     document.addEventListener("mousemove", mover)
     document.addEventListener("mouseup", soltar)
+    // O Esc desiste, arrastando ou carregando: são o mesmo gesto em dois
+    // tempos, e quem larga a tecla no meio do caminho espera a mesma coisa.
+    document.addEventListener("keydown", desistir, true)
   }
 
   // A aba escolhida manda no que aparece embaixo do header. Nenhuma está "em
@@ -1518,7 +1540,7 @@ export function criarEditor({
   redesenhar()
   // O fluxo da Osher é mais alto que a tela. Abrir mostrando só o topo faz
   // parecer que o editor cortou o trabalho.
-  canvas.enquadrar()
+  canvas.enquadrar({ piso: PISO_DE_ABERTURA })
 
   return {
     fluxo: () => atual,

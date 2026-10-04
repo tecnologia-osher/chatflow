@@ -1408,3 +1408,50 @@ Dezoito mutações no código novo, dezoito pegas — e uma delas pegou um teste
 meu: "espécie desconhecida aceita áudio" sobreviveu porque as duas frases de
 recusa começam com "Formato", e o teste só conferia isso. Passou a exigir a
 palavra que só a frase da imagem tem.
+
+### O editor maior, e o bloco que cai onde a mão soltou
+
+911 testes. Duas mudanças que vieram juntas porque mexem no mesmo gesto.
+
+**O editor ficou maior.** A paleta foi de 17 para 21rem e a letra dos tipos de
+0,82 para 0,88rem; a letra do bloco no cartão, de 0,84 para 0,9rem.
+
+Mas o que apertava mesmo não era o tamanho das coisas: era o enquadramento.
+Medido no Chrome, o fluxo da Osher **cabia inteiro a 0,6 de escala, e a letra
+de um bloco saía a 8,1px na tela** — cabia e não se lia. Agora a abertura tem
+um **piso de 0,8** (11,5px de letra) e, abaixo dele, a vista ancora no começo
+do fluxo em vez de centralizar no miolo: o fluxo se lê a partir do Start. O
+botão **Centralizar continua sem piso** — mostrar tudo é a tarefa dele, no
+tamanho que der. Quem quer menor tira o zoom.
+
+**O cartão não foi alargado, e isso foi uma decisão.** Tentei 300px e o teste
+de sobreposição acusou: `g_objetivo` e `g_valor` passaram a se cobrir no fluxo
+da Osher. A posição de cada grupo foi escolhida por alguém com o cartão do
+tamanho de hoje — alargar o cartão bagunça todo fluxo já montado, de todo
+cliente. A letra cresceu, a largura ficou.
+
+Recalibrado no Chrome depois disso: cada linha de texto passou de 17,5 para
+18,7px, e cabem **28 letras por linha** em vez de 36. A faixa fixa do bloco
+(45,6px), o bloco de botões e os rodapés não mudaram — nada neles depende
+dessa letra. E a régua do teste aprendeu uma coisa: o **passo** entre blocos é
+a distância de um topo ao topo do próximo, não a altura mais as duas margens.
+Entre vizinhos as margens se fundem; somar as duas dava 4,8px a mais por
+bloco, que num cartão de cinco vira 24px de erro.
+
+**O bloco agora cai onde a mão soltou.** Arrastando da paleta para dentro de um
+grupo, o bloco ia para o fim da lista e a pessoa tinha de arrastá-lo de novo
+até o lugar. Agora soltar sobre a faixa dos botões põe a bolha **logo acima
+deles**, e enquanto a mão está no ar a marca acende no bloco que vai ficar
+embaixo — a decisão de onde cai se toma antes de soltar, não depois. Soltar no
+nome do grupo continua indo para o fim, que é onde não há bloco nenhum sob o
+cursor. `acrescentarBloco` aprendeu `antesDe`, a mesma língua que mover um
+bloco de lugar já falava.
+
+De quebra, o **Esc passou a desistir também no meio do arrasto** — antes só
+devolvia o tipo colado no cursor, e eram o mesmo gesto em dois tempos.
+
+**Dois defeitos antigos que só apareceram com a letra maior:** o botão de tipo
+é item de grade e nascia com `min-width: auto`, então "Definir variável"
+empurrava a coluna para fora do painel em vez de encolher; e a 15rem, na tela
+estreita, duas colunas só cabem cortando os nomes — ali a paleta virou uma
+coluna só. Catorze mutações no código novo, catorze pegas.

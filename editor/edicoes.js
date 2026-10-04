@@ -96,11 +96,18 @@ function blocoNovo(fluxo, tipo) {
   return bloco
 }
 
-export function acrescentarBloco(fluxo, { grupo, tipo, apos = null }) {
+export function acrescentarBloco(fluxo, { grupo, tipo, apos = null, antesDe = null }) {
   if (!obter(tipo)) return fluxo
   const novo = blocoNovo(fluxo, tipo)
   return trocarGrupo(fluxo, grupo, (g) => {
     const blocos = [...(g.blocos || [])]
+    // `antesDe` é a língua de quem arrasta: o bloco que vai ficar logo abaixo
+    // do novo, o mesmo que `moverBlocoEntreGrupos` usa. `apos` é a de quem
+    // clica no "+ bloco" de uma linha. Quem arrasta aponta um lugar só, então
+    // `antesDe` vence — e um alvo que não existe mais cai no fim, que é onde
+    // o bloco caía antes de tudo isto.
+    const acima = antesDe ? blocos.findIndex((b) => b && b.id === antesDe) : -1
+    if (acima !== -1) { blocos.splice(acima, 0, novo); return { ...g, blocos } }
     const onde = apos ? blocos.findIndex((b) => b && b.id === apos) : -1
     if (onde === -1) blocos.push(novo)
     else blocos.splice(onde + 1, 0, novo)

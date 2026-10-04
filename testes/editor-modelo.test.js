@@ -163,8 +163,11 @@ test("resumo que nao cabe numa linha deixa o bloco mais alto", () => {
     { id: "b", tipo: "texto", resumo: "Oi" }] }
   const deDuas = { ...curto, blocos: [
     { id: "b", tipo: "texto", resumo: "a".repeat(MEDIDAS.CARTAO_CARACTERES_POR_LINHA + 1) }] }
-  assert.equal(caixas([deDuas]).get("g").altura - caixas([curto]).get("g").altura,
-    MEDIDAS.CARTAO_LINHA, "uma linha de texto a mais, uma linha de altura a mais")
+  // Com folga: a soma em ponto flutuante devolve 18,700000000000003, e o que
+  // está sendo verificado é a regra, não a última casa do binário.
+  const aMais = caixas([deDuas]).get("g").altura - caixas([curto]).get("g").altura
+  assert.ok(Math.abs(aMais - MEDIDAS.CARTAO_LINHA) < 0.001,
+    `uma linha de texto a mais, uma linha de altura a mais: deu ${aMais}`)
 })
 
 test("todo cartao tem rodape, mais baixo quando nao ha padrao a nomear", () => {
@@ -492,13 +495,19 @@ test("caixa sem rodape, como a do Start, tambem nasce na bolinha", () => {
 // Medidas tiradas no Chrome em 03/10/2026, no fluxo da Osher a 1440px, já
 // divididas pela escala do mundo. "Passo" é o que o cartão anda de um bloco
 // para o começo do próximo, que é exatamente o que `alturaDoBloco` responde.
+// O passo é a distância entre o topo de um bloco e o topo do próximo — não a
+// altura mais as duas margens. Entre vizinhos as margens se fundem, e somar
+// as duas dá 4,8px a mais por bloco, que num cartão de cinco blocos vira um
+// erro de 24px. Medidos empilhando blocos iguais e lendo a diferença.
 const MEDIDO_NO_CHROME = [
-  { o: "bloco de uma linha curta", letras: 8, passo: 63.1 },
-  { o: "bloco de uma linha", letras: 16, passo: 63.1 },
-  { o: "bloco de uma linha cheia", letras: 31, passo: 63.1 },
-  { o: "bloco que ainda cabe numa linha", letras: 34, passo: 63.1 },
-  { o: "bloco de duas linhas", letras: 38, passo: 80.5 },
-  { o: "bloco de duas linhas cheias", letras: 55, passo: 80.5 }
+  { o: "bloco de uma linha curta", letras: 8, passo: 64.3 },
+  { o: "bloco de uma linha", letras: 16, passo: 64.3 },
+  { o: "bloco de uma linha cheia", letras: 26, passo: 64.3 },
+  { o: "bloco que ainda cabe numa linha", letras: 28, passo: 64.3 },
+  { o: "bloco que acabou de quebrar", letras: 29, passo: 83.0 },
+  { o: "bloco de duas linhas", letras: 38, passo: 83.0 },
+  { o: "bloco de duas linhas cheias", letras: 55, passo: 83.0 },
+  { o: "bloco de tres linhas", letras: 60, passo: 101.7 }
 ]
 
 test("a altura de cada bloco bate com a regua do navegador", () => {
@@ -512,22 +521,22 @@ test("a altura de cada bloco bate com a regua do navegador", () => {
 })
 
 test("a altura de um cartao inteiro bate com a regua do navegador", () => {
-  // O cartão "Abertura" da Osher: três falas, sem botões. 275,2px no Chrome.
+  // O cartão "Abertura" da Osher: três falas, sem botões. 280,2px no Chrome.
   const abertura = { id: "g", titulo: "Abertura", posicao: { x: 0, y: 0 }, blocos: [
     { id: "b1", tipo: "texto", resumo: "a".repeat(55) },
     { id: "b2", tipo: "texto", resumo: "a".repeat(16) },
     { id: "b3", tipo: "texto", resumo: "a".repeat(8) }
   ] }
-  assert.ok(Math.abs(alturaDoCartao(abertura) - 275.2) <= 3,
-    `o modelo diz ${alturaDoCartao(abertura)}, o Chrome mediu 275.2`)
+  assert.ok(Math.abs(alturaDoCartao(abertura) - 280.2) <= 3,
+    `o modelo diz ${alturaDoCartao(abertura)}, o Chrome mediu 280.2`)
 
-  // O cartão "Idade": uma fala e um bloco de quatro botões. 380,6px.
+  // O cartão "Idade": uma fala e um bloco de quatro botões. 381,8px.
   const idade = { id: "g", titulo: "Idade", posicao: { x: 0, y: 0 }, blocos: [
     { id: "b1", tipo: "texto", resumo: "a".repeat(15) },
     { id: "b2", tipo: "entrada_botoes", opcoes: [{ id: "o1" }, { id: "o2" }, { id: "o3" }, { id: "o4" }] }
   ] }
-  assert.ok(Math.abs(alturaDoCartao(idade) - 380.6) <= 3,
-    `o modelo diz ${alturaDoCartao(idade)}, o Chrome mediu 380.6`)
+  assert.ok(Math.abs(alturaDoCartao(idade) - 381.8) <= 3,
+    `o modelo diz ${alturaDoCartao(idade)}, o Chrome mediu 381.8`)
 })
 
 test("o cartao leva o conteudo do bloco, para a caixa de midia editar", () => {

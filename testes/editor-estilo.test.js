@@ -98,3 +98,25 @@ test("o avisador de problemas comeca depois da paleta, e volta quando ela sai", 
   assert.match(solto.seletor, /:not\(\.ed__corpo--espiando\)/,
     "sem isto, a paleta espiando cobre o começo do aviso")
 })
+
+// Item de grade nasce com `min-width: auto`: ele se recusa a ficar menor que o
+// conteúdo, e aí "Definir variável" empurra a coluna para fora do painel em
+// vez de virar reticências. O rótulo já tinha `min-width: 0`, mas quem precisa
+// dele é o botão — o rótulo não encolhe dentro de um botão que não encolheu.
+test("o botao de tipo pode encolher na coluna, em vez de estourar o painel", () => {
+  const regra = regras.find((r) => r.seletor === ".ed__tipo")
+  assert.ok(regra, "a regra do botão de tipo sumiu — este teste precisa dela")
+  assert.match(regra.corpo, /min-width:\s*0/,
+    "sem isto, o rótulo comprido arrasta a coluna para fora da paleta estreita")
+
+  const grade = regras.find((r) => r.seletor === ".ed__grade")
+  assert.match(grade.corpo, /grid-template-columns:\s*1fr 1fr/,
+    "duas colunas iguais: é o que o min-width: 0 está protegendo")
+})
+
+test("na tela estreita a paleta vira uma coluna, para o nome caber inteiro", () => {
+  const estreita = css.match(/@media \(max-width: 1100px\) \{([\s\S]*?)\n\}/)
+  assert.ok(estreita, "a regra da tela estreita sumiu — este teste precisa dela")
+  assert.match(estreita[1], /\.ed__grade \{[^}]*grid-template-columns:\s*1fr\s*;/,
+    "em duas colunas de 15rem os nomes saem cortados")
+})

@@ -7,6 +7,7 @@ instalarNavegador()
 
 const { criarEditor } = await import("../editor/app.js")
 const { todos } = await import("../editor/catalogo.js")
+const { cartoes: cartoesDoFluxo, caixas: caixasDoFluxo } = await import("../editor/modelo.js")
 
 const fluxoBase = () => ({
   versao: 2,
@@ -253,23 +254,39 @@ test("editar com o preview fechado nao o abre sozinho", async () => {
   assert.equal(porClasse(hospedeiro, "ed__preview").length, 0)
 })
 
-test("o fluxo inteiro cabe na tela ao abrir, mesmo mais alto que ela", () => {
-  // Altura do fluxo real da Osher: vai de y=40 a y=1020 numa área de ~700px.
+test("abrindo, o fluxo nao e espremido abaixo do legivel para caber", () => {
+  // Altura do fluxo real da Osher: vai de y=40 a y=1020. Caber inteiro aqui
+  // exigia 0,6 de escala, e a 0,6 a letra de um bloco sai a 8px no Chrome.
   const alto = fluxoBase()
   alto.grupos[1].posicao = { x: 0, y: 1020 }
   const { editor } = montar(alto)
+  assert.ok(editor.vista().escala >= 0.8,
+    "abrir num tamanho que não se lê é o mesmo que não abrir")
+})
+
+test("o botao Centralizar continua mostrando tudo, no tamanho que der", () => {
+  const alto = fluxoBase()
+  alto.grupos[1].posicao = { x: 0, y: 1020 }
+  const { hospedeiro, editor } = montar(alto)
+  porClasse(hospedeiro, "ed__ajustar")[0].disparar("click")
   const v = editor.vista()
   const base = (1020 + 56) * v.escala + v.y
   assert.ok(base <= 700, `o cartão de baixo ficou em ${Math.round(base)}px, fora dos 700px visíveis`)
-  assert.ok(v.escala < 1, "um fluxo mais alto que a tela precisa ser reduzido para caber")
+  assert.ok(v.escala < 0.8, "sem piso, Centralizar reduz até caber")
 })
 
 test("fluxo alto demais para o chao da escala nao e espremido ate ficar ilegivel", () => {
   const enorme = fluxoBase()
   enorme.grupos[1].posicao = { x: 0, y: 8000 }
-  const { editor } = montar(enorme)
+  const { hospedeiro, editor } = montar(enorme)
   // Abaixo de 0,25 os cartões viram manchas. Aí é melhor a pessoa arrastar.
+  porClasse(hospedeiro, "ed__ajustar")[0].disparar("click")
   assert.equal(editor.vista().escala, 0.25)
+})
+
+test("o que ja cabe inteiro abre centrado, como sempre abriu", () => {
+  const { editor } = montar()
+  assert.equal(editor.vista().escala, 1, "fluxo pequeno não é ampliado nem reduzido")
 })
 
 test("o botao Centralizar reenquadra depois de arrastar para longe", () => {
@@ -2440,4 +2457,63 @@ test("o tipo achado continua servindo para arrastar", () => {
   arrastar(hospedeiro, "Vídeo", naJanela(hospedeiro, { x: alvo.posicao.x + 20, y: alvo.posicao.y + 20 }))
   assert.equal(editor.fluxo().grupos[0].blocos.at(-1).tipo, "video",
     "achar e não poder usar seria pior que não achar")
+})
+
+// --- soltar no meio do grupo, e não no fim ----------------------------------
+
+const fluxoDeIdade = () => ({
+  versao: 2,
+  eventos: [{ tipo: "inicio", proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Idade", posicao: { x: 0, y: 0 }, blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Qual a sua idade?" } },
+      { id: "b2", tipo: "entrada_botoes", conteudo: {},
+        opcoes: [{ id: "o1", rotulo: "18 a 30" }, { id: "o2", rotulo: "31 a 50" }] }
+    ] }
+  ]
+})
+
+// O meio da faixa de um bloco, em coordenadas de janela.
+function sobreOBloco(hospedeiro, editor, grupoId, blocoId) {
+  const c = caixasDoFluxo(cartoesDoFluxo(editor.fluxo())).get(grupoId)
+  const b = c.blocos.find((x) => x.id === blocoId)
+  return naJanela(hospedeiro, { x: c.x + 10, y: c.y + b.y + b.altura / 2 })
+}
+
+test("soltar sobre os botoes poe a bolha acima deles, nao no fim", () => {
+  const { hospedeiro, editor } = montar(fluxoDeIdade())
+  arrastar(hospedeiro, "Áudio", sobreOBloco(hospedeiro, editor, "g1", "b2"))
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.tipo),
+    ["texto", "audio", "entrada_botoes"])
+})
+
+test("soltar sobre o primeiro bloco poe a bolha no topo do grupo", () => {
+  const { hospedeiro, editor } = montar(fluxoDeIdade())
+  arrastar(hospedeiro, "Vídeo", sobreOBloco(hospedeiro, editor, "g1", "b1"))
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.tipo),
+    ["video", "texto", "entrada_botoes"])
+})
+
+test("solto no nome do grupo, continua indo para o fim", () => {
+  const { hospedeiro, editor } = montar(fluxoDeIdade())
+  const c = caixasDoFluxo(cartoesDoFluxo(editor.fluxo())).get("g1")
+  arrastar(hospedeiro, "Texto", naJanela(hospedeiro, { x: c.x + 10, y: c.y + 4 }))
+  assert.deepEqual(editor.fluxo().grupos[0].blocos.map((b) => b.tipo),
+    ["texto", "entrada_botoes", "texto"])
+})
+
+test("enquanto a mao esta no ar, a marca mostra onde o bloco vai entrar", () => {
+  const { hospedeiro, editor } = montar(fluxoDeIdade())
+  const botao = tipoDaPaleta(hospedeiro, "Áudio")
+  botao.disparar("mousedown", { button: 0, clientX: 5, clientY: 5 })
+  document.disparar("mousemove", sobreOBloco(hospedeiro, editor, "g1", "b2"))
+
+  const acesos = porClasse(hospedeiro, "ed__bloco")
+    .filter((n) => /ed__bloco--acima/.test(n.className)).map((n) => n.dadosBloco)
+  assert.deepEqual(acesos, ["b2"], "sem a marca, só se descobre onde caiu depois de soltar")
+
+  document.disparar("keydown", { key: "Escape" })
+  assert.deepEqual(porClasse(hospedeiro, "ed__bloco")
+    .filter((n) => /ed__bloco--acima/.test(n.className)), [],
+    "desistindo, a marca tem de apagar junto com o fantasma")
 })

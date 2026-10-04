@@ -1637,3 +1637,85 @@ test("arrastar o quadro nao larga a selecao: quem arrasta quer passear", () => {
   document.disparar("mouseup", {})
   assert.equal(hospedeiro.porClasse("ed__midia").length, 1, "passear não é desmarcar")
 })
+
+// --- soltar da paleta no meio de um grupo -----------------------------------
+
+const fluxoDeTresBlocos = {
+  versao: 2,
+  eventos: [{ tipo: "inicio", posicao: { x: 40, y: 40 }, proximo: "g1" }],
+  grupos: [
+    { id: "g1", titulo: "Idade", posicao: { x: 300, y: 40 }, blocos: [
+      { id: "b1", tipo: "texto", conteudo: { texto: "Qual a sua idade?" } },
+      { id: "b2", tipo: "entrada_botoes", conteudo: {}, opcoes: [{ id: "o1", rotulo: "18 a 30" }] },
+      { id: "b3", tipo: "texto", conteudo: { texto: "Obrigado" } }
+    ] }
+  ]
+}
+
+const emCima = (caixa, blocoId) => {
+  const b = caixa.blocos.find((x) => x.id === blocoId)
+  return { clientX: caixa.x + 10, clientY: caixa.y + b.y + b.altura / 2 }
+}
+
+test("alvoDe diz acima de qual bloco o ponto caiu", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTresBlocos)
+  const caixa = caixas(cartoesDoFluxo(fluxoDeTresBlocos)).get("g1")
+
+  assert.equal(canvas.alvoDe(emCima(caixa, "b2")).antesDe, "b2",
+    "soltar sobre os botões põe o bloco logo acima deles")
+  assert.equal(canvas.alvoDe(emCima(caixa, "b1")).antesDe, "b1")
+  assert.equal(canvas.alvoDe(emCima(caixa, "b3")).antesDe, "b3")
+})
+
+test("solto no cabecalho ou no rodape do cartao, o bloco vai para o fim", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTresBlocos)
+  const caixa = caixas(cartoesDoFluxo(fluxoDeTresBlocos)).get("g1")
+  // O cabeçalho é o nome do grupo: não é lugar de bloco nenhum.
+  const noNome = { clientX: caixa.x + 10, clientY: caixa.y + 4 }
+  assert.equal(canvas.alvoDe(noNome).grupo, "g1")
+  assert.equal(canvas.alvoDe(noNome).antesDe, null)
+})
+
+test("fora de qualquer cartao nao ha bloco acima de que falar", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTresBlocos)
+  assert.equal(canvas.alvoDe({ clientX: 10_000, clientY: 10_000 }).antesDe, null)
+})
+
+test("a marca de onde o bloco vai entrar acende no bloco certo, e so nele", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTresBlocos)
+  const caixa = caixas(cartoesDoFluxo(fluxoDeTresBlocos)).get("g1")
+
+  canvas.mirar(canvas.alvoDe(emCima(caixa, "b2")))
+  const acesos = () => hospedeiro.porClasse("ed__bloco")
+    .filter((n) => /ed__bloco--acima/.test(n.className)).map((n) => n.dadosBloco)
+  assert.deepEqual(acesos(), ["b2"])
+  assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 1,
+    "o cartão que vai receber também se anuncia")
+
+  canvas.mirar(canvas.alvoDe(emCima(caixa, "b3")))
+  assert.deepEqual(acesos(), ["b3"], "a marca anterior tem de apagar")
+
+  canvas.mirar(null)
+  assert.deepEqual(acesos(), [], "largou no vazio: nada fica aceso")
+  assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 0)
+})
+
+test("mirar o vazio do quadro apaga a marca, como mirar coisa nenhuma", () => {
+  const hospedeiro = new Elemento("div")
+  const canvas = criarCanvas({ elemento: hospedeiro })
+  canvas.desenhar(fluxoDeTresBlocos)
+  const caixa = caixas(cartoesDoFluxo(fluxoDeTresBlocos)).get("g1")
+  canvas.mirar(canvas.alvoDe(emCima(caixa, "b2")))
+  canvas.mirar(canvas.alvoDe({ clientX: 10_000, clientY: 10_000 }))
+  assert.deepEqual(hospedeiro.porClasse("ed__bloco")
+    .filter((n) => /ed__bloco--acima/.test(n.className)), [])
+  assert.equal(hospedeiro.porClasse("ed__cartao--recebendo").length, 0)
+})

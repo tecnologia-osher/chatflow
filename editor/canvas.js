@@ -1033,9 +1033,10 @@ export function criarCanvas({
 
   return {
     desenhar,
-    // Põe todo o fluxo na tela. Chamado na abertura e pelo botão da barra —
-    // nunca em cada redesenho, senão brigaria com quem está arrastando.
-    enquadrar() {
+    // Põe o fluxo na tela. Chamado na abertura e pelo botão da barra — nunca
+    // em cada redesenho, senão brigaria com quem está arrastando. O botão não
+    // pede piso: mostrar tudo é a tarefa dele, mesmo que fique pequeno.
+    enquadrar({ piso = 0 } = {}) {
       if (!fluxoAtual) return
       vista = enquadrar([
         ...caixas(cartoes(fluxoAtual)).values(),
@@ -1043,7 +1044,8 @@ export function criarCanvas({
       ], {
         largura: palco.clientWidth || elemento.clientWidth || 0,
         altura: palco.clientHeight || elemento.clientHeight || 0,
-        recuoEsquerda: larguraTapada()
+        recuoEsquerda: larguraTapada(),
+        piso
       })
       aplicarVista()
     },
@@ -1063,11 +1065,24 @@ export function criarCanvas({
       const dentro = ev.clientX >= area.left && ev.clientX <= area.right &&
         ev.clientY >= area.top && ev.clientY <= area.bottom
       const ponto = paraMundo(vista, noPalco(ev))
+      const todas = dentro && fluxoAtual ? caixas(cartoes(fluxoAtual)) : null
+      const grupo = todas ? caixaEm(todas, ponto) : null
       return {
         dentro,
         ponto,
-        grupo: dentro && fluxoAtual ? caixaEm(caixas(cartoes(fluxoAtual)), ponto) : null
+        grupo,
+        // Acima de qual bloco ele entra. É a mesma pergunta que o arrasto de
+        // um bloco já fazia — soltar sobre a faixa dos botões põe o novo logo
+        // acima deles, não no fim do grupo. No cabeçalho e no rodapé não há
+        // bloco nenhum sob o cursor, e aí o fim do grupo é o lugar certo.
+        antesDe: grupo ? blocoEmCaixa(todas.get(grupo), ponto) : null
       }
+    },
+    // Acender a marca de onde o bloco vai entrar, enquanto a mão ainda está
+    // no ar. Sem ela a pessoa só descobre onde caiu depois de soltar. Alvo
+    // sem cartão apaga tudo pelo mesmo caminho: não há o que acender.
+    mirar(alvo) {
+      marcarAlvoDeBloco(alvo)
     },
     // O fluxo mudou, mas os cartões não vão ser redesenhados agora: é o caso
     // de quem está digitando, porque recriar a caixa jogaria o cursor para o

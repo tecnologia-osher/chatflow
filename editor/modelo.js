@@ -193,10 +193,14 @@ const CARTAO_CABECALHO = 44
 // (nome do tipo, margens e o respiro até o bloco seguinte) e cada linha de
 // texto embaixo dela.
 const CARTAO_BLOCO = 45.6
-const CARTAO_LINHA = 17.5
-// O texto saiu de dentro da linha do ícone e ganhou a largura inteira do
-// cartão, então cabem mais letras por linha do que cabiam.
-const CARTAO_CARACTERES_POR_LINHA = 36
+// Recalibrado em 03/10/2026, quando a letra do bloco foi de 0,84 para 0,9rem:
+// a faixa fixa continuou a mesma, e cada linha ficou 1,2px mais alta.
+const CARTAO_LINHA = 18.7
+// Medido letra a letra no Chrome: 28 ainda cabem numa linha, 29 já quebram.
+// A largura do cartão não mudou — quem tirou letras da linha foi a letra
+// maior. Alargar o cartão junto faria grupos já arranjados se cobrirem: a
+// posição que o cliente salvou foi escolhida com o cartão deste tamanho.
+const CARTAO_CARACTERES_POR_LINHA = 28
 // Bloco de botões: o topo com o rótulo, e cada opção empilhada — mais a
 // linha do "+ botão", que fecha a lista e ocupa altura como as outras.
 const CARTAO_OPCOES_TOPO = 43.2
