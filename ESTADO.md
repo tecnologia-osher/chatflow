@@ -1329,3 +1329,20 @@ cartão, entra nele. Clicar não acrescenta nada — diz como se faz, porque um
 botão que não reage parece quebrado. Conferido no Chrome: com um grupo
 selecionado, clicar em "Texto" deixou os quinze blocos como estavam e o Salvar
 em "Salvo".
+
+### Clicar descola o tipo do menu
+
+872 testes. Arrastar com o botão preso da coluna até o outro lado do quadro é
+cansativo e, num fluxo largo, nem cabe no gesto. Agora **clicar num tipo
+descola ele do menu**: a caixinha passa a seguir o cursor, e o **próximo
+clique no quadro é que a larga** — no vazio, cria o grupo; sobre um cartão,
+entra nele. **Esc devolve** o tipo ao menu, porque carregar um bloco que não
+se quer mais, sem jeito de largar, seria uma armadilha.
+
+Arrastar continua valendo, igual: o que separa um gesto do outro é se o mouse
+andou mais de 3px antes de soltar — a mesma folga que o canvas usa para
+distinguir clique de arrasto nos cartões.
+
+Conferido no Chrome: cliquei em "Texto", a caixinha grudou no cursor e o
+acompanhou até (500, 800); o clique lá criou o sexto cartão com o bloco
+dentro. Depois peguei outro e o Esc devolveu, sem deixar nada no quadro.

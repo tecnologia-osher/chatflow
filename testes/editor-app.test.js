@@ -77,11 +77,38 @@ test("clicar num tipo nao acrescenta bloco nenhum, nem com grupo selecionado", (
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [1, 0])
 })
 
-test("clicar num tipo diz como se faz, em vez de nao fazer nada em silencio", () => {
+test("clicar num tipo descola ele do menu e nao acrescenta nada ainda", () => {
   const { hospedeiro, editor } = montar()
-  porClasse(hospedeiro, "ed__tipo")[0].disparar("click")
-  assert.equal(editor.fluxo().grupos[0].blocos.length, 1, "nada deve ser acrescentado")
-  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste/i)
+  const tipo = porClasse(hospedeiro, "ed__tipo")[0]
+  tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
+  document.disparar("mouseup", { clientX: 40, clientY: 120 })
+
+  assert.equal(editor.fluxo().grupos[0].blocos.length, 1, "nada deve ser acrescentado ainda")
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 1,
+    "o tipo precisa descolar do menu e seguir o cursor")
+
+  // Esc devolve o tipo ao menu: carregar um bloco que não se quer mais, sem
+  // jeito de largar, seria uma armadilha.
+  document.disparar("keydown", { key: "Escape" })
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0)
+  assert.equal(editor.fluxo().grupos[0].blocos.length, 1)
+})
+
+test("com o tipo descolado, o clique no quadro e que poe o bloco", () => {
+  const { hospedeiro, editor } = montar()
+  const antes = new Set(editor.fluxo().grupos.map((g) => g.id))
+  const tipo = tipoDaPaleta(hospedeiro, "Texto")
+  tipo.disparar("mousedown", { button: 0, clientX: 40, clientY: 120 })
+  document.disparar("mouseup", { clientX: 40, clientY: 120 })
+
+  const onde = naJanela(hospedeiro, { x: 100, y: 300 })
+  document.disparar("mousemove", onde)
+  document.disparar("mousedown", { ...onde, button: 0 })
+
+  const novos = gruposNovos(editor, antes)
+  assert.equal(novos.length, 1, "o clique no quadro é que larga o bloco")
+  assert.deepEqual(novos[0].blocos.map((b) => b.tipo), ["texto"])
+  assert.equal(porClasse(hospedeiro, "ed__fantasma").length, 0, "largou: o fantasma some")
 })
 
 test("o bloco arrastado ja vem selecionado, pronto para editar", () => {
@@ -644,9 +671,8 @@ test("excluir o grupo selecionado larga a selecao, nao fica num grupo fantasma",
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.id), ["g2"])
 
   // Com a seleção presa no grupo apagado, clicar num tipo tentaria acrescentar
-  // bloco nele. Hoje clique nenhum acrescenta: o recado só diz como se faz.
+  // bloco nele. Hoje clique nenhum acrescenta: ele só descola do menu.
   tipoDaPaleta(hospedeiro, "Texto").disparar("click")
-  assert.match(porClasse(hospedeiro, "ed__recado")[0].textContent, /arraste/i)
   assert.deepEqual(editor.fluxo().grupos.map((g) => g.blocos.length), [0])
 })
 

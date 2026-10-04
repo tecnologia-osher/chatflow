@@ -754,13 +754,10 @@ export function criarEditor({
         if (icone) botao.append(icone)
         botao.append(el("span", "ed__tipo-rotulo", t(definicao.rotulo)))
         botao.addEventListener("mousedown", (ev) => arrastarTipo(ev, definicao))
-        // Clicar não acrescenta nada. Um gesto só para pôr bloco no fluxo, e
-        // é o arrasto: clicando, o bloco caía no grupo que estava selecionado
-        // de antes — quase nunca o grupo em que a pessoa estava olhando.
-        botao.addEventListener("click", () => {
-          recado = t("Arraste o tipo até o quadro, ou solte sobre um cartão.")
-          desenharPaleta()
-        })
+        // Clicar não acrescenta nada em grupo nenhum: o clique descola o tipo
+        // do menu (ver `arrastarTipo`), e ele só desce onde a pessoa clicar
+        // depois. Antes, clicando, o bloco caía no grupo selecionado de antes
+        // — quase nunca o grupo em que ela estava olhando.
         grade.append(botao)
       }
       return grade
@@ -777,6 +774,10 @@ export function criarEditor({
     recado = ""
     redesenhar()
   }
+
+  // Tremida de mão não é arrasto. O mesmo número que o canvas usa para
+  // separar clique de arrasto nos cartões.
+  const FOLGA_DO_CLIQUE = 3
 
   // Arrastar um tipo da paleta até o quadro. Solto no vazio, cria um grupo
   // ali mesmo com o bloco dentro; solto sobre um cartão, entra nele. É o que
@@ -804,19 +805,22 @@ export function criarEditor({
       fantasma.style.setProperty("height", `${Math.round(caixa.height)}px`)
     }
     let visivel = false
+    let andou = false
+    const inicio = { x: ev.clientX, y: ev.clientY }
 
     function mover(e) {
+      if (Math.abs(e.clientX - inicio.x) > FOLGA_DO_CLIQUE ||
+          Math.abs(e.clientY - inicio.y) > FOLGA_DO_CLIQUE) andou = true
       if (!visivel) { raiz.append(fantasma); visivel = true }
       fantasma.style.setProperty("left", `${e.clientX - presoEm.x}px`)
       fantasma.style.setProperty("top", `${e.clientY - presoEm.y}px`)
     }
 
-    function soltar(e) {
-      document.removeEventListener("mousemove", mover)
-      document.removeEventListener("mouseup", soltar)
+    // Pôr o bloco onde o gesto terminou. Fora do palco não faz nada: largar
+    // na própria paleta é desistir.
+    function largar(e) {
+      desligar()
       fantasma.remove()
-      // Soltar fora do palco não faz nada — inclusive o clique seco na
-      // própria paleta, que termina onde começou e cai aqui.
       const alvo = canvas.alvoDe(e)
       if (!alvo.dentro) return
       if (alvo.grupo) { acrescentarNoGrupo(alvo.grupo, definicao.tipo); return }
@@ -829,6 +833,40 @@ export function criarEditor({
       trocarFluxo(criarGrupo(atual, alvo.ponto), umGesto)
       const novo = atual.grupos.find((g) => !antes.has(g.id))
       acrescentarNoGrupo(novo.id, definicao.tipo, null, umGesto)
+    }
+
+    function desligar() {
+      document.removeEventListener("mousemove", mover)
+      document.removeEventListener("mouseup", soltar)
+      document.removeEventListener("mousedown", largarPreso, true)
+      document.removeEventListener("keydown", desistir, true)
+    }
+
+    // Clique no quadro com o tipo preso: é aqui que ele desce. Na captura e
+    // parando a propagação, senão o mesmo clique começaria a arrastar o
+    // quadro por baixo.
+    function largarPreso(e) {
+      e.preventDefault?.()
+      e.stopPropagation?.()
+      largar(e)
+    }
+
+    function desistir(e) {
+      if (e.key !== "Escape") return
+      desligar()
+      fantasma.remove()
+    }
+
+    function soltar(e) {
+      // Arrastou e soltou: o bloco desce onde a mão largou.
+      if (andou) return largar(e)
+      // Clique seco: o tipo descola do menu e passa a seguir o cursor até o
+      // próximo clique. Quem não quer arrastar a mão inteira pela tela pega
+      // assim — e o Esc devolve.
+      document.removeEventListener("mouseup", soltar)
+      document.addEventListener("mousedown", largarPreso, true)
+      document.addEventListener("keydown", desistir, true)
+      mover(e)
     }
 
     document.addEventListener("mousemove", mover)
