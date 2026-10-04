@@ -783,9 +783,10 @@ export function criarEditor({
 
   // Abrindo, a escala não desce abaixo disto. Medido no Chrome: o fluxo da
   // Osher cabia inteiro a 0,6 e a letra do bloco saía a 8px — cabia e não se
-  // lia. A 0,8 ela sai a 11px, e quem quer ver tudo tira o zoom ou aperta
-  // Centralizar.
-  const PISO_DE_ABERTURA = 0.8
+  // lia. O piso é 1 porque 1 é o tamanho natural do cartão, o tamanho em que
+  // ele foi desenhado; qualquer número abaixo disso seria escolhido no olho.
+  // Quem quer ver mais fluxo de uma vez tira o zoom ou aperta Centralizar.
+  const PISO_DE_ABERTURA = 1
 
   // Tremida de mão não é arrasto. O mesmo número que o canvas usa para
   // separar clique de arrasto nos cartões.

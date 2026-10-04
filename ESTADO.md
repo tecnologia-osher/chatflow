@@ -1419,8 +1419,11 @@ palavra que só a frase da imagem tem.
 Mas o que apertava mesmo não era o tamanho das coisas: era o enquadramento.
 Medido no Chrome, o fluxo da Osher **cabia inteiro a 0,6 de escala, e a letra
 de um bloco saía a 8,1px na tela** — cabia e não se lia. Agora a abertura tem
-um **piso de 0,8** (11,5px de letra) e, abaixo dele, a vista ancora no começo
-do fluxo em vez de centralizar no miolo: o fluxo se lê a partir do Start. O
+um **piso de 1** — o tamanho natural do cartão, aquele em que ele foi
+desenhado, 14,4px de letra — e, abaixo dele, a vista ancora no começo do fluxo
+em vez de centralizar no miolo: o fluxo se lê a partir do Start. O piso nasceu
+em 0,8 e subiu para 1 no mesmo dia, a pedido: 0,8 era um número escolhido no
+olho, e 1 é o único que não é. O
 botão **Centralizar continua sem piso** — mostrar tudo é a tarefa dele, no
 tamanho que der. Quem quer menor tira o zoom.
 

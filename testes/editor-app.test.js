@@ -260,8 +260,8 @@ test("abrindo, o fluxo nao e espremido abaixo do legivel para caber", () => {
   const alto = fluxoBase()
   alto.grupos[1].posicao = { x: 0, y: 1020 }
   const { editor } = montar(alto)
-  assert.ok(editor.vista().escala >= 0.8,
-    "abrir num tamanho que não se lê é o mesmo que não abrir")
+  assert.equal(editor.vista().escala, 1,
+    "abre no tamanho natural do cartão: abrir num tamanho que não se lê é o mesmo que não abrir")
 })
 
 test("o botao Centralizar continua mostrando tudo, no tamanho que der", () => {
@@ -272,7 +272,7 @@ test("o botao Centralizar continua mostrando tudo, no tamanho que der", () => {
   const v = editor.vista()
   const base = (1020 + 56) * v.escala + v.y
   assert.ok(base <= 700, `o cartão de baixo ficou em ${Math.round(base)}px, fora dos 700px visíveis`)
-  assert.ok(v.escala < 0.8, "sem piso, Centralizar reduz até caber")
+  assert.ok(v.escala < 1, "sem piso, Centralizar reduz até caber")
 })
 
 test("fluxo alto demais para o chao da escala nao e espremido ate ficar ilegivel", () => {
