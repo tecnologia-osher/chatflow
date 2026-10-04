@@ -1065,3 +1065,47 @@ test("endereco que nao e endereco nao vira quadro em branco, e a conversa segue"
   assert.equal(hospedeiro.porClasse("cf__incorporado").length, 0)
   assert.match(hospedeiro.porClasse("cf__thread")[0].textContent, /Continuo aqui/)
 })
+
+test("a bolha de audio toca com controles, e o autoplay e so um pedido", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b", tipo: "audio", conteudo: { url: "https://exemplo/voz.mp3", autoplay: true } }] }] },
+    destinos: destinosDeTeste()
+  })
+  const som = hospedeiro.porClasse("cf__audio")[0]
+  assert.ok(som, "sem o player, o áudio não existe para quem conversa")
+  assert.equal(som.src, "https://exemplo/voz.mp3")
+  assert.equal("controls" in som.atributos, true,
+    "o navegador pode segurar o som: sem controles, ninguém consegue tocar")
+  assert.equal("autoplay" in som.atributos, true)
+})
+
+test("audio sem autoplay nao pede autoplay", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b", tipo: "audio", conteudo: { url: "https://exemplo/voz.mp3" } }] }] },
+    destinos: destinosDeTeste()
+  })
+  assert.equal("autoplay" in hospedeiro.porClasse("cf__audio")[0].atributos, false)
+})
+
+test("audio sem endereco e pulado, e a conversa segue", async () => {
+  const { hospedeiro } = await montarChat({
+    fluxo: { versao: 2, eventos: [{ tipo: "inicio", proximo: "g1" }],
+      grupos: [{ id: "g1", blocos: [
+        { id: "b1", tipo: "audio", conteudo: { url: "" } },
+        { id: "b2", tipo: "texto", conteudo: { texto: "Continuo aqui" } }] }] },
+    destinos: destinosDeTeste()
+  })
+  assert.equal(hospedeiro.porClasse("cf__audio").length, 0)
+  assert.match(hospedeiro.porClasse("cf__thread")[0].textContent, /Continuo aqui/)
+})
+
+test("o audio da pasta do cliente tambem ganha o caminho resolvido", async () => {
+  const { resolverMidia } = await import("../motor/midia.js")
+  const pronto = resolverMidia({ versao: 2, grupos: [{ id: "g", blocos: [
+    { id: "b", tipo: "audio", conteudo: { url: "audios/voz.mp3" } }] }] }, "../clientes/osher")
+  assert.equal(pronto.grupos[0].blocos[0].conteudo.url, "../clientes/osher/audios/voz.mp3")
+})

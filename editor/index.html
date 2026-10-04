@@ -46,15 +46,15 @@
 
   const salvar = (texto) => gravar(arquivo, texto)
 
-  // A imagem que a pessoa sobe vai para a pasta do cliente, e o fluxo guarda
-  // o caminho de dentro dela: assim a imagem viaja junto com o projeto. Em
-  // base64 porque é um JSON como os outros — multipart aqui seria um parser
-  // inteiro para guardar um arquivo.
-  async function subirImagem(arquivo) {
+  // O arquivo que a pessoa sobe — imagem ou áudio — vai para a pasta do
+  // cliente, e o fluxo guarda o caminho de dentro dela: assim ele viaja junto
+  // com o projeto. Em base64 porque é um JSON como os outros; multipart aqui
+  // seria um parser inteiro para guardar um arquivo.
+  async function subirArquivo(arquivo) {
     const bytes = new Uint8Array(await arquivo.arrayBuffer())
     let bruto = ""
     for (const b of bytes) bruto += String.fromCharCode(b)
-    const resposta = await fetch("../api/imagens", {
+    const resposta = await fetch("../api/midia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -113,7 +113,7 @@
       aoBaixar: baixar, aoSalvar: salvar, aoSalvarTema: salvarTema,
       // Subir arquivo é coisa de servidor: sem cliente (e sem `servir.py`),
       // a bolha de imagem oferece só o link, e diz por quê.
-      aoSubirImagem: cliente ? subirImagem : null,
+      aoSubirImagem: cliente ? subirArquivo : null,
       // Voltar guarda o que estiver pendente. Sem isto, renomear o projeto e
       // sair pela seta perdia o nome: ele vivia só na tela, e a lista
       // continuava mostrando o antigo. Se não deu para gravar, não sai — o

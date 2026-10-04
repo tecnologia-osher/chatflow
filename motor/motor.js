@@ -245,6 +245,19 @@ export function criarChat({
         bolha.append(img)
       }
       linha.append(bolha)
+    } else if (item.audio !== undefined) {
+      const bolha = elementoCom("div", "cf__bolha cf__bolha--audio")
+      const som = document.createElement("audio")
+      som.src = item.audio.src
+      som.className = "cf__audio"
+      som.setAttribute("controls", "")
+      som.setAttribute("preload", "none")
+      // Começar sozinho é um pedido, não uma garantia: o navegador segura o
+      // som até a pessoa tocar na tela. Os controles ficam ali de qualquer
+      // jeito, para ela poder dar play.
+      if (item.audio.autoplay) som.setAttribute("autoplay", "")
+      bolha.append(som)
+      linha.append(bolha)
     } else if (item.incorporado !== undefined) {
       const bolha = elementoCom("div", "cf__bolha cf__bolha--incorporado")
       const quadro = document.createElement("iframe")
@@ -497,6 +510,18 @@ export function criarChat({
           alternativo,
           ...(link ? { link } : {})
         })
+        estado = avancar(fluxo, estado)
+        continue
+      }
+
+      if (bloco.tipo === "audio") {
+        const endereco = interpolar(bloco.conteudo?.url || "", contexto(fluxo, estado)).trim()
+        if (endereco) {
+          await dizerComPausa("", {
+            lado: "bot",
+            audio: { src: endereco, autoplay: !!bloco.conteudo?.autoplay }
+          })
+        }
         estado = avancar(fluxo, estado)
         continue
       }

@@ -6,6 +6,8 @@
 // `motor/player.html`, no preview do editor e, um dia, num endereço próprio.
 
 const ABSOLUTO = /^(https?:)?\/\/|^data:|^blob:|^\//i
+// Os tipos cujo conteúdo é um arquivo que pode morar na pasta do cliente.
+const MIDIA = new Set(["imagem", "video", "audio"])
 
 export function ehRelativo(caminho) {
   const texto = String(caminho || "").trim()
@@ -26,7 +28,7 @@ export function resolverMidia(fluxo, base) {
   const grupos = fluxo.grupos.map((grupo) => {
     if (!grupo?.blocos) return grupo
     const blocos = grupo.blocos.map((bloco) => {
-      if (!bloco || (bloco.tipo !== "imagem" && bloco.tipo !== "video")) return bloco
+      if (!bloco || !MIDIA.has(bloco.tipo)) return bloco
       const url = bloco.conteudo?.url
       if (!ehRelativo(url)) return bloco
       mudou = true

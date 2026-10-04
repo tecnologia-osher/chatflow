@@ -16,9 +16,10 @@ Igual ao `python3 -m http.server`, com duas diferenças:
    `clientes/<id>/`, escreve o `fluxo.json` e põe o id no `clientes/index.json`,
    que é a lista que a primeira página lê.
 
-4. Aceita `POST /api/imagens` para guardar uma imagem que a pessoa subiu pela
-   bolha de imagem. Ela vai para `clientes/<id>/imagens/`, e o fluxo guarda o
-   caminho de dentro da pasta — assim a imagem viaja junto com o projeto.
+4. Aceita `POST /api/midia` para guardar um arquivo que a pessoa subiu pela
+   bolha de imagem ou de áudio. Ele vai para `clientes/<id>/imagens/` ou
+   `clientes/<id>/audios/`, e o fluxo guarda o caminho de dentro da pasta —
+   assim o arquivo viaja junto com o projeto.
 
 Só grava em `clientes/<nome>/fluxo.json`, `clientes/<nome>/tema.json` e
 `exemplos/<nome>.json`, com o nome sem barra nem ponto-ponto, e só se o corpo
@@ -47,11 +48,21 @@ LIMITE = 2 * 1024 * 1024
 ID_DE_PROJETO = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 # Imagem de conversa: estes formatos e nada maior que 2 MB, que já é muito
 # para quem abre o chat num celular.
-TIPOS_DE_IMAGEM = {
-    "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif",
-    "image/webp": "webp", "image/svg+xml": "svg",
+# Cada tipo aceito diz em que pasta mora e quanto pode pesar. Áudio é mais
+# pesado por natureza: um minuto de voz em mp3 dá perto de 1 MB.
+TIPOS_DE_MIDIA = {
+    "image/png": ("imagens", 2 * 1024 * 1024),
+    "image/jpeg": ("imagens", 2 * 1024 * 1024),
+    "image/gif": ("imagens", 2 * 1024 * 1024),
+    "image/webp": ("imagens", 2 * 1024 * 1024),
+    "image/svg+xml": ("imagens", 2 * 1024 * 1024),
+    "audio/mpeg": ("audios", 5 * 1024 * 1024),
+    "audio/mp3": ("audios", 5 * 1024 * 1024),
+    "audio/wav": ("audios", 5 * 1024 * 1024),
+    "audio/x-wav": ("audios", 5 * 1024 * 1024),
+    "audio/ogg": ("audios", 5 * 1024 * 1024),
 }
-LIMITE_DA_IMAGEM = 2 * 1024 * 1024
+MAIOR_MIDIA = max(limite for _, limite in TIPOS_DE_MIDIA.values())
 NOME_DE_ARQUIVO = re.compile(r"^[a-z0-9][a-z0-9._-]{0,49}$")
 INDICE = Path("clientes/index.json")
 
@@ -85,8 +96,8 @@ class SemCache(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         caminho = self.path.split("?")[0]
-        if caminho == "/api/imagens":
-            return self.guardar_imagem()
+        if caminho == "/api/midia":
+            return self.guardar_midia()
         if caminho != "/api/projetos":
             return self.responder(404, f"Não atendo {caminho}.")
 
@@ -118,9 +129,11 @@ class SemCache(SimpleHTTPRequestHandler):
         gravar(INDICE, indice)
         self.responder(200, f"Criei clientes/{identificador}.", id=identificador)
 
-    def guardar_imagem(self):
+    def guardar_midia(self):
+        # base64 engorda o arquivo em um terço: o corpo pode ser maior que o
+        # arquivo que ele carrega.
         tamanho = int(self.headers.get("Content-Length") or 0)
-        if tamanho <= 0 or tamanho > LIMITE + LIMITE // 2:
+        if tamanho <= 0 or tamanho > MAIOR_MIDIA * 2:
             return self.responder(413, "Corpo vazio ou grande demais.")
         try:
             pedido = json.loads(self.rfile.read(tamanho))
@@ -135,8 +148,9 @@ class SemCache(SimpleHTTPRequestHandler):
             return self.responder(404, f"O projeto {cliente} não existe.")
 
         tipo = str(pedido.get("tipo") or "")
-        if tipo not in TIPOS_DE_IMAGEM:
-            return self.responder(415, f"Formato que a conversa não mostra: {tipo}.")
+        if tipo not in TIPOS_DE_MIDIA:
+            return self.responder(415, f"Formato que a conversa não usa: {tipo}.")
+        subpasta, limite = TIPOS_DE_MIDIA[tipo]
 
         nome = str(pedido.get("nome") or "")
         if not NOME_DE_ARQUIVO.match(nome) or ".." in nome:
@@ -146,12 +160,12 @@ class SemCache(SimpleHTTPRequestHandler):
             dados = base64.b64decode(str(pedido.get("dados") or ""), validate=True)
         except (ValueError, binascii.Error) as falha:
             return self.responder(400, f"Conteúdo ilegível: {falha}")
-        if not dados or len(dados) > LIMITE_DA_IMAGEM:
-            return self.responder(413, "Imagem vazia ou maior que 2 MB.")
+        if not dados or len(dados) > limite:
+            return self.responder(413, f"Arquivo vazio ou maior que {limite // (1024 * 1024)} MB.")
 
-        imagens = pasta / "imagens"
-        imagens.mkdir(exist_ok=True)
-        destino = imagens / nome
+        onde = pasta / subpasta
+        onde.mkdir(exist_ok=True)
+        destino = onde / nome
         # Arquivo com o mesmo nome não é sobrescrito: a imagem de outro bloco
         # sumiria da conversa sem ninguém ter pedido.
         if destino.exists():
@@ -160,10 +174,10 @@ class SemCache(SimpleHTTPRequestHandler):
             numero = 2
             while destino.exists():
                 nome = f"{base}-{numero}.{extensao}" if ponto else f"{base}-{numero}"
-                destino = imagens / nome
+                destino = onde / nome
                 numero += 1
         destino.write_bytes(dados)
-        self.responder(200, f"Guardei {destino}.", caminho=f"imagens/{nome}")
+        self.responder(200, f"Guardei {destino}.", caminho=f"{subpasta}/{nome}")
 
     def do_PUT(self):
         caminho = self.path.split("?")[0]

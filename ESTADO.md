@@ -1367,3 +1367,44 @@ antes de soltar.
 Medido no Chrome, no fluxo da Osher: as quatro setas laterais encostam a 22px
 do topo do cartão (cartões de 273 a 380px de altura), e a que desce para o Fim
 encosta a 0px, no meio da largura.
+
+### A bolha Áudio, e o aviso que estava escondido atrás da paleta
+
+889 testes. **Áudio** é a quinta bolha. A caixa dela é a da imagem: **Link** e
+**Upload**, a recomendação **"Funciona com .mp3 e .wav."** e o **Começar
+sozinho**. Na conversa ela vira um `<audio controls>` dentro da bolha da marca.
+
+**Os controles não são enfeite.** O autoplay é um pedido, não uma ordem: o
+navegador segura o som de quem ainda não tocou na tela, e sem os controles a
+pessoa fica com um áudio que não toca e nada para clicar. Por isso `controls`
+entra sempre e `autoplay` só quando o fluxo pede. O `preload="none"` existe
+pelo mesmo motivo do limite de 2 MB da imagem: ninguém baixa no 4G um áudio
+que talvez nunca ouça.
+
+**Cada bolha passou a ter a sua regra de arquivo.** Antes havia uma só, a da
+imagem, e tudo que subia era conferido por ela. Agora `ARQUIVOS` guarda tipos,
+limite, rótulo e as duas frases de recusa por espécie — áudio vai até 5 MB
+(um minuto de voz em mp3 dá perto de 1 MB; 2 MB cortaria um recado de dois
+minutos), imagem continua em 2 MB. Espécie que ninguém conhece cai na regra
+mais apertada, a da imagem: errar para o lado de recusar é barato, errar para o
+lado de aceitar põe um arquivo qualquer na pasta do cliente.
+
+O servidor de bancada confere de novo do lado dele — `/api/imagens` virou
+`/api/midia`, com o tipo decidindo pasta e limite. Conferido no Chrome: um
+`.wav` de 1 segundo subiu (200, `audios/bip.wav`), um `.exe` foi recusado
+(415), e o arquivo tocou na conversa com a duração certa, sem transbordo no
+celular.
+
+**O que o áudio achou de quebra:** o avisador de problemas do fluxo — a faixa
+rosa do rodapé — nasce colado na borda esquerda, e a paleta flutua por cima
+dela. As primeiras palavras de cada aviso, justamente onde está o nome do grupo
+com problema, ficavam escondidas atrás do painel. Agora o aviso começa onde a
+paleta termina, e recupera a margem quando o cadeado a solta — mas não enquanto
+ela espia de volta pela beira, senão o nome some de novo justo quando se olha
+para lá. Medido no Chrome nos três estados: 294px com a paleta presa (ela
+termina em 285), 16px com ela fora, 294px de novo espiando.
+
+Dezoito mutações no código novo, dezoito pegas — e uma delas pegou um teste
+meu: "espécie desconhecida aceita áudio" sobreviveu porque as duas frases de
+recusa começam com "Formato", e o teste só conferia isso. Passou a exigir a
+palavra que só a frase da imagem tem.

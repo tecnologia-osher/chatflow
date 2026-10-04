@@ -78,3 +78,23 @@ test("nada manda em grid-template-columns no .ed, que e uma grade de linhas", ()
   assert.deepEqual(culpadas.map((r) => r.seletor), [])
   assert.match(css, /\.ed \{[^}]*grid-template-rows: auto 1fr/)
 })
+
+// A paleta é um painel solto (`position: absolute`), então ela não empurra
+// nada: flutua por cima do que estiver embaixo. O avisador de problemas ficava
+// embaixo dela, e as primeiras palavras de cada aviso — justamente onde está o
+// nome do grupo com problema — desapareciam atrás do painel.
+test("o avisador de problemas comeca depois da paleta, e volta quando ela sai", () => {
+  const avisador = regras.find((r) => /^\.ed__problemas:not\(:empty\)$/.test(r.seletor))
+  assert.ok(avisador, "a regra do avisador sumiu — este teste precisa dela")
+  const recuo = avisador.corpo.match(/padding-left:([^;]*);/)
+  assert.ok(recuo && /var\(--ed-lado\)/.test(recuo[1]),
+    "sem recuo do tamanho da paleta, o começo do aviso fica escondido atrás dela")
+
+  const solto = regras.find((r) => /\.ed__corpo--solto[^ ]* \.ed__problemas/.test(r.seletor))
+  assert.ok(solto, "com o cadeado aberto a paleta sai da tela: o recuo tem de sair junto")
+  assert.match(solto.corpo, /padding-left:\s*1rem/)
+  // Espiando, a paleta está de volta por cima do aviso: o recuo tem de voltar
+  // também, ou o nome do grupo some de novo justo quando se olha para ela.
+  assert.match(solto.seletor, /:not\(\.ed__corpo--espiando\)/,
+    "sem isto, a paleta espiando cobre o começo do aviso")
+})

@@ -2,7 +2,7 @@
 // Typebot. Ela existe porque imagem e vídeo não se editam escrevendo — o que
 // a pessoa tem na mão é um link, um arquivo, e um interruptor.
 
-import { caixaDoTipo, problemaNoArquivo } from "./midia.js"
+import { caixaDoTipo, problemaNoArquivo, ARQUIVOS } from "./midia.js"
 import { ALTURA_MINIMA, ALTURA_MAXIMA } from "../motor/incorporar.js"
 import { preencher } from "./idioma.js"
 
@@ -127,15 +127,16 @@ export function criarCaixaDeMidia({
       return [el("p", "ed__midia-nota",
         t("Subir arquivo precisa de servidor. Aberto assim, use o link."))]
     }
+    const regra = ARQUIVOS[molde.arquivo] || ARQUIVOS.imagem
     const etiqueta = el("label", "ed__midia-subir")
-    etiqueta.append(el("span", "ed__midia-subir-rotulo", t("Escolher uma imagem")))
+    etiqueta.append(el("span", "ed__midia-subir-rotulo", t(regra.escolher)))
     const campo = el("input", "ed__midia-arquivo")
     campo.setAttribute("type", "file")
-    campo.setAttribute("accept", "image/*")
+    campo.setAttribute("accept", regra.aceita)
     const recado = el("p", "ed__midia-recado")
     campo.addEventListener("change", async () => {
       const arquivo = campo.files?.[0]
-      const problema = problemaNoArquivo(arquivo)
+      const problema = problemaNoArquivo(arquivo, molde.arquivo)
       if (problema) { recado.textContent = t(problema); return }
       recado.textContent = t("Subindo…")
       try {
@@ -157,7 +158,7 @@ export function criarCaixaDeMidia({
 
   function linhaDoInterruptor() {
     const { campo, rotulo, dica } = molde.interruptor
-    const ligado = campo === "link_ao_clicar" ? Boolean(conteudo[campo]) : Boolean(conteudo[campo])
+    const ligado = Boolean(conteudo[campo])
     const linha = el("div", "ed__midia-linha")
     const botao = el("button", `ed__midia-chave${ligado ? " ed__midia-chave--ligado" : ""}`)
     botao.setAttribute("type", "button")

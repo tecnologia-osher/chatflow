@@ -96,3 +96,36 @@ test("imagem grande demais e recusada, com o limite na frase", () => {
 test("sem arquivo nenhum, diz isso em vez de quebrar", () => {
   assert.match(problemaNoArquivo(null), /Nenhum arquivo/)
 })
+
+// --- a bolha de áudio ------------------------------------------------------
+
+test("a caixa do audio tem link, upload, a recomendacao e o autoplay", () => {
+  const caixa = caixaDoTipo("audio")
+  assert.deepEqual(caixa.abas.map((a) => a.rotulo), ["Link", "Upload"])
+  assert.equal(caixa.campo.dica, "Cole o link do áudio…")
+  assert.match(caixa.nota, /\.mp3/)
+  assert.match(caixa.nota, /\.wav/)
+  assert.equal(caixa.interruptor.campo, "autoplay")
+  assert.equal(caixa.arquivo, "audio", "o que ela sobe é áudio, não imagem")
+})
+
+test("cada especie de arquivo tem as suas regras", () => {
+  assert.equal(problemaNoArquivo({ type: "audio/mpeg", size: 10 }, "audio"), null)
+  assert.match(problemaNoArquivo({ type: "audio/mpeg", size: 10 }, "imagem"), /Formato/,
+    "áudio não entra onde se espera imagem")
+  assert.match(problemaNoArquivo({ type: "image/png", size: 10 }, "audio"), /não toca/,
+    "imagem não entra onde se espera áudio")
+})
+
+test("o audio pode ser maior que a imagem, mas nao infinito", () => {
+  assert.equal(problemaNoArquivo({ type: "audio/mpeg", size: 4 * 1024 * 1024 }, "audio"), null,
+    "4 MB de voz é um áudio normal")
+  assert.match(problemaNoArquivo({ type: "audio/mpeg", size: 6 * 1024 * 1024 }, "audio"), /5 MB/)
+  assert.match(problemaNoArquivo({ type: "image/png", size: 4 * 1024 * 1024 }, "imagem"), /2 MB/,
+    "a imagem continua com o limite dela")
+})
+
+test("especie desconhecida cai nas regras da imagem, em vez de aceitar tudo", () => {
+  assert.match(problemaNoArquivo({ type: "application/pdf", size: 10 }, "sei-la"), /PNG/,
+    "na dúvida, a regra mais apertada: a da imagem")
+})

@@ -102,6 +102,10 @@
 }
 .cf__bolha img { max-width: 100%; height: auto; border-radius: 6px; display: block; }
 
+/* Áudio: a barra do navegador, da largura da bolha. */
+.cf__bolha--audio { padding: 0.5rem; }
+.cf__audio { display: block; width: 100%; min-width: 15rem; }
+
 /* Quadro de outra página dentro da conversa — um PDF, um formulário, um site.
    Ocupa a largura da bolha e a altura que o bloco pedir. */
 .cf__bolha--incorporado { padding: 0; overflow: hidden; width: 100%; }

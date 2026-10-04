@@ -6,6 +6,9 @@ export const ICONE_DO_TIPO = {
   video: "M2.5 3.5h11v9h-11zM6.8 6.3l3.7 2.2-3.7 2.2z",
   // Janela de navegador: moldura, barra de cima e o conteúdo dentro. É o que
   // uma página incorporada é — a página de outro alguém dentro desta.
+  // Fone de ouvido: arco por cima e as duas conchas. É o desenho que o
+  // Typebot usa, e o que se reconhece sem ler.
+  audio: "M3.5 10.5V8a4.5 4.5 0 0 1 9 0v2.5M2.5 10a1.5 1.5 0 0 1 3 0v1.5a1.5 1.5 0 0 1-3 0zM10.5 10a1.5 1.5 0 0 1 3 0v1.5a1.5 1.5 0 0 1-3 0z",
   incorporar: "M2.5 3.5h11v9h-11zM2.5 6.3h11M4.6 8.6h6.8M4.6 10.6h4",
   entrada_texto: "M2.5 4.5h11v7h-11zM5 8h4",
   entrada_numero: "M2.5 4.5h11v7h-11zM5.5 10.2V6.5l-1.3 1",

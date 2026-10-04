@@ -204,3 +204,36 @@ test("altura fora dos limites e presa quando o campo perde o foco", () => {
   assert.equal(edicoes.at(-1).valor, 1200)
   assert.equal(campo.value, "1200")
 })
+
+// --- áudio -----------------------------------------------------------------
+
+test("a caixa do audio pede o link, recomenda os formatos e liga o autoplay", () => {
+  const { no, edicoes } = montar({ tipo: "audio", conteudo: { url: "https://exemplo/voz.mp3" } })
+  assert.deepEqual(no.porClasse("ed__midia-aba").map((a) => a.textContent), ["Link", "Upload"])
+  assert.equal(no.porClasse("ed__midia-campo")[0].value, "https://exemplo/voz.mp3")
+  assert.equal(no.porClasse("ed__midia-campo")[0].atributos.placeholder, "Cole o link do áudio…")
+  assert.match(no.porClasse("ed__midia-nota")[0].textContent, /\.mp3/)
+
+  no.porClasse("ed__midia-chave")[0].disparar("click")
+  assert.deepEqual(edicoes, [{ campo: "autoplay", valor: true }])
+})
+
+test("o upload do audio aceita audio, e recusa imagem antes de subir", async () => {
+  let subiu = false
+  const { no, edicoes } = montar({ tipo: "audio", subir: async () => { subiu = true; return "audios/voz.mp3" } })
+  no.porClasse("ed__midia-aba").find((a) => a.textContent === "Upload").disparar("click")
+  const campo = no.porClasse("ed__midia-arquivo")[0]
+  assert.equal(campo.atributos.accept, "audio/*")
+  assert.match(no.porClasse("ed__midia-subir-rotulo")[0].textContent, /áudio/i)
+
+  campo.files = [{ name: "foto.png", type: "image/png", size: 100 }]
+  campo.disparar("change")
+  await assentar()
+  assert.equal(subiu, false)
+  assert.match(no.porClasse("ed__midia-recado")[0].textContent, /não toca/)
+
+  campo.files = [{ name: "voz.mp3", type: "audio/mpeg", size: 100 }]
+  campo.disparar("change")
+  await assentar()
+  assert.deepEqual(edicoes, [{ campo: "url", valor: "audios/voz.mp3" }])
+})

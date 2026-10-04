@@ -1104,7 +1104,7 @@ test("cada tipo da paleta tem icone e rotulo, nos tres da categoria Bolhas", () 
 
   const bolhas = tipos.filter((b) => b.className.includes("ed__tipo--fala"))
   assert.deepEqual(bolhas.map((b) => b.porClasse("ed__tipo-rotulo")[0].textContent),
-    ["Texto", "Imagem", "Vídeo", "Incorporar"])
+    ["Texto", "Imagem", "Vídeo", "Áudio", "Incorporar"])
   for (const botao of bolhas) {
     const traco = botao.porClasse("ed__tipo-icone")[0].filhos[0]
     assert.match(traco.atributos.d || "", /^M/, "o ícone precisa ter desenho")
@@ -1116,7 +1116,7 @@ test("o desenho de cada bolha e diferente do das outras", () => {
   const desenhos = porClasse(hospedeiro, "ed__tipo")
     .filter((b) => b.className.includes("ed__tipo--fala"))
     .map((b) => b.porClasse("ed__tipo-icone")[0].filhos[0].atributos.d)
-  assert.equal(new Set(desenhos).size, 4, "ícones iguais não distinguem nada")
+  assert.equal(new Set(desenhos).size, 5, "ícones iguais não distinguem nada")
 })
 
 test("arrastar um tipo continua funcionando com o icone dentro", () => {
@@ -2384,7 +2384,7 @@ test("acento nao atrapalha quem digita com pressa", () => {
 test("o nome do grupo tambem acha", () => {
   const { hospedeiro } = montar()
   procurar(hospedeiro, "bolhas")
-  assert.deepEqual(tiposNaTela(hospedeiro), ["Texto", "Imagem", "Vídeo", "Incorporar"])
+  assert.deepEqual(tiposNaTela(hospedeiro), ["Texto", "Imagem", "Vídeo", "Áudio", "Incorporar"])
   assert.deepEqual(porClasse(hospedeiro, "ed__categoria").map((e) => e.textContent), ["Bolhas"],
     "grupo sem nenhum achado não fica ocupando a coluna")
 })

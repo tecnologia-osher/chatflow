@@ -74,6 +74,7 @@ export const EM_INGLES = {
   "Texto": "Text",
   "Imagem": "Image",
   "Vídeo": "Video",
+  "Áudio": "Audio",
   "Incorporar": "Embed",
   "Botões": "Buttons",
   "E-mail": "Email",
@@ -103,6 +104,12 @@ export const EM_INGLES = {
   "Funciona com YouTube, Vimeo e arquivos de vídeo (.mp4).":
     "Works with YouTube, Vimeo and video files (.mp4).",
   "Escolher uma imagem": "Choose an image",
+  "Escolher um áudio": "Choose an audio file",
+  "Cole o link do áudio…": "Paste the audio file link…",
+  "Funciona com .mp3 e .wav.": "Works with .mp3 and .wav.",
+  "Formato que a conversa não toca. Use MP3, WAV ou OGG.":
+    "A format the conversation can't play. Use MP3, WAV or OGG.",
+  "Áudio grande demais: o limite é 5 MB.": "Audio too large: the limit is 5 MB.",
   "Subindo…": "Uploading…",
   "Não consegui subir ({motivo}).": "Couldn't upload it ({motivo}).",
   "Subir arquivo precisa de servidor. Aberto assim, use o link.":
